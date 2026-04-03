@@ -36,7 +36,7 @@ export default function TopNav() {
     <div className="relative w-full">
       <nav
         style={{ height: "7.5vh" }}
-        className="w-full flex items-center justify-between px-6 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800"
+        className="w-full flex items-center justify-between px-12 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800"
       >
         {/* Left: Title */}
         <span className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">

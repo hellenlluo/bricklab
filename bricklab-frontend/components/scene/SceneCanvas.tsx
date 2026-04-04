@@ -12,6 +12,7 @@ import {
 import { useScene, type SceneAsset } from "@/store/sceneStore";
 import Baseplate from "./Baseplate";
 import Gizmo from "./Gizmo";
+import ParametricBrick from "@/components/ParametricBrick";
 
 useGLTF.preload("/brick.glb");
 
@@ -125,20 +126,57 @@ function PlaceholderBox({
   );
 }
 
+function ParametricBrickWrapper({
+  asset,
+  onSelect,
+}: {
+  asset: SceneAsset;
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <group
+      name={asset.id}
+      position={asset.position ?? [0, 0, 0]}
+      onClick={(e) => {
+        e.stopPropagation();
+        if (asset.selectable !== false) onSelect(asset.id);
+      }}
+    >
+      <ParametricBrick
+        studsX={asset.preset!.studsX}
+        studsY={asset.preset!.studsY}
+        color={asset.materialColor}
+      />
+    </group>
+  );
+}
+
 function PlacedAssets({ assets }: { assets: SceneAsset[] }) {
   const { selectAsset } = useScene();
   const placed = assets.filter((a) => a.visible && a.position);
   return (
     <>
-      {placed.map((asset) =>
-        asset.modelPath ? (
-          <Suspense fallback={null} key={asset.id}>
-            <BrickModel asset={asset} onSelect={selectAsset} />
-          </Suspense>
-        ) : (
+      {placed.map((asset) => {
+        if (asset.type === "preset-brick" && asset.preset) {
+          return (
+            <ParametricBrickWrapper
+              key={asset.id}
+              asset={asset}
+              onSelect={selectAsset}
+            />
+          );
+        }
+        if (asset.modelPath) {
+          return (
+            <Suspense fallback={null} key={asset.id}>
+              <BrickModel asset={asset} onSelect={selectAsset} />
+            </Suspense>
+          );
+        }
+        return (
           <PlaceholderBox key={asset.id} asset={asset} onSelect={selectAsset} />
-        ),
-      )}
+        );
+      })}
     </>
   );
 }

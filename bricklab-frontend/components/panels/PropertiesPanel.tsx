@@ -77,10 +77,9 @@ function NumberValue({
 }
 
 export default function PropertiesPanel() {
-  const { assets, selectedAssetId, updateAsset } = useScene();
+  const { assets, selectedAssetId, updateAsset, decomposeBrick } = useScene();
   const asset = assets.find((a) => a.id === selectedAssetId) ?? null;
 
-  // Reset draft when switching assets (render-time derived state, no effect needed).
   const [colorDraftAssetId, setColorDraftAssetId] = useState<string | null>(asset?.id ?? null);
   const [colorDraft, setColorDraft] = useState(asset?.materialColor ?? "#bfbfff");
   if (colorDraftAssetId !== (asset?.id ?? null)) {
@@ -202,8 +201,6 @@ export default function PropertiesPanel() {
               const v = e.target.value;
               if (/^#[0-9a-fA-F]{0,6}$/.test(v)) {
                 setColorDraft(v);
-                // Only push to Three.js once the hex is complete to avoid
-                // THREE.Color warnings on partial strings like "#0000".
                 if (/^#[0-9a-fA-F]{6}$/.test(v))
                   updateAsset(asset.id, { materialColor: v });
               }
@@ -229,6 +226,18 @@ export default function PropertiesPanel() {
         }
       />
 
+      {asset.type === "preset-brick" &&
+        asset.preset &&
+        (asset.preset.studsX > 1 || asset.preset.studsY > 1) && (
+          <div className="pt-1 border-t border-zinc-200 dark:border-zinc-800">
+            <button
+              onClick={() => decomposeBrick(asset.id)}
+              className="w-full text-xs px-3 py-1.5 rounded border border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+            >
+              Decompose to 1×1
+            </button>
+          </div>
+        )}
     </div>
   );
 }

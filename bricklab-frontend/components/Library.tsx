@@ -3,6 +3,7 @@
 import { BRICK_LIBRARY, type BrickDefinition } from "@/lib/brickLibrary";
 import { useScene } from "@/store/sceneStore";
 import type { SceneAsset } from "@/store/sceneStore";
+import BrickPreview from "@/components/BrickPreview";
 
 function createAssetFromBrick(
   brick: BrickDefinition,
@@ -17,6 +18,10 @@ function createAssetFromBrick(
     modelPath: brick.modelPath,
     position: [0, 0, 0],
     materialColor: "#bfbfff",
+    preset: {
+      studsX: brick.studsX,
+      studsY: brick.studsY,
+    },
   };
 }
 
@@ -48,18 +53,14 @@ export default function Library({ onClose }: LibraryProps) {
               onClick={() => handleBrickClick(brick)}
               className="group flex flex-col rounded-lg border border-zinc-200 dark:border-zinc-700 hover:border-zinc-900 dark:hover:border-zinc-400 bg-white dark:bg-zinc-900 overflow-hidden transition-all cursor-pointer"
             >
-              <div
-                className={`aspect-square w-full flex items-center justify-center ${
-                  brick.modelPath
-                    ? "bg-[#F5F5F5] dark:bg-zinc-800"
-                    : "bg-[#F5F5F5] dark:bg-zinc-800"
-                }`}
-              >
-                {brick.modelPath ? (
-                  <span className="text-3xl select-none">🧱</span>
-                ) : (
-                  <span className="block w-8 h-8 border-2 border-dashed border-zinc-300 dark:border-zinc-600 rounded" />
-                )}
+              <div className="aspect-square w-full bg-[#F5F5F5] dark:bg-zinc-800 p-2">
+                <BrickPreview
+                  studsX={brick.studsX}
+                  studsY={brick.studsY}
+                  className="w-full h-full"
+                  stroke="currentColor"
+                  strokeWidth={0.5}
+                />
               </div>
 
               <div className="px-2 py-1.5 text-left">

@@ -1,0 +1,61 @@
+"use client";
+
+const STUD_SPACING = 1;
+const BODY_HEIGHT = 0.96;
+const STUD_RADIUS = 0.24;
+const STUD_HEIGHT = 0.18;
+
+export interface ParametricBrickProps {
+  studsX: number;
+  studsY: number;
+  color?: string;
+}
+
+export default function ParametricBrick({
+  studsX,
+  studsY,
+  color = "#bfbfff",
+}: ParametricBrickProps) {
+  const studs: React.ReactElement[] = [];
+
+  for (let ix = 0; ix < studsX; ix++) {
+    for (let iy = 0; iy < studsY; iy++) {
+      studs.push(
+        <mesh
+          key={`${ix}-${iy}`}
+          position={[
+            (ix + 0.5) * STUD_SPACING,
+            (iy + 0.5) * STUD_SPACING,
+            BODY_HEIGHT + STUD_HEIGHT / 2,
+          ]}
+          rotation={[Math.PI / 2, 0, 0]}
+          castShadow
+        >
+          <cylinderGeometry args={[STUD_RADIUS, STUD_RADIUS, STUD_HEIGHT, 12]} />
+          <meshStandardMaterial color={color} roughness={0.4} metalness={0.1} />
+        </mesh>,
+      );
+    }
+  }
+
+  return (
+    <group>
+      {}
+      <mesh
+        position={[
+          (studsX * STUD_SPACING) / 2,
+          (studsY * STUD_SPACING) / 2,
+          BODY_HEIGHT / 2,
+        ]}
+        castShadow
+        receiveShadow
+      >
+        <boxGeometry
+          args={[studsX * STUD_SPACING, studsY * STUD_SPACING, BODY_HEIGHT]}
+        />
+        <meshStandardMaterial color={color} roughness={0.4} metalness={0.1} />
+      </mesh>
+      {studs}
+    </group>
+  );
+}

@@ -13,6 +13,10 @@ export interface SceneAsset {
   materialColor?: string;
   materialRoughness?: number;
   materialMetalness?: number;
+  preset?: {
+    studsX: number;
+    studsY: number;
+  };
 }
 
 interface SceneStore {
@@ -20,6 +24,7 @@ interface SceneStore {
   addAsset: (asset: SceneAsset) => void;
   removeAsset: (id: string) => void;
   updateAsset: (id: string, updates: Partial<SceneAsset>) => void;
+  decomposeBrick: (id: string) => void;
   selectedAssetId: string | null;
   selectAsset: (id: string | null) => void;
   sceneBackground: string;
@@ -54,6 +59,37 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
     );
   }
 
+  function decomposeBrick(id: string) {
+    setAssets((prev) => {
+      const brick = prev.find((a) => a.id === id);
+      if (!brick?.preset) return prev;
+      const { studsX, studsY } = brick.preset;
+      if (studsX === 1 && studsY === 1) return prev;
+      const [bx, by, bz] = brick.position ?? [0, 0, 0];
+      const subBricks: SceneAsset[] = [];
+      const ts = Date.now();
+      for (let ix = 0; ix < studsX; ix++) {
+        for (let iy = 0; iy < studsY; iy++) {
+          subBricks.push({
+            id: `${id}-d${ix}-${iy}-${ts}`,
+            name: `${brick.name} (1×1)`,
+            type: "preset-brick",
+            visible: true,
+            selectable: true,
+            modelPath: brick.modelPath,
+            position: [bx + ix, by + iy, bz],
+            materialColor: brick.materialColor,
+            materialRoughness: brick.materialRoughness,
+            materialMetalness: brick.materialMetalness,
+            preset: { studsX: 1, studsY: 1 },
+          });
+        }
+      }
+      return [...prev.filter((a) => a.id !== id), ...subBricks];
+    });
+    setSelectedAssetId(null);
+  }
+
   function selectAsset(id: string | null) {
     setSelectedAssetId(id);
   }
@@ -65,6 +101,7 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
         addAsset,
         removeAsset,
         updateAsset,
+        decomposeBrick,
         selectedAssetId,
         selectAsset,
         sceneBackground,

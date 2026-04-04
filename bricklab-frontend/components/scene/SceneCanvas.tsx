@@ -1,10 +1,11 @@
 "use client";
 
-import { Suspense, useMemo, useEffect } from "react";
+import { Suspense, useMemo, useEffect, useRef } from "react";
 import * as THREE from "three";
 import { Canvas, useThree } from "@react-three/fiber";
-import { OrbitControls, Grid, Environment, useGLTF, TransformControls } from "@react-three/drei";
+import { OrbitControls, Environment, useGLTF, TransformControls } from "@react-three/drei";
 import { useScene, type SceneAsset } from "@/store/sceneStore";
+import Baseplate from "./Baseplate";
 
 useGLTF.preload("/brick.glb");
 
@@ -31,7 +32,6 @@ function BrickModel({ asset, onSelect }: {
       <primitive
         object={cloned}
         rotation={[Math.PI / 2, 0, 0]}
-        scale={10}
         castShadow
       />
     </group>
@@ -86,6 +86,9 @@ function SceneControls() {
         <TransformControls
           object={selectedObject}
           size={0.5}
+          onChange={() => {
+            if (selectedObject.position.z < 0) selectedObject.position.z = 0;
+          }}
           onMouseUp={() => {
             const { x, y, z } = selectedObject.position;
             updateAsset(selectedAssetId!, { position: [x, y, Math.max(0, z)] });
@@ -124,30 +127,21 @@ export default function SceneCanvas() {
   return (
     <div data-no-deselect className="fixed inset-0 z-0">
       <Canvas
-        camera={{ position: [4, -4, 4], fov: 45, up: [0, 0, 1] }}
+        camera={{ position: [30, -30, 20], fov: 35, up: [0, 0, 1] }}
         shadows={{ type: THREE.PCFShadowMap }}
         gl={{ antialias: true }}
         onPointerMissed={() => selectAsset(null)}
       >
         <color attach="background" args={[sceneBackground]} />
         <ZUpCamera />
-        <ambientLight intensity={0.4} />
+        <ambientLight intensity={0.35} />
         <directionalLight
           position={[10, -5, 15]}
           intensity={1.2}
           castShadow
           shadow-mapSize={[2048, 2048]}
         />
-        <Grid
-          args={[20, 20]}
-          position={[0, 0, 0]}
-          rotation={[Math.PI / 2, 0, 0]}
-          cellColor="#a1a1aa"
-          sectionColor="#52525b"
-          fadeDistance={30}
-          fadeStrength={1}
-          infiniteGrid
-        />
+        <Baseplate />
         <Environment preset="city" />
         <SceneControls />
         <PlacedAssets assets={assets} />

@@ -13,6 +13,7 @@ function createAssetFromBrick(
     name: `Brick ${index}`,
     type: brick.type,
     visible: true,
+    selectable: true,
     modelPath: brick.modelPath,
     position: [0, 0, 0],
   };

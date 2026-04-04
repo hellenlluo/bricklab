@@ -108,17 +108,32 @@ export default function PropertiesPanel() {
         </span>
       </Field>
 
-      <Field label="Visible">
-        <button
-          onClick={() => updateAsset(asset.id, { visible: !asset.visible })}
-          className={`self-start text-xs px-2 py-1 rounded border transition-colors ${
-            asset.visible
-              ? "border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300"
-              : "border-zinc-300 dark:border-zinc-600 bg-[#F5F5F5] dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500"
-          }`}
-        >
-          {asset.visible ? "Visible" : "Hidden"}
-        </button>
+      <Field label="Visibility">
+        <label className="flex items-center gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={asset.visible}
+            onChange={(e) => updateAsset(asset.id, { visible: e.target.checked })}
+            className="w-3.5 h-3.5 accent-zinc-600 dark:accent-zinc-400 cursor-pointer"
+          />
+          <span className="text-xs text-zinc-600 dark:text-zinc-400">
+            {asset.visible ? "Visible" : "Hidden"}
+          </span>
+        </label>
+      </Field>
+
+      <Field label="Selectability">
+        <label className="flex items-center gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={asset.selectable ?? true}
+            onChange={(e) => updateAsset(asset.id, { selectable: e.target.checked })}
+            className="w-3.5 h-3.5 accent-zinc-600 dark:accent-zinc-400 cursor-pointer"
+          />
+          <span className="text-xs text-zinc-600 dark:text-zinc-400">
+            {(asset.selectable ?? true) ? "Selectable" : "Not selectable"}
+          </span>
+        </label>
       </Field>
 
       <div className="flex flex-col gap-1.5">

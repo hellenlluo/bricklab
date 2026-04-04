@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useMemo, useEffect, useCallback } from "react";
+import { Suspense, useMemo, useEffect, useCallback, useState } from "react";
 import * as THREE from "three";
 import { Canvas, useThree } from "@react-three/fiber";
 import {
@@ -38,7 +38,7 @@ function BrickModel({
       position={asset.position ?? [0, 0, 0]}
       onClick={(e) => {
         e.stopPropagation();
-        onSelect(asset.id);
+        if (asset.selectable !== false) onSelect(asset.id);
       }}
     >
       <primitive object={cloned} rotation={[Math.PI / 2, 0, 0]} castShadow />
@@ -60,7 +60,7 @@ function PlaceholderBox({
       castShadow
       onClick={(e) => {
         e.stopPropagation();
-        onSelect(asset.id);
+        if (asset.selectable !== false) onSelect(asset.id);
       }}
     >
       <boxGeometry args={[1, 1.2, 2]} />
@@ -88,11 +88,20 @@ function PlacedAssets({ assets }: { assets: SceneAsset[] }) {
 }
 
 function SceneControls() {
-  const { selectedAssetId, updateAsset, plateSize } = useScene();
+  const { selectedAssetId, updateAsset, plateSize, assets } = useScene();
   const scene = useThree((s) => s.scene);
-  const selectedObject = selectedAssetId
-    ? (scene.getObjectByName(selectedAssetId) ?? undefined)
-    : undefined;
+  const [selectedObject, setSelectedObject] = useState<THREE.Object3D | undefined>(undefined);
+
+  const selectedAssetVisible = assets.find((a) => a.id === selectedAssetId)?.visible ?? false;
+
+  useEffect(() => {
+    if (!selectedAssetId || !selectedAssetVisible) {
+      setSelectedObject(undefined);
+      return;
+    }
+    const obj = scene.getObjectByName(selectedAssetId);
+    setSelectedObject(obj && obj.parent ? obj : undefined);
+  }, [scene, selectedAssetId, selectedAssetVisible]);
 
   const handleChange = useCallback(() => {
     const obj = selectedAssetId ? scene.getObjectByName(selectedAssetId) : null;

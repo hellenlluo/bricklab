@@ -7,6 +7,7 @@ export interface SceneAsset {
   name: string;
   type: string;
   visible: boolean;
+  selectable: boolean;
   modelPath?: string;
   position?: [number, number, number];
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useMemo, useEffect, useCallback, useState } from "react";
+import { Suspense, useMemo, useEffect, useCallback } from "react";
 import * as THREE from "three";
 import { Canvas, useThree } from "@react-three/fiber";
 import {
@@ -23,6 +23,28 @@ function ZUpCamera() {
   return null;
 }
 
+function applyMaterialOverrides(
+  root: THREE.Object3D,
+  color: string | undefined,
+  roughness: number | undefined,
+  metalness: number | undefined,
+) {
+  root.traverse((child) => {
+    const mesh = child as THREE.Mesh;
+    if (!mesh.isMesh) return;
+    const mats = Array.isArray(mesh.material)
+      ? (mesh.material as THREE.Material[])
+      : [mesh.material as THREE.Material];
+    mats.forEach((mat) => {
+      if (!(mat instanceof THREE.MeshStandardMaterial)) return;
+      if (color !== undefined) mat.color.set(color);
+      if (roughness !== undefined) mat.roughness = roughness;
+      if (metalness !== undefined) mat.metalness = metalness;
+      mat.needsUpdate = true;
+    });
+  });
+}
+
 function BrickModel({
   asset,
   onSelect,
@@ -31,7 +53,37 @@ function BrickModel({
   onSelect: (id: string) => void;
 }) {
   const { scene } = useGLTF(asset.modelPath!);
-  const cloned = useMemo(() => scene.clone(true), [scene]);
+
+  const cloned = useMemo(() => {
+    const clone = scene.clone(true);
+    clone.traverse((child) => {
+      const mesh = child as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      if (Array.isArray(mesh.material)) {
+        mesh.material = (mesh.material as THREE.Material[]).map((m) =>
+          m.clone(),
+        );
+      } else if (mesh.material) {
+        mesh.material = (mesh.material as THREE.Material).clone();
+      }
+    });
+    return clone;
+  }, [scene]);
+
+  useEffect(() => {
+    applyMaterialOverrides(
+      cloned,
+      asset.materialColor,
+      asset.materialRoughness,
+      asset.materialMetalness,
+    );
+  }, [
+    cloned,
+    asset.materialColor,
+    asset.materialRoughness,
+    asset.materialMetalness,
+  ]);
+
   return (
     <group
       name={asset.id}
@@ -64,7 +116,11 @@ function PlaceholderBox({
       }}
     >
       <boxGeometry args={[1, 1.2, 2]} />
-      <meshStandardMaterial color="#90abd0" />
+      <meshStandardMaterial
+        color={asset.materialColor ?? "#284a7a"}
+        roughness={asset.materialRoughness ?? 0.88}
+        metalness={asset.materialMetalness ?? 0.0}
+      />
     </mesh>
   );
 }
@@ -90,18 +146,13 @@ function PlacedAssets({ assets }: { assets: SceneAsset[] }) {
 function SceneControls() {
   const { selectedAssetId, updateAsset, plateSize, assets } = useScene();
   const scene = useThree((s) => s.scene);
-  const [selectedObject, setSelectedObject] = useState<THREE.Object3D | undefined>(undefined);
 
-  const selectedAssetVisible = assets.find((a) => a.id === selectedAssetId)?.visible ?? false;
-
-  useEffect(() => {
-    if (!selectedAssetId || !selectedAssetVisible) {
-      setSelectedObject(undefined);
-      return;
-    }
-    const obj = scene.getObjectByName(selectedAssetId);
-    setSelectedObject(obj && obj.parent ? obj : undefined);
-  }, [scene, selectedAssetId, selectedAssetVisible]);
+  const selectedAsset = assets.find((a) => a.id === selectedAssetId);
+  const rawObj =
+    selectedAsset?.visible && selectedAssetId
+      ? scene.getObjectByName(selectedAssetId)
+      : null;
+  const selectedObject = rawObj?.parent ? rawObj : undefined;
 
   const handleChange = useCallback(() => {
     const obj = selectedAssetId ? scene.getObjectByName(selectedAssetId) : null;

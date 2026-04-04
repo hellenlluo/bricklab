@@ -16,6 +16,7 @@ function createAssetFromBrick(
     selectable: true,
     modelPath: brick.modelPath,
     position: [0, 0, 0],
+    materialColor: "#bfbfff",
   };
 }
 

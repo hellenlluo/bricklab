@@ -10,6 +10,9 @@ export interface SceneAsset {
   selectable: boolean;
   modelPath?: string;
   position?: [number, number, number];
+  materialColor?: string;
+  materialRoughness?: number;
+  materialMetalness?: number;
 }
 
 interface SceneStore {

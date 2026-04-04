@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useScene } from "@/store/sceneStore";
+import Texture from "./Texture";
 
 function Field({
   label,
@@ -79,6 +80,14 @@ export default function PropertiesPanel() {
   const { assets, selectedAssetId, updateAsset } = useScene();
   const asset = assets.find((a) => a.id === selectedAssetId) ?? null;
 
+  // Reset draft when switching assets (render-time derived state, no effect needed).
+  const [colorDraftAssetId, setColorDraftAssetId] = useState<string | null>(asset?.id ?? null);
+  const [colorDraft, setColorDraft] = useState(asset?.materialColor ?? "#bfbfff");
+  if (colorDraftAssetId !== (asset?.id ?? null)) {
+    setColorDraftAssetId(asset?.id ?? null);
+    setColorDraft(asset?.materialColor ?? "#bfbfff");
+  }
+
   if (!asset) {
     return (
       <div
@@ -108,6 +117,14 @@ export default function PropertiesPanel() {
         </span>
       </Field>
 
+      {asset.modelPath && (
+        <Field label="Model">
+          <span className="text-xs text-zinc-500 dark:text-zinc-400 px-2 py-1 truncate">
+            {asset.modelPath}
+          </span>
+        </Field>
+      )}
+
       <Field label="Visibility">
         <label className="flex items-center gap-2 cursor-pointer select-none">
           <input
@@ -136,7 +153,7 @@ export default function PropertiesPanel() {
         </label>
       </Field>
 
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-0.5">
         <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
           Position
         </span>
@@ -164,13 +181,54 @@ export default function PropertiesPanel() {
         </div>
       </div>
 
-      {asset.modelPath && (
-        <Field label="Model">
-          <span className="text-xs text-zinc-500 dark:text-zinc-400 px-2 py-1 truncate">
-            {asset.modelPath}
-          </span>
-        </Field>
-      )}
+      <div className="flex flex-col gap-0.5">
+        <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+          Color
+        </span>
+        <div className="flex items-center gap-2">
+          <input
+            type="color"
+            value={asset.materialColor ?? "#bfbfff"}
+            onChange={(e) => {
+              updateAsset(asset.id, { materialColor: e.target.value });
+              setColorDraft(e.target.value);
+            }}
+            className="w-7 h-7 rounded cursor-pointer border border-zinc-200 dark:border-zinc-700 bg-transparent p-0.5"
+          />
+          <input
+            type="text"
+            value={colorDraft}
+            onChange={(e) => {
+              const v = e.target.value;
+              if (/^#[0-9a-fA-F]{0,6}$/.test(v)) {
+                setColorDraft(v);
+                // Only push to Three.js once the hex is complete to avoid
+                // THREE.Color warnings on partial strings like "#0000".
+                if (/^#[0-9a-fA-F]{6}$/.test(v))
+                  updateAsset(asset.id, { materialColor: v });
+              }
+            }}
+            onBlur={() => {
+              if (!/^#[0-9a-fA-F]{6}$/.test(colorDraft))
+                setColorDraft(asset.materialColor ?? "#bfbfff");
+            }}
+            maxLength={7}
+            className="text-xs bg-[#F5F5F5] dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded px-2 py-1 text-zinc-800 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-500 w-full font-mono"
+          />
+        </div>
+      </div>
+
+      <Texture
+        roughness={asset.materialRoughness}
+        metalness={asset.materialMetalness}
+        onRoughnessChange={(v) =>
+          updateAsset(asset.id, { materialRoughness: v })
+        }
+        onMetalnessChange={(v) =>
+          updateAsset(asset.id, { materialMetalness: v })
+        }
+      />
+
     </div>
   );
 }

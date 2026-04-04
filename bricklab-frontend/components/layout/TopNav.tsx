@@ -17,20 +17,29 @@ const NAV_ITEMS: Panel[] = [
   "Importer",
 ];
 
-const PANEL_COMPONENTS: Record<Panel, React.ReactNode> = {
-  Docs: <Docs />,
-  Generator: <Generator />,
-  Library: <Library />,
-  Exporter: <Exporter />,
-  Importer: <Importer />,
-};
-
 export default function TopNav() {
   const [activePanel, setActivePanel] = useState<Panel | null>(null);
+
+  const closePanel = () => setActivePanel(null);
 
   const handleButtonClick = (panel: Panel) => {
     setActivePanel((prev) => (prev === panel ? null : panel));
   };
+
+  function renderPanel(panel: Panel) {
+    switch (panel) {
+      case "Library":
+        return <Library onClose={closePanel} />;
+      case "Docs":
+        return <Docs />;
+      case "Generator":
+        return <Generator />;
+      case "Exporter":
+        return <Exporter />;
+      case "Importer":
+        return <Importer />;
+    }
+  }
 
   return (
     <>
@@ -51,8 +60,8 @@ export default function TopNav() {
               onClick={() => handleButtonClick(item)}
               className={`px-4 py-1.5 rounded-md text-sm font-normal transition-colors ${
                 activePanel === item
-                  ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50"
-                  : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-zinc-50 dark:hover:bg-zinc-800"
+                  ? "bg-[#F5F5F5] text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50"
+                  : "text-zinc-600 hover:text-zinc-900 hover:bg-[#F5F5F5] dark:text-zinc-400 dark:hover:text-zinc-50 dark:hover:bg-zinc-800"
               }`}
             >
               {item}
@@ -61,17 +70,19 @@ export default function TopNav() {
         </div>
       </nav>
 
-      {/* Centered panel card with dimmed backdrop */}
+      {/* Panel modal with dimmed backdrop */}
       {activePanel && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-          onClick={() => setActivePanel(null)}
+          onClick={closePanel}
         >
           <div
-            className="w-72 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900"
+            className={`rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 ${
+              activePanel === "Library" ? "w-[540px]" : "w-72"
+            }`}
             onClick={(e) => e.stopPropagation()}
           >
-            {PANEL_COMPONENTS[activePanel]}
+            {renderPanel(activePanel)}
           </div>
         </div>
       )}

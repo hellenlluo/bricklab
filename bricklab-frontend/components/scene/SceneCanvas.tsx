@@ -88,7 +88,7 @@ function PlacedAssets({ assets }: { assets: SceneAsset[] }) {
 }
 
 function SceneControls() {
-  const { selectedAssetId, updateAsset } = useScene();
+  const { selectedAssetId, updateAsset, plateSize } = useScene();
   const scene = useThree((s) => s.scene);
   const selectedObject = selectedAssetId
     ? (scene.getObjectByName(selectedAssetId) ?? undefined)
@@ -129,7 +129,7 @@ function SceneControls() {
         enableDamping
         dampingFactor={0.08}
         minDistance={0.5}
-        maxDistance={100}
+        maxDistance={plateSize * 2}
         panSpeed={0.8}
         zoomSpeed={1.2}
         rotateSpeed={0.6}

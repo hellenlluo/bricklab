@@ -4,18 +4,17 @@ import { BRICK_LIBRARY, type BrickDefinition } from "@/lib/brickLibrary";
 import { useScene } from "@/store/sceneStore";
 import type { SceneAsset } from "@/store/sceneStore";
 
-function createAssetFromBrick(brick: BrickDefinition, index: number): SceneAsset {
+function createAssetFromBrick(
+  brick: BrickDefinition,
+  index: number,
+): SceneAsset {
   return {
     id: `${brick.id}-${Date.now()}`,
     name: `Brick ${index}`,
     type: brick.type,
     visible: true,
     modelPath: brick.modelPath,
-    position: [
-      parseFloat((Math.random() * 6 - 3).toFixed(2)),
-      parseFloat((Math.random() * 6 - 3).toFixed(2)),
-      0,
-    ],
+    position: [0, 0, 0],
   };
 }
 

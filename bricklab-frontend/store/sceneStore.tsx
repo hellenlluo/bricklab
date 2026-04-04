@@ -20,6 +20,10 @@ interface SceneStore {
   selectAsset: (id: string | null) => void;
   sceneBackground: string;
   setSceneBackground: (color: string) => void;
+  plateSize: number;
+  setPlateSize: (size: number) => void;
+  plateColor: string;
+  setPlateColor: (color: string) => void;
 }
 
 const SceneContext = createContext<SceneStore | null>(null);
@@ -27,7 +31,9 @@ const SceneContext = createContext<SceneStore | null>(null);
 export function SceneProvider({ children }: { children: React.ReactNode }) {
   const [assets, setAssets] = useState<SceneAsset[]>([]);
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
-  const [sceneBackground, setSceneBackground] = useState<string>("#18181b");
+  const [sceneBackground, setSceneBackground] = useState<string>("#232323");
+  const [plateSize, setPlateSize] = useState<number>(50);
+  const [plateColor, setPlateColor] = useState<string>("#ebebeb");
 
   function addAsset(asset: SceneAsset) {
     setAssets((prev) => [...prev, asset]);
@@ -40,7 +46,7 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
 
   function updateAsset(id: string, updates: Partial<SceneAsset>) {
     setAssets((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, ...updates } : a))
+      prev.map((a) => (a.id === id ? { ...a, ...updates } : a)),
     );
   }
 
@@ -49,7 +55,22 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <SceneContext.Provider value={{ assets, addAsset, removeAsset, updateAsset, selectedAssetId, selectAsset, sceneBackground, setSceneBackground }}>
+    <SceneContext.Provider
+      value={{
+        assets,
+        addAsset,
+        removeAsset,
+        updateAsset,
+        selectedAssetId,
+        selectAsset,
+        sceneBackground,
+        setSceneBackground,
+        plateSize,
+        setPlateSize,
+        plateColor,
+        setPlateColor,
+      }}
+    >
       {children}
     </SceneContext.Provider>
   );

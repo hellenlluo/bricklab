@@ -18,8 +18,9 @@ export default function AssetsPanel() {
     function handleDocumentClick(e: MouseEvent) {
       const target = e.target as Node;
       if (
-        dropdownRef.current && !dropdownRef.current.contains(target) &&
-        !(target as Element).closest?.('[data-no-deselect]')
+        dropdownRef.current &&
+        !dropdownRef.current.contains(target) &&
+        !(target as Element).closest?.("[data-no-deselect]")
       ) {
         selectAsset(null);
       }
@@ -57,7 +58,10 @@ export default function AssetsPanel() {
   }
 
   return (
-    <div ref={dropdownRef} className="border-b border-zinc-200 dark:border-zinc-800">
+    <div
+      ref={dropdownRef}
+      className="border-b border-zinc-200 dark:border-zinc-800"
+    >
       {/* Search */}
       <div className="px-3 pt-3 pb-2">
         <input
@@ -104,7 +108,10 @@ export default function AssetsPanel() {
             filtered.map((asset) => (
               <li
                 key={asset.id}
-                onClick={(e) => { e.stopPropagation(); selectAsset(asset.id); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  selectAsset(asset.id);
+                }}
                 className={`flex items-center gap-2 mx-3 px-2 py-1.5 text-xs rounded-md cursor-default group transition-colors ${
                   selectedAssetId === asset.id
                     ? "bg-[#F5F5F5] dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"

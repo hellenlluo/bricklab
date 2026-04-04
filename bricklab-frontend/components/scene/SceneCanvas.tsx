@@ -1,11 +1,17 @@
 "use client";
 
-import { Suspense, useMemo, useEffect, useRef } from "react";
+import { Suspense, useMemo, useEffect, useCallback } from "react";
 import * as THREE from "three";
 import { Canvas, useThree } from "@react-three/fiber";
-import { OrbitControls, Environment, useGLTF, TransformControls } from "@react-three/drei";
+import {
+  OrbitControls,
+  Environment,
+  useGLTF,
+  TransformControls,
+} from "@react-three/drei";
 import { useScene, type SceneAsset } from "@/store/sceneStore";
 import Baseplate from "./Baseplate";
+import Gizmo from "./Gizmo";
 
 useGLTF.preload("/brick.glb");
 
@@ -17,7 +23,10 @@ function ZUpCamera() {
   return null;
 }
 
-function BrickModel({ asset, onSelect }: {
+function BrickModel({
+  asset,
+  onSelect,
+}: {
   asset: SceneAsset;
   onSelect: (id: string) => void;
 }) {
@@ -27,18 +36,20 @@ function BrickModel({ asset, onSelect }: {
     <group
       name={asset.id}
       position={asset.position ?? [0, 0, 0]}
-      onClick={(e) => { e.stopPropagation(); onSelect(asset.id); }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect(asset.id);
+      }}
     >
-      <primitive
-        object={cloned}
-        rotation={[Math.PI / 2, 0, 0]}
-        castShadow
-      />
+      <primitive object={cloned} rotation={[Math.PI / 2, 0, 0]} castShadow />
     </group>
   );
 }
 
-function PlaceholderBox({ asset, onSelect }: {
+function PlaceholderBox({
+  asset,
+  onSelect,
+}: {
   asset: SceneAsset;
   onSelect: (id: string) => void;
 }) {
@@ -47,7 +58,10 @@ function PlaceholderBox({ asset, onSelect }: {
       name={asset.id}
       position={asset.position ?? [0, 0, 0]}
       castShadow
-      onClick={(e) => { e.stopPropagation(); onSelect(asset.id); }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect(asset.id);
+      }}
     >
       <boxGeometry args={[1, 1.2, 2]} />
       <meshStandardMaterial color="#90abd0" />
@@ -67,7 +81,7 @@ function PlacedAssets({ assets }: { assets: SceneAsset[] }) {
           </Suspense>
         ) : (
           <PlaceholderBox key={asset.id} asset={asset} onSelect={selectAsset} />
-        )
+        ),
       )}
     </>
   );
@@ -77,8 +91,25 @@ function SceneControls() {
   const { selectedAssetId, updateAsset } = useScene();
   const scene = useThree((s) => s.scene);
   const selectedObject = selectedAssetId
-    ? scene.getObjectByName(selectedAssetId) ?? undefined
+    ? (scene.getObjectByName(selectedAssetId) ?? undefined)
     : undefined;
+
+  const handleChange = useCallback(() => {
+    const obj = selectedAssetId ? scene.getObjectByName(selectedAssetId) : null;
+    if (!obj) return;
+    obj.position.x = Math.round(obj.position.x);
+    obj.position.y = Math.round(obj.position.y);
+    obj.position.z = Math.max(0, Math.round(obj.position.z));
+  }, [scene, selectedAssetId]);
+
+  const handleMouseUp = useCallback(() => {
+    const obj = selectedAssetId ? scene.getObjectByName(selectedAssetId) : null;
+    if (!obj || !selectedAssetId) return;
+    const x = Math.round(obj.position.x);
+    const y = Math.round(obj.position.y);
+    const z = Math.max(0, Math.round(obj.position.z));
+    updateAsset(selectedAssetId, { position: [x, y, z] });
+  }, [scene, selectedAssetId, updateAsset]);
 
   return (
     <>
@@ -86,13 +117,8 @@ function SceneControls() {
         <TransformControls
           object={selectedObject}
           size={0.5}
-          onChange={() => {
-            if (selectedObject.position.z < 0) selectedObject.position.z = 0;
-          }}
-          onMouseUp={() => {
-            const { x, y, z } = selectedObject.position;
-            updateAsset(selectedAssetId!, { position: [x, y, Math.max(0, z)] });
-          }}
+          onChange={handleChange}
+          onMouseUp={handleMouseUp}
         />
       )}
       <OrbitControls
@@ -122,7 +148,8 @@ function SceneControls() {
 }
 
 export default function SceneCanvas() {
-  const { assets, sceneBackground, selectAsset } = useScene();
+  const { assets, sceneBackground, selectAsset, plateSize, plateColor } =
+    useScene();
 
   return (
     <div data-no-deselect className="fixed inset-0 z-0">
@@ -141,10 +168,11 @@ export default function SceneCanvas() {
           castShadow
           shadow-mapSize={[2048, 2048]}
         />
-        <Baseplate />
+        <Baseplate size={plateSize} color={plateColor} />
         <Environment preset="city" />
         <SceneControls />
         <PlacedAssets assets={assets} />
+        <Gizmo />
       </Canvas>
     </div>
   );

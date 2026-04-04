@@ -3,13 +3,11 @@
 import { Suspense, useMemo, useEffect } from "react";
 import * as THREE from "three";
 import { Canvas, useThree } from "@react-three/fiber";
-import { OrbitControls, Grid, Environment, useGLTF } from "@react-three/drei";
+import { OrbitControls, Grid, Environment, useGLTF, TransformControls } from "@react-three/drei";
 import { useScene, type SceneAsset } from "@/store/sceneStore";
 
-// Preload the real brick model as soon as the module loads
 useGLTF.preload("/brick.glb");
 
-/** Sets Z as the camera up axis so the scene uses Z-up convention. */
 function ZUpCamera() {
   const { camera } = useThree();
   useEffect(() => {
@@ -18,23 +16,39 @@ function ZUpCamera() {
   return null;
 }
 
-function BrickModel({ asset }: { asset: SceneAsset }) {
+function BrickModel({ asset, onSelect }: {
+  asset: SceneAsset;
+  onSelect: (id: string) => void;
+}) {
   const { scene } = useGLTF(asset.modelPath!);
   const cloned = useMemo(() => scene.clone(true), [scene]);
   return (
-    <primitive
-      object={cloned}
+    <group
+      name={asset.id}
       position={asset.position ?? [0, 0, 0]}
-      rotation={[Math.PI / 2, 0, 0]}
-      scale={10}
-      castShadow
-    />
+      onClick={(e) => { e.stopPropagation(); onSelect(asset.id); }}
+    >
+      <primitive
+        object={cloned}
+        rotation={[Math.PI / 2, 0, 0]}
+        scale={10}
+        castShadow
+      />
+    </group>
   );
 }
 
-function PlaceholderBox({ asset }: { asset: SceneAsset }) {
+function PlaceholderBox({ asset, onSelect }: {
+  asset: SceneAsset;
+  onSelect: (id: string) => void;
+}) {
   return (
-    <mesh position={asset.position ?? [0, 0, 0]} castShadow>
+    <mesh
+      name={asset.id}
+      position={asset.position ?? [0, 0, 0]}
+      castShadow
+      onClick={(e) => { e.stopPropagation(); onSelect(asset.id); }}
+    >
       <boxGeometry args={[1, 1.2, 2]} />
       <meshStandardMaterial color="#90abd0" />
     </mesh>
@@ -42,31 +56,78 @@ function PlaceholderBox({ asset }: { asset: SceneAsset }) {
 }
 
 function PlacedAssets({ assets }: { assets: SceneAsset[] }) {
+  const { selectAsset } = useScene();
   const placed = assets.filter((a) => a.visible && a.position);
   return (
     <>
       {placed.map((asset) =>
         asset.modelPath ? (
           <Suspense fallback={null} key={asset.id}>
-            <BrickModel asset={asset} />
+            <BrickModel asset={asset} onSelect={selectAsset} />
           </Suspense>
         ) : (
-          <PlaceholderBox key={asset.id} asset={asset} />
+          <PlaceholderBox key={asset.id} asset={asset} onSelect={selectAsset} />
         )
       )}
     </>
   );
 }
 
-export default function SceneCanvas() {
-  const { assets, sceneBackground } = useScene();
+function SceneControls() {
+  const { selectedAssetId, updateAsset } = useScene();
+  const scene = useThree((s) => s.scene);
+  const selectedObject = selectedAssetId
+    ? scene.getObjectByName(selectedAssetId) ?? undefined
+    : undefined;
 
   return (
-    <div className="fixed inset-0 z-0">
+    <>
+      {selectedObject && (
+        <TransformControls
+          object={selectedObject}
+          size={0.5}
+          onMouseUp={() => {
+            const { x, y, z } = selectedObject.position;
+            updateAsset(selectedAssetId!, { position: [x, y, Math.max(0, z)] });
+          }}
+        />
+      )}
+      <OrbitControls
+        makeDefault
+        enableRotate
+        enablePan
+        enableZoom
+        enableDamping
+        dampingFactor={0.08}
+        minDistance={0.5}
+        maxDistance={100}
+        panSpeed={0.8}
+        zoomSpeed={1.2}
+        rotateSpeed={0.6}
+        touches={{
+          ONE: THREE.TOUCH.ROTATE,
+          TWO: THREE.TOUCH.DOLLY_PAN,
+        }}
+        mouseButtons={{
+          LEFT: THREE.MOUSE.ROTATE,
+          MIDDLE: THREE.MOUSE.DOLLY,
+          RIGHT: THREE.MOUSE.PAN,
+        }}
+      />
+    </>
+  );
+}
+
+export default function SceneCanvas() {
+  const { assets, sceneBackground, selectAsset } = useScene();
+
+  return (
+    <div data-no-deselect className="fixed inset-0 z-0">
       <Canvas
         camera={{ position: [4, -4, 4], fov: 45, up: [0, 0, 1] }}
         shadows={{ type: THREE.PCFShadowMap }}
         gl={{ antialias: true }}
+        onPointerMissed={() => selectAsset(null)}
       >
         <color attach="background" args={[sceneBackground]} />
         <ZUpCamera />
@@ -88,28 +149,7 @@ export default function SceneCanvas() {
           infiniteGrid
         />
         <Environment preset="city" />
-        <OrbitControls
-          makeDefault
-          enableRotate
-          enablePan
-          enableZoom
-          enableDamping
-          dampingFactor={0.08}
-          minDistance={0.5}
-          maxDistance={100}
-          panSpeed={0.8}
-          zoomSpeed={1.2}
-          rotateSpeed={0.6}
-          touches={{
-            ONE: THREE.TOUCH.ROTATE,
-            TWO: THREE.TOUCH.DOLLY_PAN,
-          }}
-          mouseButtons={{
-            LEFT: THREE.MOUSE.ROTATE,
-            MIDDLE: THREE.MOUSE.DOLLY,
-            RIGHT: THREE.MOUSE.PAN,
-          }}
-        />
+        <SceneControls />
         <PlacedAssets assets={assets} />
       </Canvas>
     </div>

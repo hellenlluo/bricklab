@@ -7,9 +7,7 @@ export interface SceneAsset {
   name: string;
   type: string;
   visible: boolean;
-  /** Path relative to /public. Undefined = placeholder. */
   modelPath?: string;
-  /** World-space position; set when the asset is placed in the scene. */
   position?: [number, number, number];
 }
 

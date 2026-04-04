@@ -4,10 +4,10 @@ import { BRICK_LIBRARY, type BrickDefinition } from "@/lib/brickLibrary";
 import { useScene } from "@/store/sceneStore";
 import type { SceneAsset } from "@/store/sceneStore";
 
-function createAssetFromBrick(brick: BrickDefinition): SceneAsset {
+function createAssetFromBrick(brick: BrickDefinition, index: number): SceneAsset {
   return {
     id: `${brick.id}-${Date.now()}`,
-    name: brick.name,
+    name: `Brick ${index}`,
     type: brick.type,
     visible: true,
     modelPath: brick.modelPath,
@@ -24,23 +24,21 @@ interface LibraryProps {
 }
 
 export default function Library({ onClose }: LibraryProps) {
-  const { addAsset } = useScene();
+  const { assets, addAsset } = useScene();
 
   function handleBrickClick(brick: BrickDefinition) {
-    addAsset(createAssetFromBrick(brick));
+    addAsset(createAssetFromBrick(brick, assets.length + 1));
     onClose?.();
   }
 
   return (
     <div>
-      {/* Header */}
       <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800">
         <span className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
           Library
         </span>
       </div>
 
-      {/* Grid */}
       <div className="p-4 max-h-[60vh] overflow-y-auto">
         <div className="grid grid-cols-4 gap-3">
           {BRICK_LIBRARY.map((brick) => (
@@ -49,7 +47,6 @@ export default function Library({ onClose }: LibraryProps) {
               onClick={() => handleBrickClick(brick)}
               className="group flex flex-col rounded-lg border border-zinc-200 dark:border-zinc-700 hover:border-zinc-900 dark:hover:border-zinc-400 bg-white dark:bg-zinc-900 overflow-hidden transition-all cursor-pointer"
             >
-              {/* Preview area */}
               <div
                 className={`aspect-square w-full flex items-center justify-center ${
                   brick.modelPath
@@ -64,7 +61,6 @@ export default function Library({ onClose }: LibraryProps) {
                 )}
               </div>
 
-              {/* Label */}
               <div className="px-2 py-1.5 text-left">
                 <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300 truncate block">
                   {brick.name}

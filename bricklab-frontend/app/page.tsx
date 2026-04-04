@@ -1,16 +1,17 @@
 import TopNav from "@/components/layout/TopNav";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import RightSidebar from "@/components/layout/RightSidebar";
+import ToolBar from "@/components/layout/ToolBar";
+import SceneCanvas from "@/components/scene/SceneCanvas";
 
 export default function Home() {
   return (
-    <div className="flex flex-col h-screen bg-zinc-50 font-sans dark:bg-black">
+    <div className="h-screen font-sans overflow-hidden">
+      <SceneCanvas />
       <TopNav />
-      <div className="flex flex-1 overflow-hidden">
-        <LeftSidebar />
-        <main className="flex-1 overflow-hidden" />
-        <RightSidebar />
-      </div>
+      <LeftSidebar />
+      <RightSidebar />
+      <ToolBar />
     </div>
   );
 }

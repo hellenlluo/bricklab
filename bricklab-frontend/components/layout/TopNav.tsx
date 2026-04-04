@@ -33,10 +33,10 @@ export default function TopNav() {
   };
 
   return (
-    <div className="relative w-full">
+    <>
       <nav
-        style={{ height: "7.5vh" }}
-        className="w-full flex items-center justify-between px-12 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800"
+        style={{ height: "7.5vh", top: "1vh", left: "1vw", right: "1vw" }}
+        className="fixed flex items-center justify-between px-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl z-40"
       >
         {/* Left: Title */}
         <span className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
@@ -75,6 +75,6 @@ export default function TopNav() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

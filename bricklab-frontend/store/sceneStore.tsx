@@ -45,6 +45,8 @@ interface SceneStore {
   customBricks: CustomBrickDefinition[];
   addCustomBrick: (brick: CustomBrickDefinition) => void;
   removeCustomBrick: (id: string) => void;
+  selectionHighlightColor: string;
+  setSelectionHighlightColor: (color: string) => void;
 }
 
 const SceneContext = createContext<SceneStore | null>(null);
@@ -57,6 +59,7 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
   const [plateColor, setPlateColor] = useState<string>("#ebebeb");
   const [maxCameraDistance, setMaxCameraDistance] = useState<number>(100);
   const [customBricks, setCustomBricks] = useState<CustomBrickDefinition[]>([]);
+  const [selectionHighlightColor, setSelectionHighlightColor] = useState<string>("#ff8c82");
 
   function updatePlateSize(size: number) {
     setPlateSize(size);
@@ -142,6 +145,8 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
         customBricks,
         addCustomBrick,
         removeCustomBrick,
+        selectionHighlightColor,
+        setSelectionHighlightColor,
       }}
     >
       {children}

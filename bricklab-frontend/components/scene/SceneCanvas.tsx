@@ -29,6 +29,7 @@ function applyMaterialOverrides(
   color: string | undefined,
   roughness: number | undefined,
   metalness: number | undefined,
+  emissive?: string,
 ) {
   root.traverse((child) => {
     const mesh = child as THREE.Mesh;
@@ -41,6 +42,8 @@ function applyMaterialOverrides(
       if (color !== undefined) mat.color.set(color);
       if (roughness !== undefined) mat.roughness = roughness;
       if (metalness !== undefined) mat.metalness = metalness;
+      mat.emissive.set(emissive ?? "black");
+      mat.emissiveIntensity = emissive ? 0.4 : 1;
       mat.needsUpdate = true;
     });
   });
@@ -49,9 +52,11 @@ function applyMaterialOverrides(
 function BrickModel({
   asset,
   onSelect,
+  emissive,
 }: {
   asset: SceneAsset;
   onSelect: (id: string) => void;
+  emissive?: string;
 }) {
   const { scene } = useGLTF(asset.modelPath!);
 
@@ -77,12 +82,14 @@ function BrickModel({
       asset.materialColor,
       asset.materialRoughness,
       asset.materialMetalness,
+      emissive,
     );
   }, [
     cloned,
     asset.materialColor,
     asset.materialRoughness,
     asset.materialMetalness,
+    emissive,
   ]);
 
   return (
@@ -102,9 +109,11 @@ function BrickModel({
 function PlaceholderBox({
   asset,
   onSelect,
+  emissive,
 }: {
   asset: SceneAsset;
   onSelect: (id: string) => void;
+  emissive?: string;
 }) {
   return (
     <mesh
@@ -121,6 +130,8 @@ function PlaceholderBox({
         color={asset.materialColor ?? "#284a7a"}
         roughness={asset.materialRoughness ?? 0.88}
         metalness={asset.materialMetalness ?? 0.0}
+        emissive={emissive ?? "black"}
+        emissiveIntensity={emissive ? 0.4 : 1}
       />
     </mesh>
   );
@@ -129,9 +140,11 @@ function PlaceholderBox({
 function ParametricBrickWrapper({
   asset,
   onSelect,
+  emissive,
 }: {
   asset: SceneAsset;
   onSelect: (id: string) => void;
+  emissive?: string;
 }) {
   const { studsX, studsY } = asset.preset!;
   const cx = studsX / 2;
@@ -154,6 +167,7 @@ function ParametricBrickWrapper({
           color={asset.materialColor}
           roughness={asset.materialRoughness}
           metalness={asset.materialMetalness}
+          emissive={emissive}
         />
       </group>
     </group>
@@ -161,29 +175,31 @@ function ParametricBrickWrapper({
 }
 
 function PlacedAssets({ assets }: { assets: SceneAsset[] }) {
-  const { selectAsset } = useScene();
+  const { selectAsset, selectedAssetId, selectionHighlightColor } = useScene();
   const placed = assets.filter((a) => a.visible && a.position);
   return (
     <>
       {placed.map((asset) => {
+        const emissive = asset.id === selectedAssetId ? selectionHighlightColor : undefined;
         if (asset.type === "preset-brick" && asset.preset) {
           return (
             <ParametricBrickWrapper
               key={asset.id}
               asset={asset}
               onSelect={selectAsset}
+              emissive={emissive}
             />
           );
         }
         if (asset.modelPath) {
           return (
             <Suspense fallback={null} key={asset.id}>
-              <BrickModel asset={asset} onSelect={selectAsset} />
+              <BrickModel asset={asset} onSelect={selectAsset} emissive={emissive} />
             </Suspense>
           );
         }
         return (
-          <PlaceholderBox key={asset.id} asset={asset} onSelect={selectAsset} />
+          <PlaceholderBox key={asset.id} asset={asset} onSelect={selectAsset} emissive={emissive} />
         );
       })}
     </>

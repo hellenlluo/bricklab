@@ -11,6 +11,8 @@ export interface ParametricBrickProps {
   color?: string;
   roughness?: number;
   metalness?: number;
+  emissive?: string;
+  emissiveIntensity?: number;
 }
 
 export default function ParametricBrick({
@@ -19,6 +21,8 @@ export default function ParametricBrick({
   color = "#bfbfff",
   roughness = 0.88,
   metalness = 0.2,
+  emissive = "black",
+  emissiveIntensity = 0.25,
 }: ParametricBrickProps) {
   const studs: React.ReactElement[] = [];
 
@@ -36,7 +40,7 @@ export default function ParametricBrick({
           castShadow
         >
           <cylinderGeometry args={[STUD_RADIUS, STUD_RADIUS, STUD_HEIGHT, 12]} />
-          <meshStandardMaterial color={color} roughness={roughness} metalness={metalness} />
+          <meshStandardMaterial color={color} roughness={roughness} metalness={metalness} emissive={emissive} emissiveIntensity={emissiveIntensity} />
         </mesh>,
       );
     }
@@ -57,7 +61,7 @@ export default function ParametricBrick({
         <boxGeometry
           args={[studsX * STUD_SPACING, studsY * STUD_SPACING, BODY_HEIGHT]}
         />
-        <meshStandardMaterial color={color} roughness={roughness} metalness={metalness} />
+        <meshStandardMaterial color={color} roughness={roughness} metalness={metalness} emissive={emissive} emissiveIntensity={emissiveIntensity} />
       </mesh>
       {studs}
     </group>

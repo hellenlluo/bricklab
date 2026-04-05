@@ -229,14 +229,12 @@ export default function PropertiesPanel() {
       {asset.type === "preset-brick" &&
         asset.preset &&
         (asset.preset.studsX > 1 || asset.preset.studsY > 1) && (
-          <div className="pt-1 border-t border-zinc-200 dark:border-zinc-800">
-            <button
-              onClick={() => decomposeBrick(asset.id)}
-              className="w-full text-xs px-3 py-1.5 rounded border border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-            >
-              Decompose to 1×1
-            </button>
-          </div>
+          <button
+            onClick={() => decomposeBrick(asset.id)}
+            className="w-full text-xs px-2 py-1 rounded border border-zinc-200 dark:border-zinc-700 bg-[#F5F5F5] dark:bg-zinc-800 text-zinc-800 dark:text-zinc-100 hover:border-zinc-400 dark:hover:border-zinc-500 transition-colors"
+          >
+            Decompose
+          </button>
         )}
     </div>
   );

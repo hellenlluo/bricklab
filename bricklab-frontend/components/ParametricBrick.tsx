@@ -9,12 +9,16 @@ export interface ParametricBrickProps {
   studsX: number;
   studsY: number;
   color?: string;
+  roughness?: number;
+  metalness?: number;
 }
 
 export default function ParametricBrick({
   studsX,
   studsY,
   color = "#bfbfff",
+  roughness = 0.88,
+  metalness = 0.2,
 }: ParametricBrickProps) {
   const studs: React.ReactElement[] = [];
 
@@ -32,7 +36,7 @@ export default function ParametricBrick({
           castShadow
         >
           <cylinderGeometry args={[STUD_RADIUS, STUD_RADIUS, STUD_HEIGHT, 12]} />
-          <meshStandardMaterial color={color} roughness={0.4} metalness={0.1} />
+          <meshStandardMaterial color={color} roughness={roughness} metalness={metalness} />
         </mesh>,
       );
     }
@@ -53,7 +57,7 @@ export default function ParametricBrick({
         <boxGeometry
           args={[studsX * STUD_SPACING, studsY * STUD_SPACING, BODY_HEIGHT]}
         />
-        <meshStandardMaterial color={color} roughness={0.4} metalness={0.1} />
+        <meshStandardMaterial color={color} roughness={roughness} metalness={metalness} />
       </mesh>
       {studs}
     </group>

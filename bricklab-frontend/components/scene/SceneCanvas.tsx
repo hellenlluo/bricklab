@@ -146,6 +146,8 @@ function ParametricBrickWrapper({
         studsX={asset.preset!.studsX}
         studsY={asset.preset!.studsY}
         color={asset.materialColor}
+        roughness={asset.materialRoughness}
+        metalness={asset.materialMetalness}
       />
     </group>
   );

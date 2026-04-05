@@ -18,6 +18,8 @@ function createAssetFromBrick(
     modelPath: brick.modelPath,
     position: [0, 0, 0],
     materialColor: "#bfbfff",
+    materialRoughness: 0.88,
+    materialMetalness: 0.2,
     preset: {
       studsX: brick.studsX,
       studsY: brick.studsY,
@@ -51,7 +53,7 @@ export default function Library({ onClose }: LibraryProps) {
             <button
               key={brick.id}
               onClick={() => handleBrickClick(brick)}
-              className="group flex flex-col rounded-lg border border-zinc-200 dark:border-zinc-700 hover:border-zinc-900 dark:hover:border-zinc-400 bg-white dark:bg-zinc-900 overflow-hidden transition-all cursor-pointer"
+              className="group flex flex-col rounded-lg border border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500 bg-white dark:bg-zinc-900 overflow-hidden transition-all cursor-pointer"
             >
               <div className="aspect-square w-full bg-[#F5F5F5] dark:bg-zinc-800 p-2">
                 <BrickPreview

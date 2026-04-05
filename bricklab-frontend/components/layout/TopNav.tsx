@@ -60,8 +60,8 @@ export default function TopNav() {
               onClick={() => handleButtonClick(item)}
               className={`px-4 py-1.5 rounded-md text-sm font-normal transition-colors ${
                 activePanel === item
-                  ? "bg-[#F5F5F5] text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50"
-                  : "text-zinc-600 hover:text-zinc-900 hover:bg-[#F5F5F5] dark:text-zinc-400 dark:hover:text-zinc-50 dark:hover:bg-zinc-800"
+                  ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50"
+                  : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-zinc-50 dark:hover:bg-zinc-800"
               }`}
             >
               {item}

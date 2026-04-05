@@ -24,7 +24,7 @@ function SliderRow({ label, value, onChange }: SliderRowProps) {
         step={0.01}
         value={value}
         onChange={(e) => onChange(parseFloat(e.target.value))}
-        className="w-full h-1 accent-[#404040] dark:accent-zinc-400 cursor-pointer"
+        className="w-full h-1 accent-zinc-700 dark:accent-zinc-400 cursor-pointer"
       />
     </div>
   );

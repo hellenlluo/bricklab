@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useScene } from "@/store/sceneStore";
 
 export default function SettingsPanel() {
@@ -11,8 +11,15 @@ export default function SettingsPanel() {
     setPlateSize,
     plateColor,
     setPlateColor,
+    maxCameraDistance,
+    setMaxCameraDistance,
   } = useScene();
   const [plateSizeDraft, setPlateSizeDraft] = useState(String(plateSize));
+  const [maxDistanceDraft, setMaxDistanceDraft] = useState(String(maxCameraDistance));
+
+  useEffect(() => {
+    setMaxDistanceDraft(String(maxCameraDistance));
+  }, [maxCameraDistance]);
 
   return (
     <div data-no-deselect className="px-3 py-3 flex flex-col gap-3">
@@ -40,7 +47,7 @@ export default function SettingsPanel() {
               }
             }}
             maxLength={7}
-            className="text-xs bg-[#F5F5F5] dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded px-2 py-1 text-zinc-800 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-500 w-full font-mono"
+            className="text-xs bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded px-2 py-1 text-zinc-800 dark:text-zinc-100 outline-none focus:border-zinc-400 dark:focus:border-zinc-500 w-full font-mono"
           />
         </div>
       </div>
@@ -69,7 +76,7 @@ export default function SettingsPanel() {
               }
             }}
             maxLength={7}
-            className="text-xs bg-[#F5F5F5] dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded px-2 py-1 text-zinc-800 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-500 w-full font-mono"
+            className="text-xs bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded px-2 py-1 text-zinc-800 dark:text-zinc-100 outline-none focus:border-zinc-400 dark:focus:border-zinc-500 w-full font-mono"
           />
         </div>
       </div>
@@ -96,7 +103,33 @@ export default function SettingsPanel() {
             if (e.key === "Enter") (e.target as HTMLInputElement).blur();
             if (e.key === "Escape") setPlateSizeDraft(String(plateSize));
           }}
-          className="text-xs bg-[#F5F5F5] dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded px-2 py-1 text-zinc-800 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-500 w-full"
+          className="text-xs bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded px-2 py-1 text-zinc-800 dark:text-zinc-100 outline-none focus:border-zinc-400 dark:focus:border-zinc-500 w-full"
+        />
+      </div>
+
+      <div className="flex flex-col gap-0.5">
+        <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+          Max Camera Distance
+        </span>
+        <input
+          type="number"
+          min={1}
+          value={maxDistanceDraft}
+          onChange={(e) => setMaxDistanceDraft(e.target.value)}
+          onBlur={() => {
+            const n = parseInt(maxDistanceDraft, 10);
+            if (!isNaN(n) && n > 0) {
+              setMaxCameraDistance(n);
+              setMaxDistanceDraft(String(n));
+            } else {
+              setMaxDistanceDraft(String(maxCameraDistance));
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+            if (e.key === "Escape") setMaxDistanceDraft(String(maxCameraDistance));
+          }}
+          className="text-xs bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded px-2 py-1 text-zinc-800 dark:text-zinc-100 outline-none focus:border-zinc-400 dark:focus:border-zinc-500 w-full"
         />
       </div>
     </div>

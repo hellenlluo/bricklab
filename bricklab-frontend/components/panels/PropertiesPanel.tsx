@@ -41,7 +41,7 @@ function TextValue({
           (e.target as HTMLInputElement).blur();
         }
       }}
-      className="text-xs bg-[#F5F5F5] dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded px-2 py-1 text-zinc-800 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-500 w-full"
+      className="text-xs bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded px-2 py-1 text-zinc-800 dark:text-zinc-100 outline-none focus:border-zinc-400 dark:focus:border-zinc-500 w-full"
     />
   );
 }
@@ -71,7 +71,7 @@ function NumberValue({
           (e.target as HTMLInputElement).blur();
         }
       }}
-      className="text-xs bg-[#F5F5F5] dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded px-2 py-1 text-zinc-800 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-500 w-full"
+      className="text-xs bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded px-2 py-1 text-zinc-800 dark:text-zinc-100 outline-none focus:border-zinc-400 dark:focus:border-zinc-500 w-full"
     />
   );
 }
@@ -116,7 +116,7 @@ export default function PropertiesPanel() {
             type="checkbox"
             checked={asset.visible}
             onChange={(e) => updateAsset(asset.id, { visible: e.target.checked })}
-            className="w-3.5 h-3.5 accent-[#404040] dark:accent-zinc-400 cursor-pointer"
+            className="w-3.5 h-3.5 accent-zinc-700 dark:accent-zinc-400 cursor-pointer"
           />
           <span className="text-xs text-zinc-600 dark:text-zinc-400">
             {asset.visible ? "Visible" : "Hidden"}
@@ -130,7 +130,7 @@ export default function PropertiesPanel() {
             type="checkbox"
             checked={asset.selectable ?? true}
             onChange={(e) => updateAsset(asset.id, { selectable: e.target.checked })}
-            className="w-3.5 h-3.5 accent-[#404040] dark:accent-zinc-400 cursor-pointer"
+            className="w-3.5 h-3.5 accent-zinc-700 dark:accent-zinc-400 cursor-pointer"
           />
           <span className="text-xs text-zinc-600 dark:text-zinc-400">
             {(asset.selectable ?? true) ? "Selectable" : "Not selectable"}
@@ -177,7 +177,7 @@ export default function PropertiesPanel() {
                 preset: { studsX: asset.preset!.studsY, studsY: asset.preset!.studsX },
               })
             }
-            className="w-full text-[10px] px-2 py-1 rounded bg-[#404040] text-white hover:bg-[#555555] transition-colors"
+            className="w-full text-[10px] px-2 py-1 rounded bg-zinc-700 text-white hover:bg-zinc-600 transition-colors"
           >
             {asset.preset.studsX > asset.preset.studsY ? "Rotate 90° CW" : "Rotate 90° CCW"}
           </button>
@@ -214,7 +214,7 @@ export default function PropertiesPanel() {
                 setColorDraft(asset.materialColor ?? "#bfbfff");
             }}
             maxLength={7}
-            className="text-xs bg-[#F5F5F5] dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded px-2 py-1 text-zinc-800 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-500 w-full font-mono"
+            className="text-xs bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded px-2 py-1 text-zinc-800 dark:text-zinc-100 outline-none focus:border-zinc-400 dark:focus:border-zinc-500 w-full font-mono"
           />
         </div>
       </div>
@@ -235,7 +235,7 @@ export default function PropertiesPanel() {
         (asset.preset.studsX > 1 || asset.preset.studsY > 1) && (
           <button
             onClick={() => decomposeBrick(asset.id)}
-            className="w-full text-[10px] px-2 py-1 rounded bg-[#404040] text-white hover:bg-[#555555] transition-colors"
+            className="w-full text-[10px] px-2 py-1 rounded bg-zinc-700 text-white hover:bg-zinc-600 transition-colors"
           >
             Decompose
           </button>

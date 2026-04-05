@@ -50,7 +50,7 @@ function BrickCard({
         onClick={onClick}
         className={`flex flex-col w-full cursor-pointer${fillHeight ? " flex-1 min-h-0" : ""}`}
       >
-        <div className={fillHeight ? "flex-1 min-h-0 bg-[#F5F5F5] dark:bg-zinc-800 p-2" : "aspect-6/5 w-full bg-[#F5F5F5] dark:bg-zinc-800 p-2"}>
+        <div className={fillHeight ? "flex-1 min-h-0 bg-zinc-100 dark:bg-zinc-800 p-2" : "aspect-6/5 w-full bg-zinc-100 dark:bg-zinc-800 p-2"}>
           <BrickPreview
             studsX={brick.studsX}
             studsY={brick.studsY}
@@ -108,8 +108,8 @@ export default function Library({ onClose }: LibraryProps) {
   const tabClass = (t: Tab) =>
     `flex-1 py-1.5 text-sm font-normal transition-colors rounded-md ${
       tab === t
-        ? "bg-[#F5F5F5] text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50"
-        : "text-zinc-600 hover:text-zinc-900 hover:bg-[#F5F5F5] dark:text-zinc-400 dark:hover:text-zinc-50 dark:hover:bg-zinc-800"
+        ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50"
+        : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-zinc-50 dark:hover:bg-zinc-800"
     }`;
 
   return (
@@ -160,7 +160,7 @@ export default function Library({ onClose }: LibraryProps) {
                 max={32}
                 value={studsX}
                 onChange={(e) => setStudsX(e.target.value)}
-                className="text-xs bg-[#F5F5F5] dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded px-2 py-1 text-zinc-800 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-500 w-16"
+                className="text-xs bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded px-2 py-1 text-zinc-800 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-500 w-16"
               />
             </div>
             <div className="flex flex-col gap-0.5">
@@ -171,18 +171,24 @@ export default function Library({ onClose }: LibraryProps) {
                 max={32}
                 value={studsY}
                 onChange={(e) => setStudsY(e.target.value)}
-                className="text-xs bg-[#F5F5F5] dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded px-2 py-1 text-zinc-800 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-500 w-16"
+                className="text-xs bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded px-2 py-1 text-zinc-800 dark:text-zinc-100 outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-500 w-16"
               />
             </div>
             <button
               onClick={handleAddCustom}
-              className="px-3 py-1.5 rounded-md bg-[#404040] text-white text-[10px] font-medium hover:bg-[#555555] transition-colors"
+              className="px-3 py-1.5 rounded-md bg-zinc-700 text-white text-[10px] font-medium hover:bg-zinc-600 transition-colors"
             >
               Add
             </button>
           </div>
           {formError && (
             <p className="text-[10px] text-red-500 mb-2">{formError}</p>
+          )}
+
+          {customBricks.length === 0 && (
+            <p className="text-xs text-zinc-400 dark:text-zinc-500 mb-2">
+              No custom brick types yet. Define one above.
+            </p>
           )}
 
           {customBricks.length > 0 && (

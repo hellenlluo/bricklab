@@ -69,14 +69,14 @@ export default function AssetsPanel() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search assets…"
-          className="w-full text-xs rounded-md border border-zinc-200 dark:border-zinc-700 bg-[#F5F5F5] dark:bg-zinc-800 px-2 py-1.5 text-zinc-800 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-500"
+          className="w-full text-xs rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 px-2 py-1.5 text-zinc-800 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 outline-none focus:border-zinc-400 dark:focus:border-zinc-500"
         />
       </div>
 
       {/* Collapsible header */}
       <button
         onClick={handleToggle}
-        className="flex w-full items-center gap-2 px-3 py-1.5 text-left hover:bg-[#F5F5F5] dark:hover:bg-zinc-800 transition-colors"
+        className="flex w-full items-center gap-2 px-3 py-1.5 text-left hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
       >
         {/* Black triangle indicator */}
         <span
@@ -114,8 +114,8 @@ export default function AssetsPanel() {
                 }}
                 className={`flex items-center gap-2 mx-3 px-2 py-1.5 text-xs rounded-md cursor-default group transition-colors ${
                   selectedAssetId === asset.id
-                    ? "bg-[#F5F5F5] dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
-                    : "text-zinc-700 dark:text-zinc-300 hover:bg-[#F5F5F5] dark:hover:bg-zinc-800"
+                    ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
+                    : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                 }`}
               >
                 {editingId === asset.id ? (

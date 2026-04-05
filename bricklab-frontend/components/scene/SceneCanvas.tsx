@@ -191,12 +191,12 @@ function PlacedAssets({ assets }: { assets: SceneAsset[] }) {
 }
 
 function SceneControls() {
-  const { selectedAssetId, updateAsset, plateSize, assets } = useScene();
+  const { selectedAssetId, updateAsset, plateSize, assets, maxCameraDistance } = useScene();
   const scene = useThree((s) => s.scene);
 
   const selectedAsset = assets.find((a) => a.id === selectedAssetId);
   const rawObj =
-    selectedAsset?.visible && selectedAssetId
+    selectedAsset?.visible && selectedAsset?.selectable !== false && selectedAssetId
       ? scene.getObjectByName(selectedAssetId)
       : null;
   const selectedObject = rawObj?.parent ? rawObj : undefined;
@@ -244,7 +244,7 @@ function SceneControls() {
         enableDamping
         dampingFactor={0.08}
         minDistance={0.5}
-        maxDistance={plateSize * 2}
+        maxDistance={maxCameraDistance}
         panSpeed={0.8}
         zoomSpeed={1.2}
         rotateSpeed={0.6}

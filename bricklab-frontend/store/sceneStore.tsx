@@ -40,6 +40,8 @@ interface SceneStore {
   setPlateSize: (size: number) => void;
   plateColor: string;
   setPlateColor: (color: string) => void;
+  maxCameraDistance: number;
+  setMaxCameraDistance: (d: number) => void;
   customBricks: CustomBrickDefinition[];
   addCustomBrick: (brick: CustomBrickDefinition) => void;
   removeCustomBrick: (id: string) => void;
@@ -53,7 +55,13 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
   const [sceneBackground, setSceneBackground] = useState<string>("#232323");
   const [plateSize, setPlateSize] = useState<number>(50);
   const [plateColor, setPlateColor] = useState<string>("#ebebeb");
+  const [maxCameraDistance, setMaxCameraDistance] = useState<number>(100);
   const [customBricks, setCustomBricks] = useState<CustomBrickDefinition[]>([]);
+
+  function updatePlateSize(size: number) {
+    setPlateSize(size);
+    setMaxCameraDistance(Math.max(size, 50) * 2);
+  }
 
   function addCustomBrick(brick: CustomBrickDefinition) {
     setCustomBricks((prev) => [...prev, brick]);
@@ -96,7 +104,7 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
             visible: true,
             selectable: true,
             modelPath: brick.modelPath,
-            position: [bx + ix, by + iy, bz],
+            position: [bx + ix, by - iy, bz],
             materialColor: brick.materialColor,
             materialRoughness: brick.materialRoughness,
             materialMetalness: brick.materialMetalness,
@@ -126,9 +134,11 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
         sceneBackground,
         setSceneBackground,
         plateSize,
-        setPlateSize,
+        setPlateSize: updatePlateSize,
         plateColor,
         setPlateColor,
+        maxCameraDistance,
+        setMaxCameraDistance,
         customBricks,
         addCustomBrick,
         removeCustomBrick,

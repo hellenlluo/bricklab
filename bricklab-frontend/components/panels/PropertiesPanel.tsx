@@ -101,19 +101,13 @@ export default function PropertiesPanel() {
   const pos = asset.position ?? [0, 0, 0];
 
   return (
-    <div data-no-deselect className="px-3 py-3 flex flex-col gap-3">
+    <div data-no-deselect className="px-3 py-3 flex flex-col gap-4">
       <Field label="Name">
         <TextValue
           key={asset.name}
           value={asset.name}
           onChange={(v) => updateAsset(asset.id, { name: v })}
         />
-      </Field>
-
-      <Field label="Type">
-        <span className="text-xs text-zinc-600 dark:text-zinc-400 px-2 py-1">
-          {asset.type}
-        </span>
       </Field>
 
       {asset.modelPath && (
@@ -179,6 +173,24 @@ export default function PropertiesPanel() {
           ))}
         </div>
       </div>
+
+      {asset.type === "preset-brick" && asset.preset && asset.preset.studsX !== asset.preset.studsY && (
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+            Rotation
+          </span>
+          <button
+            onClick={() =>
+              updateAsset(asset.id, {
+                preset: { studsX: asset.preset!.studsY, studsY: asset.preset!.studsX },
+              })
+            }
+            className="w-full text-xs px-2 py-1 rounded border border-zinc-200 dark:border-zinc-700 bg-[#F5F5F5] dark:bg-zinc-800 text-zinc-800 dark:text-zinc-100 hover:border-zinc-400 dark:hover:border-zinc-500 transition-colors text-left"
+          >
+            {asset.preset.studsX > asset.preset.studsY ? "Rotate 90° CW" : "Rotate 90° CCW"}
+          </button>
+        </div>
+      )}
 
       <div className="flex flex-col gap-0.5">
         <span className="text-[10px] text-zinc-400 dark:text-zinc-500">

@@ -1,9 +1,9 @@
 "use client";
 
 const STUD_SPACING = 1;
-const BODY_HEIGHT = 0.96;
-const STUD_RADIUS = 0.24;
-const STUD_HEIGHT = 0.18;
+export const BODY_HEIGHT = 1;
+const STUD_RADIUS = 0.25;
+const STUD_HEIGHT = 0.175;
 
 export interface ParametricBrickProps {
   studsX: number;
@@ -29,7 +29,7 @@ export default function ParametricBrick({
           key={`${ix}-${iy}`}
           position={[
             (ix + 0.5) * STUD_SPACING,
-            (iy + 0.5) * STUD_SPACING,
+            -(iy + 0.5) * STUD_SPACING,
             BODY_HEIGHT + STUD_HEIGHT / 2,
           ]}
           rotation={[Math.PI / 2, 0, 0]}
@@ -48,7 +48,7 @@ export default function ParametricBrick({
       <mesh
         position={[
           (studsX * STUD_SPACING) / 2,
-          (studsY * STUD_SPACING) / 2,
+          -(studsY * STUD_SPACING) / 2,
           BODY_HEIGHT / 2,
         ]}
         castShadow

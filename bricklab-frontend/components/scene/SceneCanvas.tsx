@@ -12,7 +12,7 @@ import {
 import { useScene, type SceneAsset } from "@/store/sceneStore";
 import Baseplate from "./Baseplate";
 import Gizmo from "./Gizmo";
-import ParametricBrick from "@/components/ParametricBrick";
+import ParametricBrick, { BODY_HEIGHT } from "@/components/ParametricBrick";
 
 useGLTF.preload("/brick.glb");
 
@@ -133,22 +133,29 @@ function ParametricBrickWrapper({
   asset: SceneAsset;
   onSelect: (id: string) => void;
 }) {
+  const { studsX, studsY } = asset.preset!;
+  const cx = studsX / 2;
+  const cy = studsY / 2;
+  const cz = BODY_HEIGHT / 2;
+  const [px, py, pz] = asset.position ?? [0, 0, 0];
   return (
     <group
       name={asset.id}
-      position={asset.position ?? [0, 0, 0]}
+      position={[px + cx, py - cy, pz + cz]}
       onClick={(e) => {
         e.stopPropagation();
         if (asset.selectable !== false) onSelect(asset.id);
       }}
     >
-      <ParametricBrick
-        studsX={asset.preset!.studsX}
-        studsY={asset.preset!.studsY}
-        color={asset.materialColor}
-        roughness={asset.materialRoughness}
-        metalness={asset.materialMetalness}
-      />
+      <group position={[-cx, cy, -cz]}>
+        <ParametricBrick
+          studsX={studsX}
+          studsY={studsY}
+          color={asset.materialColor}
+          roughness={asset.materialRoughness}
+          metalness={asset.materialMetalness}
+        />
+      </group>
     </group>
   );
 }
@@ -197,19 +204,27 @@ function SceneControls() {
   const handleChange = useCallback(() => {
     const obj = selectedAssetId ? scene.getObjectByName(selectedAssetId) : null;
     if (!obj) return;
-    obj.position.x = Math.round(obj.position.x);
-    obj.position.y = Math.round(obj.position.y);
-    obj.position.z = Math.max(0, Math.round(obj.position.z));
-  }, [scene, selectedAssetId]);
+    const asset = assets.find((a) => a.id === selectedAssetId);
+    const cx = asset?.type === "preset-brick" && asset.preset ? asset.preset.studsX / 2 : 0;
+    const cy = asset?.type === "preset-brick" && asset.preset ? asset.preset.studsY / 2 : 0;
+    const cz = asset?.type === "preset-brick" && asset.preset ? BODY_HEIGHT / 2 : 0;
+    obj.position.x = Math.round(obj.position.x - cx) + cx;
+    obj.position.y = Math.round(obj.position.y + cy) - cy;
+    obj.position.z = Math.max(cz, Math.round(obj.position.z - cz) + cz);
+  }, [scene, selectedAssetId, assets]);
 
   const handleMouseUp = useCallback(() => {
     const obj = selectedAssetId ? scene.getObjectByName(selectedAssetId) : null;
     if (!obj || !selectedAssetId) return;
-    const x = Math.round(obj.position.x);
-    const y = Math.round(obj.position.y);
-    const z = Math.max(0, Math.round(obj.position.z));
+    const asset = assets.find((a) => a.id === selectedAssetId);
+    const cx = asset?.type === "preset-brick" && asset.preset ? asset.preset.studsX / 2 : 0;
+    const cy = asset?.type === "preset-brick" && asset.preset ? asset.preset.studsY / 2 : 0;
+    const cz = asset?.type === "preset-brick" && asset.preset ? BODY_HEIGHT / 2 : 0;
+    const x = Math.round(obj.position.x - cx);
+    const y = Math.round(obj.position.y + cy);
+    const z = Math.max(0, Math.round(obj.position.z - cz));
     updateAsset(selectedAssetId, { position: [x, y, z] });
-  }, [scene, selectedAssetId, updateAsset]);
+  }, [scene, selectedAssetId, updateAsset, assets]);
 
   return (
     <>

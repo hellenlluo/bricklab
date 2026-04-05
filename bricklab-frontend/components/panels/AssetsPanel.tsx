@@ -137,9 +137,7 @@ export default function AssetsPanel() {
                     {asset.name}
                   </span>
                 )}
-                <span className="text-zinc-400 dark:text-zinc-600 shrink-0">
-                  {asset.type}
-                </span>
+
               </li>
             ))
           )}

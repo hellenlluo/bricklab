@@ -78,7 +78,7 @@ export default function TopNav() {
         >
           <div
             className={`rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 ${
-              activePanel === "Library" ? "w-[540px]" : "w-72"
+              activePanel === "Library" ? "w-[40vw]" : "w-72"
             }`}
             onClick={(e) => e.stopPropagation()}
           >

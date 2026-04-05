@@ -110,21 +110,13 @@ export default function PropertiesPanel() {
         />
       </Field>
 
-      {asset.modelPath && (
-        <Field label="Model">
-          <span className="text-xs text-zinc-500 dark:text-zinc-400 px-2 py-1 truncate">
-            {asset.modelPath}
-          </span>
-        </Field>
-      )}
-
       <Field label="Visibility">
         <label className="flex items-center gap-2 cursor-pointer select-none">
           <input
             type="checkbox"
             checked={asset.visible}
             onChange={(e) => updateAsset(asset.id, { visible: e.target.checked })}
-            className="w-3.5 h-3.5 accent-zinc-600 dark:accent-zinc-400 cursor-pointer"
+            className="w-3.5 h-3.5 accent-[#404040] dark:accent-zinc-400 cursor-pointer"
           />
           <span className="text-xs text-zinc-600 dark:text-zinc-400">
             {asset.visible ? "Visible" : "Hidden"}
@@ -138,7 +130,7 @@ export default function PropertiesPanel() {
             type="checkbox"
             checked={asset.selectable ?? true}
             onChange={(e) => updateAsset(asset.id, { selectable: e.target.checked })}
-            className="w-3.5 h-3.5 accent-zinc-600 dark:accent-zinc-400 cursor-pointer"
+            className="w-3.5 h-3.5 accent-[#404040] dark:accent-zinc-400 cursor-pointer"
           />
           <span className="text-xs text-zinc-600 dark:text-zinc-400">
             {(asset.selectable ?? true) ? "Selectable" : "Not selectable"}
@@ -185,7 +177,7 @@ export default function PropertiesPanel() {
                 preset: { studsX: asset.preset!.studsY, studsY: asset.preset!.studsX },
               })
             }
-            className="w-full text-xs px-2 py-1 rounded border border-zinc-200 dark:border-zinc-700 bg-[#F5F5F5] dark:bg-zinc-800 text-zinc-800 dark:text-zinc-100 hover:border-zinc-400 dark:hover:border-zinc-500 transition-colors text-left"
+            className="w-full text-[10px] px-2 py-1 rounded bg-[#404040] text-white hover:bg-[#555555] transition-colors"
           >
             {asset.preset.studsX > asset.preset.studsY ? "Rotate 90° CW" : "Rotate 90° CCW"}
           </button>
@@ -243,7 +235,7 @@ export default function PropertiesPanel() {
         (asset.preset.studsX > 1 || asset.preset.studsY > 1) && (
           <button
             onClick={() => decomposeBrick(asset.id)}
-            className="w-full text-xs px-2 py-1 rounded border border-zinc-200 dark:border-zinc-700 bg-[#F5F5F5] dark:bg-zinc-800 text-zinc-800 dark:text-zinc-100 hover:border-zinc-400 dark:hover:border-zinc-500 transition-colors"
+            className="w-full text-[10px] px-2 py-1 rounded bg-[#404040] text-white hover:bg-[#555555] transition-colors"
           >
             Decompose
           </button>

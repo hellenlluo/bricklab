@@ -19,6 +19,13 @@ export interface SceneAsset {
   };
 }
 
+export interface CustomBrickDefinition {
+  id: string;
+  name: string;
+  studsX: number;
+  studsY: number;
+}
+
 interface SceneStore {
   assets: SceneAsset[];
   addAsset: (asset: SceneAsset) => void;
@@ -33,6 +40,9 @@ interface SceneStore {
   setPlateSize: (size: number) => void;
   plateColor: string;
   setPlateColor: (color: string) => void;
+  customBricks: CustomBrickDefinition[];
+  addCustomBrick: (brick: CustomBrickDefinition) => void;
+  removeCustomBrick: (id: string) => void;
 }
 
 const SceneContext = createContext<SceneStore | null>(null);
@@ -43,6 +53,15 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
   const [sceneBackground, setSceneBackground] = useState<string>("#232323");
   const [plateSize, setPlateSize] = useState<number>(50);
   const [plateColor, setPlateColor] = useState<string>("#ebebeb");
+  const [customBricks, setCustomBricks] = useState<CustomBrickDefinition[]>([]);
+
+  function addCustomBrick(brick: CustomBrickDefinition) {
+    setCustomBricks((prev) => [...prev, brick]);
+  }
+
+  function removeCustomBrick(id: string) {
+    setCustomBricks((prev) => prev.filter((b) => b.id !== id));
+  }
 
   function addAsset(asset: SceneAsset) {
     setAssets((prev) => [...prev, asset]);
@@ -110,6 +129,9 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
         setPlateSize,
         plateColor,
         setPlateColor,
+        customBricks,
+        addCustomBrick,
+        removeCustomBrick,
       }}
     >
       {children}

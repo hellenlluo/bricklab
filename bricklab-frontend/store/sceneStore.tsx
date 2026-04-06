@@ -33,7 +33,9 @@ interface SceneStore {
   updateAsset: (id: string, updates: Partial<SceneAsset>) => void;
   decomposeBrick: (id: string) => void;
   selectedAssetId: string | null;
+  selectedAssetIds: string[];
   selectAsset: (id: string | null) => void;
+  toggleAssetSelection: (id: string) => void;
   sceneBackground: string;
   setSceneBackground: (color: string) => void;
   plateSize: number;
@@ -56,6 +58,7 @@ const SceneContext = createContext<SceneStore | null>(null);
 export function SceneProvider({ children }: { children: React.ReactNode }) {
   const [assets, setAssets] = useState<SceneAsset[]>([]);
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
+  const [selectedAssetIds, setSelectedAssetIds] = useState<string[]>([]);
   const [sceneBackground, setSceneBackground] = useState<string>("#232323");
   const [plateSize, setPlateSize] = useState<number>(50);
   const [plateColor, setPlateColor] = useState<string>("#ebebeb");
@@ -84,6 +87,7 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
   function removeAsset(id: string) {
     setAssets((prev) => prev.filter((a) => a.id !== id));
     setSelectedAssetId((prev) => (prev === id ? null : prev));
+    setSelectedAssetIds((prev) => prev.filter((x) => x !== id));
   }
 
   function updateAsset(id: string, updates: Partial<SceneAsset>) {
@@ -121,10 +125,26 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
       return [...prev.filter((a) => a.id !== id), ...subBricks];
     });
     setSelectedAssetId(null);
+    setSelectedAssetIds([]);
   }
 
   function selectAsset(id: string | null) {
     setSelectedAssetId(id);
+    setSelectedAssetIds(id ? [id] : []);
+  }
+
+  function toggleAssetSelection(id: string) {
+    const isAlreadySelected = selectedAssetIds.includes(id);
+    if (isAlreadySelected) {
+      const next = selectedAssetIds.filter((x) => x !== id);
+      setSelectedAssetIds(next);
+      if (selectedAssetId === id) {
+        setSelectedAssetId(next[next.length - 1] ?? null);
+      }
+    } else {
+      setSelectedAssetIds((prev) => [...prev, id]);
+      setSelectedAssetId(id);
+    }
   }
 
   return (
@@ -136,7 +156,9 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
         updateAsset,
         decomposeBrick,
         selectedAssetId,
+        selectedAssetIds,
         selectAsset,
+        toggleAssetSelection,
         sceneBackground,
         setSceneBackground,
         plateSize,

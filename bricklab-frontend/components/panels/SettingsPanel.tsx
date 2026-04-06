@@ -137,7 +137,7 @@ export default function SettingsPanel() {
 
       <div className="flex flex-col gap-0.5">
         <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
-          Selection Highlight Color
+          Selection Color
         </span>
         <div className="flex items-center gap-2">
           <input

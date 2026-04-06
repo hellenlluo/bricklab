@@ -29,7 +29,7 @@ function applyMaterialOverrides(
   color: string | undefined,
   roughness: number | undefined,
   metalness: number | undefined,
-  emissive?: string,
+  colorOverride?: string,
 ) {
   root.traverse((child) => {
     const mesh = child as THREE.Mesh;
@@ -39,11 +39,13 @@ function applyMaterialOverrides(
       : [mesh.material as THREE.Material];
     mats.forEach((mat) => {
       if (!(mat instanceof THREE.MeshStandardMaterial)) return;
-      if (color !== undefined) mat.color.set(color);
+      const c = colorOverride ?? color;
+      if (c !== undefined) mat.color.set(c);
       if (roughness !== undefined) mat.roughness = roughness;
       if (metalness !== undefined) mat.metalness = metalness;
-      mat.emissive.set(emissive ?? "black");
-      mat.emissiveIntensity = emissive ? 0.4 : 1;
+      mat.polygonOffset = !!colorOverride;
+      mat.polygonOffsetFactor = colorOverride ? -4 : 0;
+      mat.polygonOffsetUnits = colorOverride ? -4 : 0;
       mat.needsUpdate = true;
     });
   });
@@ -52,11 +54,11 @@ function applyMaterialOverrides(
 function BrickModel({
   asset,
   onSelect,
-  emissive,
+  selectionColor,
 }: {
   asset: SceneAsset;
-  onSelect: (id: string) => void;
-  emissive?: string;
+  onSelect: (id: string, shiftKey: boolean) => void;
+  selectionColor?: string;
 }) {
   const { scene } = useGLTF(asset.modelPath!);
 
@@ -82,23 +84,24 @@ function BrickModel({
       asset.materialColor,
       asset.materialRoughness,
       asset.materialMetalness,
-      emissive,
+      selectionColor,
     );
   }, [
     cloned,
     asset.materialColor,
     asset.materialRoughness,
     asset.materialMetalness,
-    emissive,
+    selectionColor,
   ]);
 
   return (
     <group
       name={asset.id}
       position={asset.position ?? [0, 0, 0]}
+      renderOrder={selectionColor ? 1 : 0}
       onClick={(e) => {
         e.stopPropagation();
-        if (asset.selectable !== false) onSelect(asset.id);
+        if (asset.selectable !== false) onSelect(asset.id, e.nativeEvent.shiftKey);
       }}
     >
       <primitive object={cloned} rotation={[Math.PI / 2, 0, 0]} castShadow />
@@ -109,29 +112,31 @@ function BrickModel({
 function PlaceholderBox({
   asset,
   onSelect,
-  emissive,
+  selectionColor,
 }: {
   asset: SceneAsset;
-  onSelect: (id: string) => void;
-  emissive?: string;
+  onSelect: (id: string, shiftKey: boolean) => void;
+  selectionColor?: string;
 }) {
   return (
     <mesh
       name={asset.id}
       position={asset.position ?? [0, 0, 0]}
+      renderOrder={selectionColor ? 1 : 0}
       castShadow
       onClick={(e) => {
         e.stopPropagation();
-        if (asset.selectable !== false) onSelect(asset.id);
+        if (asset.selectable !== false) onSelect(asset.id, e.nativeEvent.shiftKey);
       }}
     >
       <boxGeometry args={[1, 1.2, 2]} />
       <meshStandardMaterial
-        color={asset.materialColor ?? "#284a7a"}
+        color={selectionColor ?? asset.materialColor ?? "#284a7a"}
         roughness={asset.materialRoughness ?? 0.88}
         metalness={asset.materialMetalness ?? 0.0}
-        emissive={emissive ?? "black"}
-        emissiveIntensity={emissive ? 0.4 : 1}
+        polygonOffset={!!selectionColor}
+        polygonOffsetFactor={selectionColor ? -4 : 0}
+        polygonOffsetUnits={selectionColor ? -4 : 0}
       />
     </mesh>
   );
@@ -140,11 +145,11 @@ function PlaceholderBox({
 function ParametricBrickWrapper({
   asset,
   onSelect,
-  emissive,
+  selectionColor,
 }: {
   asset: SceneAsset;
-  onSelect: (id: string) => void;
-  emissive?: string;
+  onSelect: (id: string, shiftKey: boolean) => void;
+  selectionColor?: string;
 }) {
   const { studsX, studsY } = asset.preset!;
   const cx = studsX / 2;
@@ -155,19 +160,20 @@ function ParametricBrickWrapper({
     <group
       name={asset.id}
       position={[px + cx, py - cy, pz + cz]}
+      renderOrder={selectionColor ? 1 : 0}
       onClick={(e) => {
         e.stopPropagation();
-        if (asset.selectable !== false) onSelect(asset.id);
+        if (asset.selectable !== false) onSelect(asset.id, e.nativeEvent.shiftKey);
       }}
     >
       <group position={[-cx, cy, -cz]}>
         <ParametricBrick
           studsX={studsX}
           studsY={studsY}
-          color={asset.materialColor}
+          color={selectionColor ?? asset.materialColor}
           roughness={asset.materialRoughness}
           metalness={asset.materialMetalness}
-          emissive={emissive}
+          isSelected={!!selectionColor}
         />
       </group>
     </group>
@@ -175,42 +181,83 @@ function ParametricBrickWrapper({
 }
 
 function PlacedAssets({ assets }: { assets: SceneAsset[] }) {
-  const { selectAsset, selectedAssetId, selectionHighlightColor } = useScene();
+  const { selectAsset, toggleAssetSelection, selectedAssetIds, selectionHighlightColor } = useScene();
   const placed = assets.filter((a) => a.visible && a.position);
+
+  function handleSelect(id: string, shiftKey: boolean) {
+    if (shiftKey) {
+      toggleAssetSelection(id);
+    } else {
+      selectAsset(id);
+    }
+  }
+
   return (
     <>
       {placed.map((asset) => {
-        const emissive = asset.id === selectedAssetId ? selectionHighlightColor : undefined;
+        const selectionColor = selectedAssetIds.includes(asset.id) ? selectionHighlightColor : undefined;
         if (asset.type === "preset-brick" && asset.preset) {
           return (
             <ParametricBrickWrapper
               key={asset.id}
               asset={asset}
-              onSelect={selectAsset}
-              emissive={emissive}
+              onSelect={handleSelect}
+              selectionColor={selectionColor}
             />
           );
         }
         if (asset.modelPath) {
           return (
             <Suspense fallback={null} key={asset.id}>
-              <BrickModel asset={asset} onSelect={selectAsset} emissive={emissive} />
+              <BrickModel asset={asset} onSelect={handleSelect} selectionColor={selectionColor} />
             </Suspense>
           );
         }
         return (
-          <PlaceholderBox key={asset.id} asset={asset} onSelect={selectAsset} emissive={emissive} />
+          <PlaceholderBox key={asset.id} asset={asset} onSelect={handleSelect} selectionColor={selectionColor} />
         );
       })}
     </>
   );
 }
 
+function getAssetCenter(asset: SceneAsset): [number, number, number] {
+  const [px, py, pz] = asset.position ?? [0, 0, 0];
+  if (asset.type === "preset-brick" && asset.preset) {
+    return [
+      px + asset.preset.studsX / 2,
+      py - asset.preset.studsY / 2,
+      pz + BODY_HEIGHT / 2,
+    ];
+  }
+  return [px, py, pz];
+}
+
+function getAssetOffsets(asset: SceneAsset) {
+  if (asset.type === "preset-brick" && asset.preset) {
+    return {
+      cx: asset.preset.studsX / 2,
+      cy: asset.preset.studsY / 2,
+      cz: BODY_HEIGHT / 2,
+    };
+  }
+  return { cx: 0, cy: 0, cz: 0 };
+}
+
+function getAssetWeight(asset: SceneAsset) {
+  if (asset.type === "preset-brick" && asset.preset) {
+    return asset.preset.studsX * asset.preset.studsY;
+  }
+  return 1;
+}
+
 function SceneControls() {
-  const { selectedAssetId, updateAsset, plateSize, assets, maxCameraDistance, viewportType } = useScene();
+  const { selectedAssetId, selectedAssetIds, updateAsset, plateSize, assets, maxCameraDistance, viewportType } = useScene();
   const scene = useThree((s) => s.scene);
   const camera = useThree((s) => s.camera);
   const orbRef = useRef<any>(null);
+  const selectionPivot = useMemo(() => new THREE.Group(), []);
+  const lastPivotPositionRef = useRef(new THREE.Vector3());
 
   useEffect(() => {
     const orb = orbRef.current;
@@ -238,42 +285,98 @@ function SceneControls() {
     orb.update();
   }, [viewportType, plateSize, camera]);
 
+  const selectedAssets = useMemo(
+    () =>
+      assets.filter(
+        (asset) =>
+          selectedAssetIds.includes(asset.id) &&
+          asset.visible &&
+          asset.selectable !== false &&
+          asset.position,
+      ),
+    [assets, selectedAssetIds],
+  );
+  const isMultiSelection = selectedAssets.length > 1;
   const selectedAsset = assets.find((a) => a.id === selectedAssetId);
   const rawObj =
     selectedAsset?.visible && selectedAsset?.selectable !== false && selectedAssetId
       ? scene.getObjectByName(selectedAssetId)
       : null;
-  const selectedObject = rawObj?.parent ? rawObj : undefined;
+  const selectedObject = isMultiSelection ? selectionPivot : rawObj?.parent ? rawObj : undefined;
+
+  useEffect(() => {
+    if (!isMultiSelection) return;
+    if (selectedAssets.length === 0) return;
+    const totalWeight = selectedAssets.reduce(
+      (sum, asset) => sum + getAssetWeight(asset),
+      0,
+    );
+    const center = selectedAssets.reduce(
+      (acc, asset) => {
+        const [x, y, z] = getAssetCenter(asset);
+        const weight = getAssetWeight(asset);
+        acc.x += x * weight;
+        acc.y += y * weight;
+        acc.z += z * weight;
+        return acc;
+      },
+      new THREE.Vector3(),
+    );
+    center.divideScalar(totalWeight || 1);
+    selectionPivot.position.copy(center);
+    lastPivotPositionRef.current.copy(center);
+  }, [isMultiSelection, selectedAssets, selectionPivot]);
 
   const handleChange = useCallback(() => {
+    if (isMultiSelection) {
+      const delta = selectionPivot.position.clone().sub(lastPivotPositionRef.current);
+      if (delta.lengthSq() === 0) return;
+      selectedAssetIds.forEach((id) => {
+        const obj = scene.getObjectByName(id);
+        if (obj) obj.position.add(delta);
+      });
+      lastPivotPositionRef.current.copy(selectionPivot.position);
+      return;
+    }
+
     const obj = selectedAssetId ? scene.getObjectByName(selectedAssetId) : null;
     if (!obj) return;
     const asset = assets.find((a) => a.id === selectedAssetId);
-    const cx = asset?.type === "preset-brick" && asset.preset ? asset.preset.studsX / 2 : 0;
-    const cy = asset?.type === "preset-brick" && asset.preset ? asset.preset.studsY / 2 : 0;
-    const cz = asset?.type === "preset-brick" && asset.preset ? BODY_HEIGHT / 2 : 0;
+    const { cx, cy, cz } = asset ? getAssetOffsets(asset) : { cx: 0, cy: 0, cz: 0 };
     obj.position.x = Math.round(obj.position.x - cx) + cx;
     obj.position.y = Math.round(obj.position.y + cy) - cy;
     obj.position.z = Math.max(cz, Math.round(obj.position.z - cz) + cz);
-  }, [scene, selectedAssetId, assets]);
+  }, [assets, isMultiSelection, scene, selectedAssetId, selectedAssetIds, selectionPivot]);
 
   const handleMouseUp = useCallback(() => {
+    if (isMultiSelection) {
+      selectedAssets.forEach((asset) => {
+        const obj = scene.getObjectByName(asset.id);
+        if (!obj) return;
+        const { cx, cy, cz } = getAssetOffsets(asset);
+        const x = Math.round(obj.position.x - cx);
+        const y = Math.round(obj.position.y + cy);
+        const z = Math.max(0, Math.round(obj.position.z - cz));
+        updateAsset(asset.id, { position: [x, y, z] });
+      });
+      return;
+    }
+
     const obj = selectedAssetId ? scene.getObjectByName(selectedAssetId) : null;
     if (!obj || !selectedAssetId) return;
     const asset = assets.find((a) => a.id === selectedAssetId);
-    const cx = asset?.type === "preset-brick" && asset.preset ? asset.preset.studsX / 2 : 0;
-    const cy = asset?.type === "preset-brick" && asset.preset ? asset.preset.studsY / 2 : 0;
-    const cz = asset?.type === "preset-brick" && asset.preset ? BODY_HEIGHT / 2 : 0;
+    const { cx, cy, cz } = asset ? getAssetOffsets(asset) : { cx: 0, cy: 0, cz: 0 };
     const x = Math.round(obj.position.x - cx);
     const y = Math.round(obj.position.y + cy);
     const z = Math.max(0, Math.round(obj.position.z - cz));
     updateAsset(selectedAssetId, { position: [x, y, z] });
-  }, [scene, selectedAssetId, updateAsset, assets]);
+  }, [assets, isMultiSelection, scene, selectedAssetId, selectedAssets, updateAsset]);
 
   const isPerspective = viewportType === "Perspective";
 
   return (
     <>
+      {isMultiSelection && <primitive object={selectionPivot} visible={false} />}
       {selectedObject && (
         <TransformControls
           object={selectedObject}

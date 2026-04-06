@@ -4,7 +4,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { useScene } from "@/store/sceneStore";
 
 export default function AssetsPanel() {
-  const { assets, updateAsset, selectedAssetId, selectAsset } = useScene();
+  const { assets, updateAsset, selectedAssetId, selectedAssetIds, selectAsset, toggleAssetSelection } = useScene();
   const [expanded, setExpanded] = useState(false);
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -110,10 +110,14 @@ export default function AssetsPanel() {
                 key={asset.id}
                 onClick={(e) => {
                   e.stopPropagation();
-                  selectAsset(asset.id);
+                  if (e.shiftKey) {
+                    toggleAssetSelection(asset.id);
+                  } else {
+                    selectAsset(asset.id);
+                  }
                 }}
                 className={`flex items-center gap-2 mx-3 px-2 py-1.5 text-xs rounded-md cursor-default group transition-colors ${
-                  selectedAssetId === asset.id
+                  selectedAssetIds.includes(asset.id)
                     ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
                     : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                 }`}

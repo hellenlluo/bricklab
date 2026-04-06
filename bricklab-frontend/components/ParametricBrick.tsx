@@ -13,6 +13,7 @@ export interface ParametricBrickProps {
   metalness?: number;
   emissive?: string;
   emissiveIntensity?: number;
+  isSelected?: boolean;
 }
 
 export default function ParametricBrick({
@@ -23,6 +24,7 @@ export default function ParametricBrick({
   metalness = 0.2,
   emissive = "black",
   emissiveIntensity = 0.25,
+  isSelected = false,
 }: ParametricBrickProps) {
   const studs: React.ReactElement[] = [];
 
@@ -40,7 +42,7 @@ export default function ParametricBrick({
           castShadow
         >
           <cylinderGeometry args={[STUD_RADIUS, STUD_RADIUS, STUD_HEIGHT, 12]} />
-          <meshStandardMaterial color={color} roughness={roughness} metalness={metalness} emissive={emissive} emissiveIntensity={emissiveIntensity} />
+          <meshStandardMaterial color={color} roughness={roughness} metalness={metalness} emissive={emissive} emissiveIntensity={emissiveIntensity} polygonOffset={isSelected} polygonOffsetFactor={isSelected ? -4 : 0} polygonOffsetUnits={isSelected ? -4 : 0} />
         </mesh>,
       );
     }
@@ -61,7 +63,7 @@ export default function ParametricBrick({
         <boxGeometry
           args={[studsX * STUD_SPACING, studsY * STUD_SPACING, BODY_HEIGHT]}
         />
-        <meshStandardMaterial color={color} roughness={roughness} metalness={metalness} emissive={emissive} emissiveIntensity={emissiveIntensity} />
+        <meshStandardMaterial color={color} roughness={roughness} metalness={metalness} emissive={emissive} emissiveIntensity={emissiveIntensity} polygonOffset={isSelected} polygonOffsetFactor={isSelected ? -4 : 0} polygonOffsetUnits={isSelected ? -4 : 0} />
       </mesh>
       {studs}
     </group>

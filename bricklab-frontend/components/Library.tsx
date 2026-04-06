@@ -83,8 +83,8 @@ type Tab = "preset" | "custom";
 export default function Library({ onClose }: LibraryProps) {
   const { assets, addAsset, customBricks, addCustomBrick, removeCustomBrick } = useScene();
   const [tab, setTab] = useState<Tab>("preset");
-  const [studsX, setStudsX] = useState("2");
-  const [studsY, setStudsY] = useState("2");
+  const [studsX, setStudsX] = useState("3");
+  const [studsY, setStudsY] = useState("3");
   const [formError, setFormError] = useState<string | null>(null);
 
   function handleBrickClick(brick: BrickDefinition | CustomBrickDefinition) {
@@ -97,6 +97,13 @@ export default function Library({ onClose }: LibraryProps) {
     const y = Math.round(Number(studsY));
     if (!studsX || !studsY || isNaN(x) || isNaN(y) || x < 1 || y < 1 || x > 32 || y > 32) {
       setFormError("Dimensions must be between 1 and 32.");
+      return;
+    }
+    const alreadyExists =
+      BRICK_LIBRARY.some((b) => b.studsX === x && b.studsY === y) ||
+      customBricks.some((b) => b.studsX === x && b.studsY === y);
+    if (alreadyExists) {
+      setFormError(`A ${x}×${y} brick type already exists.`);
       return;
     }
     setFormError(null);
@@ -182,7 +189,7 @@ export default function Library({ onClose }: LibraryProps) {
             </button>
           </div>
           {formError && (
-            <p className="text-[10px] text-red-500 mb-2">{formError}</p>
+            <p className="text-xs text-red-500 mb-2">{formError}</p>
           )}
 
           {customBricks.length === 0 && (

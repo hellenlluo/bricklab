@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useMemo, useEffect, useCallback } from "react";
+import { Suspense, useMemo, useEffect, useCallback, useRef } from "react";
 import * as THREE from "three";
 import { Canvas, useThree } from "@react-three/fiber";
 import {
@@ -207,8 +207,36 @@ function PlacedAssets({ assets }: { assets: SceneAsset[] }) {
 }
 
 function SceneControls() {
-  const { selectedAssetId, updateAsset, plateSize, assets, maxCameraDistance } = useScene();
+  const { selectedAssetId, updateAsset, plateSize, assets, maxCameraDistance, viewportType } = useScene();
   const scene = useThree((s) => s.scene);
+  const camera = useThree((s) => s.camera);
+  const orbRef = useRef<any>(null);
+
+  useEffect(() => {
+    const orb = orbRef.current;
+    if (!orb) return;
+    const d = Math.max(plateSize, 30) * 1.8;
+    const iso = d / Math.sqrt(3);
+    type V3 = [number, number, number];
+    let pos: V3;
+    let up: V3 = [0, 0, 1];
+    switch (viewportType) {
+      case "Top":   pos = [0, 0, d];      up = [0, 1, 0]; break;
+      case "Front": pos = [0, -d, 0];                     break;
+      case "Back":  pos = [0,  d, 0];                     break;
+      case "Left":  pos = [-d, 0, 0];                     break;
+      case "Right": pos = [ d, 0, 0];                     break;
+      case "Iso NE": pos = [ iso, -iso, iso]; break;
+      case "Iso NW": pos = [-iso, -iso, iso]; break;
+      case "Iso SE": pos = [ iso,  iso, iso]; break;
+      case "Iso SW": pos = [-iso,  iso, iso]; break;
+      default:      pos = [30, -30, 20];                  break;
+    }
+    camera.up.set(...up);
+    camera.position.set(...pos);
+    orb.target.set(0, 0, 0);
+    orb.update();
+  }, [viewportType, plateSize, camera]);
 
   const selectedAsset = assets.find((a) => a.id === selectedAssetId);
   const rawObj =
@@ -242,6 +270,8 @@ function SceneControls() {
     updateAsset(selectedAssetId, { position: [x, y, z] });
   }, [scene, selectedAssetId, updateAsset, assets]);
 
+  const isPerspective = viewportType === "Perspective";
+
   return (
     <>
       {selectedObject && (
@@ -253,8 +283,9 @@ function SceneControls() {
         />
       )}
       <OrbitControls
+        ref={orbRef}
         makeDefault
-        enableRotate
+        enableRotate={isPerspective}
         enablePan
         enableZoom
         enableDamping
@@ -264,23 +295,23 @@ function SceneControls() {
         panSpeed={0.8}
         zoomSpeed={1.2}
         rotateSpeed={0.6}
-        touches={{
-          ONE: THREE.TOUCH.ROTATE,
-          TWO: THREE.TOUCH.DOLLY_PAN,
-        }}
-        mouseButtons={{
-          LEFT: THREE.MOUSE.ROTATE,
-          MIDDLE: THREE.MOUSE.DOLLY,
-          RIGHT: THREE.MOUSE.PAN,
-        }}
+        touches={isPerspective
+          ? { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN }
+          : { ONE: THREE.TOUCH.PAN,    TWO: THREE.TOUCH.DOLLY_PAN }
+        }
+        mouseButtons={isPerspective
+          ? { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN }
+          : { LEFT: THREE.MOUSE.PAN,    MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN }
+        }
       />
     </>
   );
 }
 
 export default function SceneCanvas() {
-  const { assets, sceneBackground, selectAsset, plateSize, plateColor } =
+  const { assets, sceneBackground, selectAsset, plateSize, plateColor, viewportType } =
     useScene();
+  const isPerspective = viewportType === "Perspective";
 
   return (
     <div data-no-deselect className="fixed inset-0 z-0">
@@ -303,7 +334,7 @@ export default function SceneCanvas() {
         <Environment preset="city" />
         <SceneControls />
         <PlacedAssets assets={assets} />
-        <Gizmo />
+        <Gizmo interactive={isPerspective} />
       </Canvas>
     </div>
   );

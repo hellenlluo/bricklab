@@ -47,6 +47,8 @@ interface SceneStore {
   removeCustomBrick: (id: string) => void;
   selectionHighlightColor: string;
   setSelectionHighlightColor: (color: string) => void;
+  viewportType: string;
+  setViewportType: (v: string) => void;
 }
 
 const SceneContext = createContext<SceneStore | null>(null);
@@ -60,6 +62,7 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
   const [maxCameraDistance, setMaxCameraDistance] = useState<number>(100);
   const [customBricks, setCustomBricks] = useState<CustomBrickDefinition[]>([]);
   const [selectionHighlightColor, setSelectionHighlightColor] = useState<string>("#ff8c82");
+  const [viewportType, setViewportType] = useState<string>("Perspective");
 
   function updatePlateSize(size: number) {
     setPlateSize(size);
@@ -147,6 +150,8 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
         removeCustomBrick,
         selectionHighlightColor,
         setSelectionHighlightColor,
+        viewportType,
+        setViewportType,
       }}
     >
       {children}

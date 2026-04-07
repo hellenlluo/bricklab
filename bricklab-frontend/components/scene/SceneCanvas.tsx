@@ -57,7 +57,7 @@ function BrickModel({
   selectionColor,
 }: {
   asset: SceneAsset;
-  onSelect: (id: string, shiftKey: boolean) => void;
+  onSelect: (id: string, shiftKey: boolean, doubleClick: boolean) => void;
   selectionColor?: string;
 }) {
   const { scene } = useGLTF(asset.modelPath!);
@@ -101,7 +101,11 @@ function BrickModel({
       renderOrder={selectionColor ? 1 : 0}
       onClick={(e) => {
         e.stopPropagation();
-        if (asset.selectable !== false) onSelect(asset.id, e.nativeEvent.shiftKey);
+        if (asset.selectable !== false) onSelect(asset.id, e.nativeEvent.shiftKey, false);
+      }}
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+        if (asset.selectable !== false) onSelect(asset.id, false, true);
       }}
     >
       <primitive object={cloned} rotation={[Math.PI / 2, 0, 0]} castShadow />
@@ -115,7 +119,7 @@ function PlaceholderBox({
   selectionColor,
 }: {
   asset: SceneAsset;
-  onSelect: (id: string, shiftKey: boolean) => void;
+  onSelect: (id: string, shiftKey: boolean, doubleClick: boolean) => void;
   selectionColor?: string;
 }) {
   return (
@@ -126,7 +130,11 @@ function PlaceholderBox({
       castShadow
       onClick={(e) => {
         e.stopPropagation();
-        if (asset.selectable !== false) onSelect(asset.id, e.nativeEvent.shiftKey);
+        if (asset.selectable !== false) onSelect(asset.id, e.nativeEvent.shiftKey, false);
+      }}
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+        if (asset.selectable !== false) onSelect(asset.id, false, true);
       }}
     >
       <boxGeometry args={[1, 1.2, 2]} />
@@ -148,7 +156,7 @@ function ParametricBrickWrapper({
   selectionColor,
 }: {
   asset: SceneAsset;
-  onSelect: (id: string, shiftKey: boolean) => void;
+  onSelect: (id: string, shiftKey: boolean, doubleClick: boolean) => void;
   selectionColor?: string;
 }) {
   const { studsX, studsY } = asset.preset!;
@@ -163,7 +171,11 @@ function ParametricBrickWrapper({
       renderOrder={selectionColor ? 1 : 0}
       onClick={(e) => {
         e.stopPropagation();
-        if (asset.selectable !== false) onSelect(asset.id, e.nativeEvent.shiftKey);
+        if (asset.selectable !== false) onSelect(asset.id, e.nativeEvent.shiftKey, false);
+      }}
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+        if (asset.selectable !== false) onSelect(asset.id, false, true);
       }}
     >
       <group position={[-cx, cy, -cz]}>
@@ -181,21 +193,52 @@ function ParametricBrickWrapper({
 }
 
 function PlacedAssets({ assets }: { assets: SceneAsset[] }) {
-  const { selectAsset, toggleAssetSelection, selectedAssetIds, selectionHighlightColor } = useScene();
+  const {
+    selectAsset,
+    toggleAssetSelection,
+    selectedAssetIds,
+    selectionColor: selectionHighlight,
+    selectGroup,
+    groupSelected,
+    groups,
+  } = useScene();
   const placed = assets.filter((a) => a.visible && a.position);
 
-  function handleSelect(id: string, shiftKey: boolean) {
+  function handleSelect(id: string, shiftKey: boolean, doubleClick: boolean) {
+    const asset = assets.find((a) => a.id === id);
+    // Double-click → always select the specific brick
+    if (doubleClick) {
+      selectAsset(id);
+      return;
+    }
     if (shiftKey) {
       toggleAssetSelection(id);
-    } else {
-      selectAsset(id);
+      return;
     }
+    // Single click on a grouped brick → select the whole group
+    if (asset?.groupId) {
+      selectGroup(asset.groupId);
+      return;
+    }
+    selectAsset(id);
   }
+
+  // ⌘G / Ctrl+G to group selected bricks
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "g") {
+        e.preventDefault();
+        groupSelected();
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [groupSelected]);
 
   return (
     <>
       {placed.map((asset) => {
-        const selectionColor = selectedAssetIds.includes(asset.id) ? selectionHighlightColor : undefined;
+        const selectionColor = selectedAssetIds.includes(asset.id) ? selectionHighlight : undefined;
         if (asset.type === "preset-brick" && asset.preset) {
           return (
             <ParametricBrickWrapper

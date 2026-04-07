@@ -7,7 +7,7 @@ import type { SceneAsset } from "@/store/sceneStore";
 
 type AnyBrick = BrickDefinition | CustomBrickDefinition;
 
-function createAssetFromBrick(brick: AnyBrick, index: number): SceneAsset {
+function createAssetFromBrick(brick: AnyBrick, index: number, defaultBrickColor: string): SceneAsset {
   const isPreset = "type" in brick;
   return {
     id: `${brick.id}-${Date.now()}`,
@@ -17,7 +17,7 @@ function createAssetFromBrick(brick: AnyBrick, index: number): SceneAsset {
     selectable: true,
     modelPath: isPreset ? (brick as BrickDefinition).modelPath : "/brick.glb",
     position: [0, 0, 0],
-    materialColor: "#bfbfff",
+    materialColor: defaultBrickColor,
     materialRoughness: 0.88,
     materialMetalness: 0.2,
     preset: {
@@ -28,7 +28,7 @@ function createAssetFromBrick(brick: AnyBrick, index: number): SceneAsset {
 }
 
 export default function ToolBar() {
-  const { assets, addAsset, customBricks } = useScene();
+  const { assets, addAsset, customBricks, defaultBrickColor } = useScene();
   const [expanded, setExpanded] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([
     "brick-1x1",
@@ -63,7 +63,7 @@ export default function ToolBar() {
     .filter(Boolean) as AnyBrick[];
 
   function handleAdd(brick: AnyBrick) {
-    addAsset(createAssetFromBrick(brick, assets.length + 1));
+    addAsset(createAssetFromBrick(brick, assets.length + 1, defaultBrickColor));
   }
 
   return (

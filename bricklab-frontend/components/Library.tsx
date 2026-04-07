@@ -9,6 +9,7 @@ import BrickPreview from "@/components/BrickPreview";
 function createAssetFromBrick(
   brick: BrickDefinition | CustomBrickDefinition,
   index: number,
+  defaultBrickColor: string,
 ): SceneAsset {
   const isPreset = "type" in brick;
   return {
@@ -19,7 +20,7 @@ function createAssetFromBrick(
     selectable: true,
     modelPath: isPreset ? (brick as BrickDefinition).modelPath : "/brick.glb",
     position: [0, 0, 0],
-    materialColor: "#bfbfff",
+    materialColor: defaultBrickColor,
     materialRoughness: 0.88,
     materialMetalness: 0.2,
     preset: {
@@ -81,14 +82,14 @@ function BrickCard({
 type Tab = "preset" | "custom";
 
 export default function Library({ onClose }: LibraryProps) {
-  const { assets, addAsset, customBricks, addCustomBrick, removeCustomBrick } = useScene();
+  const { assets, addAsset, customBricks, addCustomBrick, removeCustomBrick, defaultBrickColor } = useScene();
   const [tab, setTab] = useState<Tab>("preset");
   const [studsX, setStudsX] = useState("3");
   const [studsY, setStudsY] = useState("3");
   const [formError, setFormError] = useState<string | null>(null);
 
   function handleBrickClick(brick: BrickDefinition | CustomBrickDefinition) {
-    addAsset(createAssetFromBrick(brick, assets.length + 1));
+    addAsset(createAssetFromBrick(brick, assets.length + 1, defaultBrickColor));
     onClose?.();
   }
 

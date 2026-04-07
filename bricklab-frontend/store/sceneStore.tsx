@@ -8,6 +8,7 @@ export interface SceneAsset {
   type: string;
   visible: boolean;
   selectable: boolean;
+  groupId?: string;
   modelPath?: string;
   position?: [number, number, number];
   materialColor?: string;
@@ -17,6 +18,11 @@ export interface SceneAsset {
     studsX: number;
     studsY: number;
   };
+}
+
+export interface BrickGroup {
+  id: string;
+  name: string;
 }
 
 export interface CustomBrickDefinition {
@@ -32,9 +38,14 @@ interface SceneStore {
   removeAsset: (id: string) => void;
   updateAsset: (id: string, updates: Partial<SceneAsset>) => void;
   decomposeBrick: (id: string) => void;
+  groups: BrickGroup[];
+  groupSelected: () => void;
+  ungroupAssets: (groupId: string) => void;
+  updateGroup: (groupId: string, name: string) => void;
   selectedAssetId: string | null;
   selectedAssetIds: string[];
   selectAsset: (id: string | null) => void;
+  selectGroup: (groupId: string) => void;
   toggleAssetSelection: (id: string) => void;
   sceneBackground: string;
   setSceneBackground: (color: string) => void;
@@ -47,8 +58,10 @@ interface SceneStore {
   customBricks: CustomBrickDefinition[];
   addCustomBrick: (brick: CustomBrickDefinition) => void;
   removeCustomBrick: (id: string) => void;
-  selectionHighlightColor: string;
-  setSelectionHighlightColor: (color: string) => void;
+  defaultBrickColor: string;
+  setDefaultBrickColor: (color: string) => void;
+  selectionColor: string;
+  setSelectionColor: (color: string) => void;
   viewportType: string;
   setViewportType: (v: string) => void;
 }
@@ -57,6 +70,7 @@ const SceneContext = createContext<SceneStore | null>(null);
 
 export function SceneProvider({ children }: { children: React.ReactNode }) {
   const [assets, setAssets] = useState<SceneAsset[]>([]);
+  const [groups, setGroups] = useState<BrickGroup[]>([]);
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
   const [selectedAssetIds, setSelectedAssetIds] = useState<string[]>([]);
   const [sceneBackground, setSceneBackground] = useState<string>("#232323");
@@ -64,7 +78,8 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
   const [plateColor, setPlateColor] = useState<string>("#ebebeb");
   const [maxCameraDistance, setMaxCameraDistance] = useState<number>(100);
   const [customBricks, setCustomBricks] = useState<CustomBrickDefinition[]>([]);
-  const [selectionHighlightColor, setSelectionHighlightColor] = useState<string>("#ff8c82");
+  const [defaultBrickColor, setDefaultBrickColor] = useState<string>("#bfbfff");
+  const [selectionColor, setSelectionColor] = useState<string>("#ff8c82");
   const [viewportType, setViewportType] = useState<string>("Perspective");
 
   function updatePlateSize(size: number) {
@@ -88,6 +103,37 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
     setAssets((prev) => prev.filter((a) => a.id !== id));
     setSelectedAssetId((prev) => (prev === id ? null : prev));
     setSelectedAssetIds((prev) => prev.filter((x) => x !== id));
+  }
+
+  function groupSelected() {
+    if (selectedAssetIds.length < 2) return;
+    const ids = selectedAssetIds;
+    const groupId = `group-${Date.now()}`;
+    const newGroup: BrickGroup = { id: groupId, name: `Group ${groups.length + 1}` };
+    setGroups((prev) => [...prev, newGroup]);
+    setAssets((prev) =>
+      prev.map((a) => (ids.includes(a.id) ? { ...a, groupId } : a)),
+    );
+  }
+
+  function ungroupAssets(groupId: string) {
+    setAssets((prev) =>
+      prev.map((a) => (a.groupId === groupId ? { ...a, groupId: undefined } : a)),
+    );
+    setGroups((prev) => prev.filter((g) => g.id !== groupId));
+  }
+
+  function updateGroup(groupId: string, name: string) {
+    setGroups((prev) => prev.map((g) => (g.id === groupId ? { ...g, name } : g)));
+  }
+
+  function selectGroup(groupId: string) {
+    setAssets((prev) => {
+      const ids = prev.filter((a) => a.groupId === groupId).map((a) => a.id);
+      setSelectedAssetIds(ids);
+      setSelectedAssetId(ids[ids.length - 1] ?? null);
+      return prev;
+    });
   }
 
   function updateAsset(id: string, updates: Partial<SceneAsset>) {
@@ -155,9 +201,14 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
         removeAsset,
         updateAsset,
         decomposeBrick,
+        groups,
+        groupSelected,
+        ungroupAssets,
+        updateGroup,
         selectedAssetId,
         selectedAssetIds,
         selectAsset,
+        selectGroup,
         toggleAssetSelection,
         sceneBackground,
         setSceneBackground,
@@ -170,8 +221,10 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
         customBricks,
         addCustomBrick,
         removeCustomBrick,
-        selectionHighlightColor,
-        setSelectionHighlightColor,
+        defaultBrickColor,
+        setDefaultBrickColor,
+        selectionColor,
+        setSelectionColor,
         viewportType,
         setViewportType,
       }}

@@ -9,6 +9,7 @@ import {
   useGLTF,
   TransformControls,
 } from "@react-three/drei";
+import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { useScene, type SceneAsset } from "@/store/sceneStore";
 import Baseplate from "./Baseplate";
 import Gizmo from "./Gizmo";
@@ -204,23 +205,70 @@ function PlacedAssets({ assets }: { assets: SceneAsset[] }) {
   } = useScene();
   const placed = assets.filter((a) => a.visible && a.position);
 
-  function handleSelect(id: string, shiftKey: boolean, doubleClick: boolean) {
-    const asset = assets.find((a) => a.id === id);
-    // Double-click → always select the specific brick
-    if (doubleClick) {
-      selectAsset(id);
-      return;
+  // Tracks which group we are currently "inside" (Figma-style drill-down).
+  // Using a ref so changes don't trigger re-renders — selection state handles that.
+  const focusedGroupId = useRef<string | null>(null);
+
+  // Returns the ancestor chain for a brick, outermost group first.
+  // e.g. brick in GroupB (inside GroupA) → ["GroupA", "GroupB"]
+  function getAncestorChain(assetId: string): string[] {
+    const asset = assets.find((a) => a.id === assetId);
+    if (!asset?.groupId) return [];
+    const chain: string[] = [];
+    let cur: string | undefined = asset.groupId;
+    while (cur) {
+      chain.unshift(cur);
+      const grp = groups.find((g) => g.id === cur);
+      cur = grp?.parentGroupId;
     }
+    return chain; // [outermost, ..., immediate parent]
+  }
+
+  function handleSelect(id: string, shiftKey: boolean, doubleClick: boolean) {
     if (shiftKey) {
       toggleAssetSelection(id);
       return;
     }
-    // Single click on a grouped brick → select the whole group
-    if (asset?.groupId) {
-      selectGroup(asset.groupId);
+
+    const chain = getAncestorChain(id);
+
+    if (chain.length === 0) {
+      // Ungrouped brick — plain select
+      selectAsset(id);
+      focusedGroupId.current = null;
       return;
     }
-    selectAsset(id);
+
+    // Index of the currently focused group within this brick's ancestor chain
+    const focusIdx = chain.indexOf(focusedGroupId.current ?? "");
+
+    if (!doubleClick) {
+      // Single click
+      if (focusIdx !== -1) {
+        // Already inside this hierarchy — stay at the same level
+        selectGroup(chain[focusIdx]);
+      } else {
+        // Different hierarchy or no focus — jump to outermost group
+        focusedGroupId.current = chain[0];
+        selectGroup(chain[0]);
+      }
+    } else {
+      // Double click — advance one level deeper
+      if (focusIdx === chain.length - 1) {
+        // Already at the immediate parent group → select the individual brick
+        selectAsset(id);
+        focusedGroupId.current = null;
+      } else if (focusIdx !== -1) {
+        // Step into the next group in the chain
+        const nextId = chain[focusIdx + 1];
+        focusedGroupId.current = nextId;
+        selectGroup(nextId);
+      } else {
+        // Focus was outside this chain (shouldn't normally happen) — go to outermost
+        focusedGroupId.current = chain[0];
+        selectGroup(chain[0]);
+      }
+    }
   }
 
   // ⌘G / Ctrl+G to group selected bricks
@@ -298,7 +346,7 @@ function SceneControls() {
   const { selectedAssetId, selectedAssetIds, updateAsset, plateSize, assets, maxCameraDistance, viewportType } = useScene();
   const scene = useThree((s) => s.scene);
   const camera = useThree((s) => s.camera);
-  const orbRef = useRef<any>(null);
+  const orbRef = useRef<OrbitControlsImpl>(null);
   const selectionPivot = useMemo(() => new THREE.Group(), []);
   const lastPivotPositionRef = useRef(new THREE.Vector3());
 

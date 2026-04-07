@@ -23,6 +23,7 @@ export interface SceneAsset {
 export interface BrickGroup {
   id: string;
   name: string;
+  parentGroupId?: string;
 }
 
 export interface CustomBrickDefinition {
@@ -108,19 +109,69 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
   function groupSelected() {
     if (selectedAssetIds.length < 2) return;
     const ids = selectedAssetIds;
+
+    // Recursively collect all asset IDs in a group (direct + through child groups)
+    function collectAllAssetIds(gId: string): string[] {
+      const direct = assets.filter((a) => a.groupId === gId).map((a) => a.id);
+      const childIds = groups.filter((g) => g.parentGroupId === gId).flatMap((g) => collectAllAssetIds(g.id));
+      return [...direct, ...childIds];
+    }
+
+    // Does every asset in this group (recursively) appear in ids?
+    function isFullyInSelection(gId: string): boolean {
+      const directs = assets.filter((a) => a.groupId === gId);
+      const children = groups.filter((g) => g.parentGroupId === gId);
+      if (directs.length === 0 && children.length === 0) return false;
+      return (
+        directs.every((a) => ids.includes(a.id)) &&
+        children.every((g) => isFullyInSelection(g.id))
+      );
+    }
+
+    // Top-level groups whose entire membership is selected → nest them
+    const groupsToNest = groups.filter(
+      (g) => !g.parentGroupId && isFullyInSelection(g.id),
+    );
+
+    // Bricks not already covered by a group being nested → direct children of new group
+    const nestedMemberIds = new Set(
+      groupsToNest.flatMap((g) => collectAllAssetIds(g.id)),
+    );
+    const looseBrickIds = ids.filter((id) => !nestedMemberIds.has(id));
+
+    if (groupsToNest.length + looseBrickIds.length < 2) return;
+
     const groupId = `group-${Date.now()}`;
     const newGroup: BrickGroup = { id: groupId, name: `Group ${groups.length + 1}` };
-    setGroups((prev) => [...prev, newGroup]);
+
+    setGroups((prev) => [
+      ...prev.map((g) =>
+        groupsToNest.some((ng) => ng.id === g.id)
+          ? { ...g, parentGroupId: groupId }
+          : g,
+      ),
+      newGroup,
+    ]);
     setAssets((prev) =>
-      prev.map((a) => (ids.includes(a.id) ? { ...a, groupId } : a)),
+      prev.map((a) => (looseBrickIds.includes(a.id) ? { ...a, groupId } : a)),
     );
   }
 
   function ungroupAssets(groupId: string) {
+    const group = groups.find((g) => g.id === groupId);
+    const parentId = group?.parentGroupId;
+    // Promote direct brick members up to the parent (or root)
     setAssets((prev) =>
-      prev.map((a) => (a.groupId === groupId ? { ...a, groupId: undefined } : a)),
+      prev.map((a) => (a.groupId === groupId ? { ...a, groupId: parentId } : a)),
     );
-    setGroups((prev) => prev.filter((g) => g.id !== groupId));
+    // Promote child groups up to the parent (or root) and remove the target group
+    setGroups((prev) =>
+      prev
+        .filter((g) => g.id !== groupId)
+        .map((g) =>
+          g.parentGroupId === groupId ? { ...g, parentGroupId: parentId } : g,
+        ),
+    );
   }
 
   function updateGroup(groupId: string, name: string) {
@@ -128,12 +179,16 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
   }
 
   function selectGroup(groupId: string) {
-    setAssets((prev) => {
-      const ids = prev.filter((a) => a.groupId === groupId).map((a) => a.id);
-      setSelectedAssetIds(ids);
-      setSelectedAssetId(ids[ids.length - 1] ?? null);
-      return prev;
-    });
+    function collectIds(gId: string): string[] {
+      const direct = assets.filter((a) => a.groupId === gId).map((a) => a.id);
+      const childIds = groups
+        .filter((g) => g.parentGroupId === gId)
+        .flatMap((g) => collectIds(g.id));
+      return [...direct, ...childIds];
+    }
+    const ids = collectIds(groupId);
+    setSelectedAssetIds(ids);
+    setSelectedAssetId(ids[ids.length - 1] ?? null);
   }
 
   function updateAsset(id: string, updates: Partial<SceneAsset>) {

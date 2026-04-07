@@ -33,7 +33,45 @@ export interface CustomBrickDefinition {
   studsY: number;
 }
 
+export interface SceneData {
+  id: string;
+  name: string;
+  assets: SceneAsset[];
+  groups: BrickGroup[];
+  selectedAssetId: string | null;
+  selectedAssetIds: string[];
+  sceneBackground: string;
+  plateSize: number;
+  plateColor: string;
+  maxCameraDistance: number;
+}
+
+const DEFAULT_SCENE_ID = "scene-default";
+
+function createDefaultScene(id: string, name: string): SceneData {
+  return {
+    id,
+    name,
+    assets: [],
+    groups: [],
+    selectedAssetId: null,
+    selectedAssetIds: [],
+    sceneBackground: "#232323",
+    plateSize: 50,
+    plateColor: "#ebebeb",
+    maxCameraDistance: 100,
+  };
+}
+
 interface SceneStore {
+  // Multi-scene management
+  scenes: SceneData[];
+  activeSceneId: string;
+  addScene: () => void;
+  removeScene: (id: string) => void;
+  renameScene: (id: string, name: string) => void;
+  setActiveScene: (id: string) => void;
+  // Per-scene state (proxied from active scene)
   assets: SceneAsset[];
   addAsset: (asset: SceneAsset) => void;
   removeAsset: (id: string) => void;
@@ -56,6 +94,7 @@ interface SceneStore {
   setPlateColor: (color: string) => void;
   maxCameraDistance: number;
   setMaxCameraDistance: (d: number) => void;
+  // Global settings
   customBricks: CustomBrickDefinition[];
   addCustomBrick: (brick: CustomBrickDefinition) => void;
   removeCustomBrick: (id: string) => void;
@@ -70,23 +109,58 @@ interface SceneStore {
 const SceneContext = createContext<SceneStore | null>(null);
 
 export function SceneProvider({ children }: { children: React.ReactNode }) {
-  const [assets, setAssets] = useState<SceneAsset[]>([]);
-  const [groups, setGroups] = useState<BrickGroup[]>([]);
-  const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
-  const [selectedAssetIds, setSelectedAssetIds] = useState<string[]>([]);
-  const [sceneBackground, setSceneBackground] = useState<string>("#232323");
-  const [plateSize, setPlateSize] = useState<number>(50);
-  const [plateColor, setPlateColor] = useState<string>("#ebebeb");
-  const [maxCameraDistance, setMaxCameraDistance] = useState<number>(100);
+  const [scenes, setScenes] = useState<SceneData[]>([
+    createDefaultScene(DEFAULT_SCENE_ID, "Scene 1"),
+  ]);
+  const [activeSceneId, setActiveSceneId] = useState<string>(DEFAULT_SCENE_ID);
   const [customBricks, setCustomBricks] = useState<CustomBrickDefinition[]>([]);
   const [defaultBrickColor, setDefaultBrickColor] = useState<string>("#bfbfff");
   const [selectionColor, setSelectionColor] = useState<string>("#ff8c82");
   const [viewportType, setViewportType] = useState<string>("Perspective");
 
-  function updatePlateSize(size: number) {
-    setPlateSize(size);
-    setMaxCameraDistance(Math.max(size, 50) * 2);
+  // Derive active scene data
+  const activeScene = scenes.find((s) => s.id === activeSceneId) ?? scenes[0];
+  const { assets, groups, selectedAssetId, selectedAssetIds, sceneBackground, plateSize, plateColor, maxCameraDistance } = activeScene;
+
+  function updateActiveScene(updater: (scene: SceneData) => SceneData) {
+    setScenes((prev) =>
+      prev.map((s) => (s.id === activeSceneId ? updater(s) : s)),
+    );
   }
+
+  // ── Multi-scene management ─────────────────────────────────────────────────
+
+  function addScene() {
+    const id = `scene-${Date.now()}`;
+    const name = `Scene ${scenes.length + 1}`;
+    setScenes((prev) => [...prev, createDefaultScene(id, name)]);
+    setActiveSceneId(id);
+  }
+
+  function removeScene(id: string) {
+    if (scenes.length <= 1) return;
+    setScenes((prev) => {
+      const next = prev.filter((s) => s.id !== id);
+      return next;
+    });
+    setActiveSceneId((prev) => {
+      if (prev !== id) return prev;
+      const remaining = scenes.filter((s) => s.id !== id);
+      return remaining[0]?.id ?? DEFAULT_SCENE_ID;
+    });
+  }
+
+  function renameScene(id: string, name: string) {
+    setScenes((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, name } : s)),
+    );
+  }
+
+  function setActiveScene(id: string) {
+    setActiveSceneId(id);
+  }
+
+  // ── Global settings ────────────────────────────────────────────────────────
 
   function addCustomBrick(brick: CustomBrickDefinition) {
     setCustomBricks((prev) => [...prev, brick]);
@@ -96,28 +170,39 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
     setCustomBricks((prev) => prev.filter((b) => b.id !== id));
   }
 
+  // ── Per-scene helpers ──────────────────────────────────────────────────────
+
+  function updatePlateSize(size: number) {
+    updateActiveScene((s) => ({
+      ...s,
+      plateSize: size,
+      maxCameraDistance: Math.max(size, 50) * 2,
+    }));
+  }
+
   function addAsset(asset: SceneAsset) {
-    setAssets((prev) => [...prev, asset]);
+    updateActiveScene((s) => ({ ...s, assets: [...s.assets, asset] }));
   }
 
   function removeAsset(id: string) {
-    setAssets((prev) => prev.filter((a) => a.id !== id));
-    setSelectedAssetId((prev) => (prev === id ? null : prev));
-    setSelectedAssetIds((prev) => prev.filter((x) => x !== id));
+    updateActiveScene((s) => ({
+      ...s,
+      assets: s.assets.filter((a) => a.id !== id),
+      selectedAssetId: s.selectedAssetId === id ? null : s.selectedAssetId,
+      selectedAssetIds: s.selectedAssetIds.filter((x) => x !== id),
+    }));
   }
 
   function groupSelected() {
     if (selectedAssetIds.length < 2) return;
     const ids = selectedAssetIds;
 
-    // Recursively collect all asset IDs in a group (direct + through child groups)
     function collectAllAssetIds(gId: string): string[] {
       const direct = assets.filter((a) => a.groupId === gId).map((a) => a.id);
       const childIds = groups.filter((g) => g.parentGroupId === gId).flatMap((g) => collectAllAssetIds(g.id));
       return [...direct, ...childIds];
     }
 
-    // Does every asset in this group (recursively) appear in ids?
     function isFullyInSelection(gId: string): boolean {
       const directs = assets.filter((a) => a.groupId === gId);
       const children = groups.filter((g) => g.parentGroupId === gId);
@@ -128,12 +213,10 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
       );
     }
 
-    // Top-level groups whose entire membership is selected → nest them
     const groupsToNest = groups.filter(
       (g) => !g.parentGroupId && isFullyInSelection(g.id),
     );
 
-    // Bricks not already covered by a group being nested → direct children of new group
     const nestedMemberIds = new Set(
       groupsToNest.flatMap((g) => collectAllAssetIds(g.id)),
     );
@@ -144,38 +227,39 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
     const groupId = `group-${Date.now()}`;
     const newGroup: BrickGroup = { id: groupId, name: `Group ${groups.length + 1}` };
 
-    setGroups((prev) => [
-      ...prev.map((g) =>
-        groupsToNest.some((ng) => ng.id === g.id)
-          ? { ...g, parentGroupId: groupId }
-          : g,
-      ),
-      newGroup,
-    ]);
-    setAssets((prev) =>
-      prev.map((a) => (looseBrickIds.includes(a.id) ? { ...a, groupId } : a)),
-    );
+    updateActiveScene((s) => ({
+      ...s,
+      groups: [
+        ...s.groups.map((g) =>
+          groupsToNest.some((ng) => ng.id === g.id)
+            ? { ...g, parentGroupId: groupId }
+            : g,
+        ),
+        newGroup,
+      ],
+      assets: s.assets.map((a) => (looseBrickIds.includes(a.id) ? { ...a, groupId } : a)),
+    }));
   }
 
   function ungroupAssets(groupId: string) {
     const group = groups.find((g) => g.id === groupId);
     const parentId = group?.parentGroupId;
-    // Promote direct brick members up to the parent (or root)
-    setAssets((prev) =>
-      prev.map((a) => (a.groupId === groupId ? { ...a, groupId: parentId } : a)),
-    );
-    // Promote child groups up to the parent (or root) and remove the target group
-    setGroups((prev) =>
-      prev
+    updateActiveScene((s) => ({
+      ...s,
+      assets: s.assets.map((a) => (a.groupId === groupId ? { ...a, groupId: parentId } : a)),
+      groups: s.groups
         .filter((g) => g.id !== groupId)
         .map((g) =>
           g.parentGroupId === groupId ? { ...g, parentGroupId: parentId } : g,
         ),
-    );
+    }));
   }
 
   function updateGroup(groupId: string, name: string) {
-    setGroups((prev) => prev.map((g) => (g.id === groupId ? { ...g, name } : g)));
+    updateActiveScene((s) => ({
+      ...s,
+      groups: s.groups.map((g) => (g.id === groupId ? { ...g, name } : g)),
+    }));
   }
 
   function selectGroup(groupId: string) {
@@ -187,22 +271,26 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
       return [...direct, ...childIds];
     }
     const ids = collectIds(groupId);
-    setSelectedAssetIds(ids);
-    setSelectedAssetId(ids[ids.length - 1] ?? null);
+    updateActiveScene((s) => ({
+      ...s,
+      selectedAssetIds: ids,
+      selectedAssetId: ids[ids.length - 1] ?? null,
+    }));
   }
 
   function updateAsset(id: string, updates: Partial<SceneAsset>) {
-    setAssets((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, ...updates } : a)),
-    );
+    updateActiveScene((s) => ({
+      ...s,
+      assets: s.assets.map((a) => (a.id === id ? { ...a, ...updates } : a)),
+    }));
   }
 
   function decomposeBrick(id: string) {
-    setAssets((prev) => {
-      const brick = prev.find((a) => a.id === id);
-      if (!brick?.preset) return prev;
+    updateActiveScene((s) => {
+      const brick = s.assets.find((a) => a.id === id);
+      if (!brick?.preset) return s;
       const { studsX, studsY } = brick.preset;
-      if (studsX === 1 && studsY === 1) return prev;
+      if (studsX === 1 && studsY === 1) return s;
       const [bx, by, bz] = brick.position ?? [0, 0, 0];
       const subBricks: SceneAsset[] = [];
       const ts = Date.now();
@@ -223,34 +311,52 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
           });
         }
       }
-      return [...prev.filter((a) => a.id !== id), ...subBricks];
+      return {
+        ...s,
+        assets: [...s.assets.filter((a) => a.id !== id), ...subBricks],
+        selectedAssetId: null,
+        selectedAssetIds: [],
+      };
     });
-    setSelectedAssetId(null);
-    setSelectedAssetIds([]);
   }
 
   function selectAsset(id: string | null) {
-    setSelectedAssetId(id);
-    setSelectedAssetIds(id ? [id] : []);
+    updateActiveScene((s) => ({
+      ...s,
+      selectedAssetId: id,
+      selectedAssetIds: id ? [id] : [],
+    }));
   }
 
   function toggleAssetSelection(id: string) {
-    const isAlreadySelected = selectedAssetIds.includes(id);
-    if (isAlreadySelected) {
-      const next = selectedAssetIds.filter((x) => x !== id);
-      setSelectedAssetIds(next);
-      if (selectedAssetId === id) {
-        setSelectedAssetId(next[next.length - 1] ?? null);
+    updateActiveScene((s) => {
+      const isAlreadySelected = s.selectedAssetIds.includes(id);
+      if (isAlreadySelected) {
+        const next = s.selectedAssetIds.filter((x) => x !== id);
+        return {
+          ...s,
+          selectedAssetIds: next,
+          selectedAssetId: s.selectedAssetId === id ? (next[next.length - 1] ?? null) : s.selectedAssetId,
+        };
+      } else {
+        return {
+          ...s,
+          selectedAssetIds: [...s.selectedAssetIds, id],
+          selectedAssetId: id,
+        };
       }
-    } else {
-      setSelectedAssetIds((prev) => [...prev, id]);
-      setSelectedAssetId(id);
-    }
+    });
   }
 
   return (
     <SceneContext.Provider
       value={{
+        scenes,
+        activeSceneId,
+        addScene,
+        removeScene,
+        renameScene,
+        setActiveScene,
         assets,
         addAsset,
         removeAsset,
@@ -266,13 +372,16 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
         selectGroup,
         toggleAssetSelection,
         sceneBackground,
-        setSceneBackground,
+        setSceneBackground: (color: string) =>
+          updateActiveScene((s) => ({ ...s, sceneBackground: color })),
         plateSize,
         setPlateSize: updatePlateSize,
         plateColor,
-        setPlateColor,
+        setPlateColor: (color: string) =>
+          updateActiveScene((s) => ({ ...s, plateColor: color })),
         maxCameraDistance,
-        setMaxCameraDistance,
+        setMaxCameraDistance: (d: number) =>
+          updateActiveScene((s) => ({ ...s, maxCameraDistance: d })),
         customBricks,
         addCustomBrick,
         removeCustomBrick,

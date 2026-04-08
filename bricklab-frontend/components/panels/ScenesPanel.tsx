@@ -50,7 +50,7 @@ export default function ScenesPanel() {
         <button
           onClick={addScene}
           title="Add Scene"
-          className="px-3 py-1.5 rounded-md bg-zinc-700 text-white text-[10px] font-medium hover:bg-zinc-600 transition-colors"
+          className="px-2 py-1 rounded bg-zinc-700 text-white text-[10px] hover:bg-zinc-600 transition-colors"
         >
           + New
         </button>

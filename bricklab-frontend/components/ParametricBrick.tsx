@@ -41,8 +41,19 @@ export default function ParametricBrick({
           rotation={[Math.PI / 2, 0, 0]}
           castShadow
         >
-          <cylinderGeometry args={[STUD_RADIUS, STUD_RADIUS, STUD_HEIGHT, 12]} />
-          <meshStandardMaterial color={color} roughness={roughness} metalness={metalness} emissive={emissive} emissiveIntensity={emissiveIntensity} polygonOffset={isSelected} polygonOffsetFactor={isSelected ? -4 : 0} polygonOffsetUnits={isSelected ? -4 : 0} />
+          <cylinderGeometry
+            args={[STUD_RADIUS, STUD_RADIUS, STUD_HEIGHT, 12]}
+          />
+          <meshStandardMaterial
+            color={color}
+            roughness={roughness}
+            metalness={metalness}
+            emissive={emissive}
+            emissiveIntensity={emissiveIntensity}
+            polygonOffset={isSelected}
+            polygonOffsetFactor={isSelected ? -4 : 0}
+            polygonOffsetUnits={isSelected ? -4 : 0}
+          />
         </mesh>,
       );
     }
@@ -63,7 +74,16 @@ export default function ParametricBrick({
         <boxGeometry
           args={[studsX * STUD_SPACING, studsY * STUD_SPACING, BODY_HEIGHT]}
         />
-        <meshStandardMaterial color={color} roughness={roughness} metalness={metalness} emissive={emissive} emissiveIntensity={emissiveIntensity} polygonOffset={isSelected} polygonOffsetFactor={isSelected ? -4 : 0} polygonOffsetUnits={isSelected ? -4 : 0} />
+        <meshStandardMaterial
+          color={color}
+          roughness={roughness}
+          metalness={metalness}
+          emissive={emissive}
+          emissiveIntensity={emissiveIntensity}
+          polygonOffset={isSelected}
+          polygonOffsetFactor={isSelected ? -4 : 0}
+          polygonOffsetUnits={isSelected ? -4 : 0}
+        />
       </mesh>
       {studs}
     </group>

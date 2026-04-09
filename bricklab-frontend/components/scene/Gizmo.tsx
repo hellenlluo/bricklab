@@ -6,7 +6,11 @@ import { GizmoHelper, GizmoViewport } from "@react-three/drei";
 
 type Controls = { target?: THREE.Vector3; update?: () => void } | null;
 
-export default function Gizmo({ interactive = true }: { interactive?: boolean }) {
+export default function Gizmo({
+  interactive = true,
+}: {
+  interactive?: boolean;
+}) {
   const size = useThree((s) => s.size);
   const controls = useThree((s) => s.controls) as Controls;
   const gap = 55;
@@ -17,7 +21,11 @@ export default function Gizmo({ interactive = true }: { interactive?: boolean })
     <GizmoHelper
       alignment="top-left"
       margin={[marginX, marginY]}
-      onTarget={interactive ? () => controls?.target?.clone() ?? new THREE.Vector3() : undefined}
+      onTarget={
+        interactive
+          ? () => controls?.target?.clone() ?? new THREE.Vector3()
+          : undefined
+      }
       onUpdate={interactive ? () => controls?.update?.() : undefined}
     >
       <mesh scale={new THREE.Vector3(0.75, 0.75, 0.75)}>

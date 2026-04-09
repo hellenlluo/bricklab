@@ -120,7 +120,16 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
 
   // Derive active scene data
   const activeScene = scenes.find((s) => s.id === activeSceneId) ?? scenes[0];
-  const { assets, groups, selectedAssetId, selectedAssetIds, sceneBackground, plateSize, plateColor, maxCameraDistance } = activeScene;
+  const {
+    assets,
+    groups,
+    selectedAssetId,
+    selectedAssetIds,
+    sceneBackground,
+    plateSize,
+    plateColor,
+    maxCameraDistance,
+  } = activeScene;
 
   function updateActiveScene(updater: (scene: SceneData) => SceneData) {
     setScenes((prev) =>
@@ -151,9 +160,7 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
   }
 
   function renameScene(id: string, name: string) {
-    setScenes((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, name } : s)),
-    );
+    setScenes((prev) => prev.map((s) => (s.id === id ? { ...s, name } : s)));
   }
 
   function setActiveScene(id: string) {
@@ -199,7 +206,9 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
 
     function collectAllAssetIds(gId: string): string[] {
       const direct = assets.filter((a) => a.groupId === gId).map((a) => a.id);
-      const childIds = groups.filter((g) => g.parentGroupId === gId).flatMap((g) => collectAllAssetIds(g.id));
+      const childIds = groups
+        .filter((g) => g.parentGroupId === gId)
+        .flatMap((g) => collectAllAssetIds(g.id));
       return [...direct, ...childIds];
     }
 
@@ -225,7 +234,10 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
     if (groupsToNest.length + looseBrickIds.length < 2) return;
 
     const groupId = `group-${Date.now()}`;
-    const newGroup: BrickGroup = { id: groupId, name: `Group ${groups.length + 1}` };
+    const newGroup: BrickGroup = {
+      id: groupId,
+      name: `Group ${groups.length + 1}`,
+    };
 
     updateActiveScene((s) => ({
       ...s,
@@ -237,7 +249,9 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
         ),
         newGroup,
       ],
-      assets: s.assets.map((a) => (looseBrickIds.includes(a.id) ? { ...a, groupId } : a)),
+      assets: s.assets.map((a) =>
+        looseBrickIds.includes(a.id) ? { ...a, groupId } : a,
+      ),
     }));
   }
 
@@ -246,7 +260,9 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
     const parentId = group?.parentGroupId;
     updateActiveScene((s) => ({
       ...s,
-      assets: s.assets.map((a) => (a.groupId === groupId ? { ...a, groupId: parentId } : a)),
+      assets: s.assets.map((a) =>
+        a.groupId === groupId ? { ...a, groupId: parentId } : a,
+      ),
       groups: s.groups
         .filter((g) => g.id !== groupId)
         .map((g) =>
@@ -336,7 +352,10 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
         return {
           ...s,
           selectedAssetIds: next,
-          selectedAssetId: s.selectedAssetId === id ? (next[next.length - 1] ?? null) : s.selectedAssetId,
+          selectedAssetId:
+            s.selectedAssetId === id
+              ? (next[next.length - 1] ?? null)
+              : s.selectedAssetId,
         };
       } else {
         return {

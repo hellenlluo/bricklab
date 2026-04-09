@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useScene } from "@/store/sceneStore";
+import Input from "@/components/ui/Input";
 
 export default function SettingsPanel() {
   const {
@@ -19,7 +20,9 @@ export default function SettingsPanel() {
     setSelectionColor,
   } = useScene();
   const [plateSizeDraft, setPlateSizeDraft] = useState(String(plateSize));
-  const [maxDistanceDraft, setMaxDistanceDraft] = useState(String(maxCameraDistance));
+  const [maxDistanceDraft, setMaxDistanceDraft] = useState(
+    String(maxCameraDistance),
+  );
 
   useEffect(() => {
     setMaxDistanceDraft(String(maxCameraDistance));
@@ -38,7 +41,7 @@ export default function SettingsPanel() {
             onChange={(e) => setSceneBackground(e.target.value)}
             className="w-7 h-7 rounded cursor-pointer border border-zinc-200 dark:border-zinc-700 bg-transparent p-0.5"
           />
-          <input
+          <Input
             type="text"
             value={sceneBackground}
             onChange={(e) => {
@@ -51,7 +54,7 @@ export default function SettingsPanel() {
               }
             }}
             maxLength={7}
-            className="text-xs bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded px-2 py-1 text-zinc-800 dark:text-zinc-100 outline-none focus:border-zinc-400 dark:focus:border-zinc-500 w-full font-mono"
+            className="w-full font-mono"
           />
         </div>
       </div>
@@ -67,7 +70,7 @@ export default function SettingsPanel() {
             onChange={(e) => setPlateColor(e.target.value)}
             className="w-7 h-7 rounded cursor-pointer border border-zinc-200 dark:border-zinc-700 bg-transparent p-0.5"
           />
-          <input
+          <Input
             type="text"
             value={plateColor}
             onChange={(e) => {
@@ -80,7 +83,7 @@ export default function SettingsPanel() {
               }
             }}
             maxLength={7}
-            className="text-xs bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded px-2 py-1 text-zinc-800 dark:text-zinc-100 outline-none focus:border-zinc-400 dark:focus:border-zinc-500 w-full font-mono"
+            className="w-full font-mono"
           />
         </div>
       </div>
@@ -89,7 +92,7 @@ export default function SettingsPanel() {
         <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
           Baseplate Size
         </span>
-        <input
+        <Input
           type="number"
           min={1}
           value={plateSizeDraft}
@@ -107,7 +110,7 @@ export default function SettingsPanel() {
             if (e.key === "Enter") (e.target as HTMLInputElement).blur();
             if (e.key === "Escape") setPlateSizeDraft(String(plateSize));
           }}
-          className="text-xs bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded px-2 py-1 text-zinc-800 dark:text-zinc-100 outline-none focus:border-zinc-400 dark:focus:border-zinc-500 w-full"
+          className="w-full"
         />
       </div>
 
@@ -115,7 +118,7 @@ export default function SettingsPanel() {
         <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
           Max Zoom Distance
         </span>
-        <input
+        <Input
           type="number"
           min={1}
           value={maxDistanceDraft}
@@ -131,9 +134,10 @@ export default function SettingsPanel() {
           }}
           onKeyDown={(e) => {
             if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-            if (e.key === "Escape") setMaxDistanceDraft(String(maxCameraDistance));
+            if (e.key === "Escape")
+              setMaxDistanceDraft(String(maxCameraDistance));
           }}
-          className="text-xs bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded px-2 py-1 text-zinc-800 dark:text-zinc-100 outline-none focus:border-zinc-400 dark:focus:border-zinc-500 w-full"
+          className="w-full"
         />
       </div>
 
@@ -148,7 +152,7 @@ export default function SettingsPanel() {
             onChange={(e) => setDefaultBrickColor(e.target.value)}
             className="w-7 h-7 rounded cursor-pointer border border-zinc-200 dark:border-zinc-700 bg-transparent p-0.5"
           />
-          <input
+          <Input
             type="text"
             value={defaultBrickColor}
             onChange={(e) => {
@@ -161,7 +165,7 @@ export default function SettingsPanel() {
               }
             }}
             maxLength={7}
-            className="text-xs bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded px-2 py-1 text-zinc-800 dark:text-zinc-100 outline-none focus:border-zinc-400 dark:focus:border-zinc-500 w-full font-mono"
+            className="w-full font-mono"
           />
         </div>
       </div>
@@ -177,7 +181,7 @@ export default function SettingsPanel() {
             onChange={(e) => setSelectionColor(e.target.value)}
             className="w-7 h-7 rounded cursor-pointer border border-zinc-200 dark:border-zinc-700 bg-transparent p-0.5"
           />
-          <input
+          <Input
             type="text"
             value={selectionColor}
             onChange={(e) => {
@@ -190,7 +194,7 @@ export default function SettingsPanel() {
               }
             }}
             maxLength={7}
-            className="text-xs bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded px-2 py-1 text-zinc-800 dark:text-zinc-100 outline-none focus:border-zinc-400 dark:focus:border-zinc-500 w-full font-mono"
+            className="w-full font-mono"
           />
         </div>
       </div>

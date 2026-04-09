@@ -57,21 +57,37 @@ function GroupRow({
   shared: GroupRowShared;
 }) {
   const {
-    editingId, editingValue, inputRef, selectedAssetIds,
-    allGroups, allAssets, expandedGroups,
-    onToggleExpand, onSelectGroup, onUngroup,
-    onSelectAsset, onStartEdit, onEditChange, onCommitEdit, onCancelEdit, onKeyDown,
+    editingId,
+    editingValue,
+    inputRef,
+    selectedAssetIds,
+    allGroups,
+    allAssets,
+    expandedGroups,
+    onToggleExpand,
+    onSelectGroup,
+    onUngroup,
+    onSelectAsset,
+    onStartEdit,
+    onEditChange,
+    onCommitEdit,
+    onCancelEdit,
+    onKeyDown,
   } = shared;
 
   const isOpen = expandedGroups[group.id] ?? false;
   const childGroups = allGroups.filter((g) => g.parentGroupId === group.id);
   const directMembers = allAssets.filter((a) => a.groupId === group.id);
   const totalChildren = childGroups.length + directMembers.length;
-  const grpSelected = isGroupFullySelected(group.id, allGroups, allAssets, selectedAssetIds);
+  const grpSelected = isGroupFullySelected(
+    group.id,
+    allGroups,
+    allAssets,
+    selectedAssetIds,
+  );
 
-  const indentStyle = depth > 0
-    ? { paddingLeft: `${depth * 2}rem` }
-    : undefined;
+  const indentStyle =
+    depth > 0 ? { paddingLeft: `${depth * 2}rem` } : undefined;
 
   const headerRounding = isOpen
     ? "rounded-t-md"
@@ -83,7 +99,10 @@ function GroupRow({
     <li>
       {/* Group header row */}
       <div
-        onClick={(e) => { e.stopPropagation(); onSelectGroup(group.id); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onSelectGroup(group.id);
+        }}
         style={indentStyle}
         className={`flex items-center gap-1 mx-3 px-2 py-1.5 text-xs cursor-default group transition-colors ${headerRounding} ${
           grpSelected
@@ -92,14 +111,21 @@ function GroupRow({
         }`}
       >
         <button
-          onClick={(e) => { e.stopPropagation(); onToggleExpand(group.id); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleExpand(group.id);
+          }}
           className="shrink-0 text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-200"
           style={{ fontSize: "0.45rem", lineHeight: 1 }}
         >
           {isOpen ? "▼" : "▶"}
         </button>
 
-        <svg className="shrink-0 w-3 h-3 text-zinc-400 dark:text-zinc-500" viewBox="0 0 16 16" fill="currentColor">
+        <svg
+          className="shrink-0 w-3 h-3 text-zinc-400 dark:text-zinc-500"
+          viewBox="0 0 16 16"
+          fill="currentColor"
+        >
           <rect x="1" y="5" width="14" height="9" rx="1.5" fillOpacity="0.4" />
           <rect x="1" y="2" width="6" height="4" rx="1" fillOpacity="0.7" />
         </svg>
@@ -117,7 +143,10 @@ function GroupRow({
         ) : (
           <span
             className="truncate flex-1 font-medium"
-            onDoubleClick={(e) => { e.stopPropagation(); onStartEdit(group.id, group.name); }}
+            onDoubleClick={(e) => {
+              e.stopPropagation();
+              onStartEdit(group.id, group.name);
+            }}
             title="Double-click to rename"
           >
             {group.name}
@@ -129,7 +158,10 @@ function GroupRow({
         </span>
 
         <button
-          onClick={(e) => { e.stopPropagation(); onUngroup(group.id); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onUngroup(group.id);
+          }}
           className="shrink-0 ml-1 w-4 h-4 flex items-center justify-center rounded text-zinc-400 dark:text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:text-zinc-700 dark:hover:text-zinc-200 opacity-0 group-hover:opacity-100 transition-opacity text-[9px]"
           title="Ungroup"
         >
@@ -146,7 +178,9 @@ function GroupRow({
               key={childGroup.id}
               group={childGroup}
               depth={depth + 1}
-              isLastInParent={idx === childGroups.length - 1 && directMembers.length === 0}
+              isLastInParent={
+                idx === childGroups.length - 1 && directMembers.length === 0
+              }
               shared={shared}
             />
           ))}
@@ -157,11 +191,16 @@ function GroupRow({
               asset={asset}
               depth={depth + 1}
               isLast={idx === directMembers.length - 1}
+              isPrevSelected={selectedAssetIds.includes(directMembers[idx - 1]?.id)}
+              isNextSelected={selectedAssetIds.includes(directMembers[idx + 1]?.id)}
               editingId={editingId}
               editingValue={editingValue}
               inputRef={inputRef}
               selectedAssetIds={selectedAssetIds}
-              onSelect={(e) => { e.stopPropagation(); onSelectAsset(asset.id, e.shiftKey); }}
+              onSelect={(e) => {
+                e.stopPropagation();
+                onSelectAsset(asset.id, e.shiftKey);
+              }}
               onStartEdit={() => onStartEdit(asset.id, asset.name)}
               onEditChange={onEditChange}
               onCommitEdit={() => onCommitEdit(asset.id, false)}
@@ -190,7 +229,9 @@ export default function AssetsPanel() {
     updateGroup,
   } = useScene();
   const [expanded, setExpanded] = useState(false);
-  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(
+    {},
+  );
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState("");
@@ -263,7 +304,8 @@ export default function AssetsPanel() {
     allGroups: groups,
     allAssets: assets,
     expandedGroups,
-    onToggleExpand: (id) => setExpandedGroups((prev) => ({ ...prev, [id]: !prev[id] })),
+    onToggleExpand: (id) =>
+      setExpandedGroups((prev) => ({ ...prev, [id]: !prev[id] })),
     onSelectGroup: selectGroup,
     onUngroup: ungroupAssets,
     onSelectAsset: (id, shiftKey) => {
@@ -337,11 +379,13 @@ export default function AssetsPanel() {
           ))}
 
           {/* Ungrouped assets */}
-          {ungroupedAssets.map((asset) => (
+          {ungroupedAssets.map((asset, idx) => (
             <AssetRow
               key={asset.id}
               asset={asset}
               depth={0}
+              isPrevSelected={selectedAssetIds.includes(ungroupedAssets[idx - 1]?.id)}
+              isNextSelected={selectedAssetIds.includes(ungroupedAssets[idx + 1]?.id)}
               editingId={editingId}
               editingValue={editingValue}
               inputRef={inputRef}
@@ -370,6 +414,8 @@ function AssetRow({
   asset,
   depth,
   isLast = false,
+  isPrevSelected = false,
+  isNextSelected = false,
   editingId,
   editingValue,
   inputRef,
@@ -384,6 +430,8 @@ function AssetRow({
   asset: { id: string; name: string };
   depth: number;
   isLast?: boolean;
+  isPrevSelected?: boolean;
+  isNextSelected?: boolean;
   editingId: string | null;
   editingValue: string;
   inputRef: React.RefObject<HTMLInputElement | null>;
@@ -395,9 +443,22 @@ function AssetRow({
   onCancelEdit: () => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
 }) {
-  const rounding =
-    depth === 0 ? "rounded-md" : isLast ? "rounded-b-md" : "rounded-none";
-  const indentStyle = depth > 0 ? { paddingLeft: `${depth * 2}rem` } : undefined;
+  const isSelected = selectedAssetIds.includes(asset.id);
+  const rounding = isSelected
+    ? !isPrevSelected && !isNextSelected
+      ? "rounded-md"
+      : !isPrevSelected
+        ? "rounded-t-md"
+        : !isNextSelected
+          ? "rounded-b-md"
+          : "rounded-none"
+    : depth === 0
+      ? "rounded-md"
+      : isLast
+        ? "rounded-b-md"
+        : "rounded-none";
+  const indentStyle =
+    depth > 0 ? { paddingLeft: `${depth * 2}rem` } : undefined;
 
   return (
     <li
@@ -416,8 +477,10 @@ function AssetRow({
           onChange={(e) => onEditChange(e.target.value)}
           onBlur={onCommitEdit}
           onKeyDown={(e) => {
-            if (e.key === "Escape") { e.preventDefault(); onCancelEdit(); }
-            else onKeyDown(e);
+            if (e.key === "Escape") {
+              e.preventDefault();
+              onCancelEdit();
+            } else onKeyDown(e);
           }}
           className="flex-1 min-w-0 bg-transparent outline-none border-b border-black dark:border-white text-xs text-zinc-800 dark:text-zinc-100 leading-none p-0 m-0 h-[1em]"
           autoFocus
@@ -425,7 +488,10 @@ function AssetRow({
       ) : (
         <span
           className="truncate flex-1"
-          onDoubleClick={(e) => { e.stopPropagation(); onStartEdit(); }}
+          onDoubleClick={(e) => {
+            e.stopPropagation();
+            onStartEdit();
+          }}
           title="Double-click to rename"
         >
           {asset.name}

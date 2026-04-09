@@ -2,10 +2,17 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useScene } from "@/store/sceneStore";
+import Button from "@/components/ui/Button";
 
 export default function ScenesPanel() {
-  const { scenes, activeSceneId, addScene, removeScene, renameScene, setActiveScene } =
-    useScene();
+  const {
+    scenes,
+    activeSceneId,
+    addScene,
+    removeScene,
+    renameScene,
+    setActiveScene,
+  } = useScene();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState("");
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -33,8 +40,14 @@ export default function ScenesPanel() {
   }
 
   function handleKeyDown(e: React.KeyboardEvent, id: string) {
-    if (e.key === "Enter") { e.preventDefault(); commitEdit(id); }
-    if (e.key === "Escape") { e.preventDefault(); cancelEdit(); }
+    if (e.key === "Enter") {
+      e.preventDefault();
+      commitEdit(id);
+    }
+    if (e.key === "Escape") {
+      e.preventDefault();
+      cancelEdit();
+    }
   }
 
   return (
@@ -47,13 +60,9 @@ export default function ScenesPanel() {
         <span className="ml-auto text-xs text-zinc-400 dark:text-zinc-500">
           {scenes.length}
         </span>
-        <button
-          onClick={addScene}
-          title="Add Scene"
-          className="px-2 py-1 rounded bg-zinc-700 text-white text-[10px] hover:bg-zinc-600 transition-colors"
-        >
+        <Button onClick={addScene} title="Add Scene">
           + New
-        </button>
+        </Button>
       </div>
 
       {/* Scene list */}
@@ -72,7 +81,10 @@ export default function ScenesPanel() {
                 }`}
               >
                 {/* Scene icon */}
-                <span className="shrink-0 text-zinc-400 dark:text-zinc-500" style={{ fontSize: "0.6rem" }}>
+                <span
+                  className="shrink-0 text-zinc-400 dark:text-zinc-500"
+                  style={{ fontSize: "0.6rem" }}
+                >
                   ◈
                 </span>
 
@@ -90,7 +102,10 @@ export default function ScenesPanel() {
                 ) : (
                   <span
                     className="flex-1 min-w-0 text-xs truncate"
-                    onDoubleClick={(e) => { e.stopPropagation(); startEdit(scene.id, scene.name); }}
+                    onDoubleClick={(e) => {
+                      e.stopPropagation();
+                      startEdit(scene.id, scene.name);
+                    }}
                   >
                     {scene.name}
                   </span>
@@ -106,7 +121,10 @@ export default function ScenesPanel() {
                 {/* Delete button (hidden unless hovered, disabled when only one scene) */}
                 {!isEditing && scenes.length > 1 && (
                   <button
-                    onClick={(e) => { e.stopPropagation(); removeScene(scene.id); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeScene(scene.id);
+                    }}
                     title="Delete scene"
                     className="shrink-0 opacity-0 group-hover:opacity-100 text-zinc-400 dark:text-zinc-500 hover:text-red-500 dark:hover:text-red-400 transition-all"
                     style={{ fontSize: "0.6rem", lineHeight: 1 }}

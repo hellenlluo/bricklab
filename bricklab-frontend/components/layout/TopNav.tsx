@@ -80,6 +80,8 @@ export default function TopNav() {
             className={`rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 ${
               activePanel === "Library" || activePanel === "Docs"
                 ? "w-[40vw]"
+                : activePanel === "Generator"
+                  ? "w-[50vw]"
                 : "w-72"
             }`}
             onClick={(e) => e.stopPropagation()}

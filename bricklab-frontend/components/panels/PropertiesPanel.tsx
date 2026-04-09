@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useScene } from "@/store/sceneStore";
 import Texture from "./Texture";
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 
 function Field({
   label,
@@ -30,7 +32,7 @@ function TextValue({
 }) {
   const [draft, setDraft] = useState(value);
   return (
-    <input
+    <Input
       value={draft}
       onChange={(e) => setDraft(e.target.value)}
       onBlur={() => onChange(draft.trim() || value)}
@@ -41,7 +43,7 @@ function TextValue({
           (e.target as HTMLInputElement).blur();
         }
       }}
-      className="text-xs bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded px-2 py-1 text-zinc-800 dark:text-zinc-100 outline-none focus:border-zinc-400 dark:focus:border-zinc-500 w-full"
+      className="w-full"
     />
   );
 }
@@ -55,7 +57,7 @@ function NumberValue({
 }) {
   const [draft, setDraft] = useState(String(value));
   return (
-    <input
+    <Input
       type="number"
       value={draft}
       onChange={(e) => setDraft(e.target.value)}
@@ -71,7 +73,7 @@ function NumberValue({
           (e.target as HTMLInputElement).blur();
         }
       }}
-      className="text-xs bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded px-2 py-1 text-zinc-800 dark:text-zinc-100 outline-none focus:border-zinc-400 dark:focus:border-zinc-500 w-full"
+      className="w-full"
     />
   );
 }
@@ -80,8 +82,12 @@ export default function PropertiesPanel() {
   const { assets, selectedAssetId, updateAsset, decomposeBrick } = useScene();
   const asset = assets.find((a) => a.id === selectedAssetId) ?? null;
 
-  const [colorDraftAssetId, setColorDraftAssetId] = useState<string | null>(asset?.id ?? null);
-  const [colorDraft, setColorDraft] = useState(asset?.materialColor ?? "#bfbfff");
+  const [colorDraftAssetId, setColorDraftAssetId] = useState<string | null>(
+    asset?.id ?? null,
+  );
+  const [colorDraft, setColorDraft] = useState(
+    asset?.materialColor ?? "#bfbfff",
+  );
   if (colorDraftAssetId !== (asset?.id ?? null)) {
     setColorDraftAssetId(asset?.id ?? null);
     setColorDraft(asset?.materialColor ?? "#bfbfff");
@@ -115,7 +121,9 @@ export default function PropertiesPanel() {
           <input
             type="checkbox"
             checked={asset.visible}
-            onChange={(e) => updateAsset(asset.id, { visible: e.target.checked })}
+            onChange={(e) =>
+              updateAsset(asset.id, { visible: e.target.checked })
+            }
             className="w-3.5 h-3.5 accent-zinc-700 dark:accent-zinc-400 cursor-pointer"
           />
           <span className="text-xs text-zinc-600 dark:text-zinc-400">
@@ -129,7 +137,9 @@ export default function PropertiesPanel() {
           <input
             type="checkbox"
             checked={asset.selectable ?? true}
-            onChange={(e) => updateAsset(asset.id, { selectable: e.target.checked })}
+            onChange={(e) =>
+              updateAsset(asset.id, { selectable: e.target.checked })
+            }
             className="w-3.5 h-3.5 accent-zinc-700 dark:accent-zinc-400 cursor-pointer"
           />
           <span className="text-xs text-zinc-600 dark:text-zinc-400">
@@ -166,23 +176,30 @@ export default function PropertiesPanel() {
         </div>
       </div>
 
-      {asset.type === "preset-brick" && asset.preset && asset.preset.studsX !== asset.preset.studsY && (
-        <div className="flex flex-col gap-0.5">
-          <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
-            Rotation
-          </span>
-          <button
-            onClick={() =>
-              updateAsset(asset.id, {
-                preset: { studsX: asset.preset!.studsY, studsY: asset.preset!.studsX },
-              })
-            }
-            className="w-full text-[10px] px-2 py-1 rounded bg-zinc-700 text-white hover:bg-zinc-600 transition-colors"
-          >
-            {asset.preset.studsX > asset.preset.studsY ? "Rotate 90° CW" : "Rotate 90° CCW"}
-          </button>
-        </div>
-      )}
+      {asset.type === "preset-brick" &&
+        asset.preset &&
+        asset.preset.studsX !== asset.preset.studsY && (
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+              Rotation
+            </span>
+            <Button
+              onClick={() =>
+                updateAsset(asset.id, {
+                  preset: {
+                    studsX: asset.preset!.studsY,
+                    studsY: asset.preset!.studsX,
+                  },
+                })
+              }
+              className="w-full"
+            >
+              {asset.preset.studsX > asset.preset.studsY
+                ? "Rotate 90° CW"
+                : "Rotate 90° CCW"}
+            </Button>
+          </div>
+        )}
 
       <div className="flex flex-col gap-0.5">
         <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
@@ -198,7 +215,7 @@ export default function PropertiesPanel() {
             }}
             className="w-7 h-7 rounded cursor-pointer border border-zinc-200 dark:border-zinc-700 bg-transparent p-0.5"
           />
-          <input
+          <Input
             type="text"
             value={colorDraft}
             onChange={(e) => {
@@ -214,7 +231,7 @@ export default function PropertiesPanel() {
                 setColorDraft(asset.materialColor ?? "#bfbfff");
             }}
             maxLength={7}
-            className="text-xs bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded px-2 py-1 text-zinc-800 dark:text-zinc-100 outline-none focus:border-zinc-400 dark:focus:border-zinc-500 w-full font-mono"
+            className="w-full font-mono"
           />
         </div>
       </div>
@@ -233,12 +250,9 @@ export default function PropertiesPanel() {
       {asset.type === "preset-brick" &&
         asset.preset &&
         (asset.preset.studsX > 1 || asset.preset.studsY > 1) && (
-          <button
-            onClick={() => decomposeBrick(asset.id)}
-            className="w-full text-[10px] px-2 py-1 rounded bg-zinc-700 text-white hover:bg-zinc-600 transition-colors"
-          >
+          <Button onClick={() => decomposeBrick(asset.id)} className="w-full">
             Decompose
-          </button>
+          </Button>
         )}
     </div>
   );

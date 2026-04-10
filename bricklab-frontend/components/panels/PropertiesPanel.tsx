@@ -79,7 +79,14 @@ function NumberValue({
 }
 
 export default function PropertiesPanel() {
-  const { assets, selectedAssetId, updateAsset, decomposeBrick } = useScene();
+  const {
+    assets,
+    selectedAssetId,
+    selectedAssetIds,
+    updateAsset,
+    decomposeBrick,
+    rotateSelectedAssets,
+  } = useScene();
   const asset = assets.find((a) => a.id === selectedAssetId) ?? null;
 
   const [colorDraftAssetId, setColorDraftAssetId] = useState<string | null>(
@@ -176,30 +183,41 @@ export default function PropertiesPanel() {
         </div>
       </div>
 
-      {asset.type === "preset-brick" &&
-        asset.preset &&
-        asset.preset.studsX !== asset.preset.studsY && (
+      {(() => {
+        const isMulti = selectedAssetIds.length > 1;
+        const selectedPresetAssets = isMulti
+          ? assets.filter(
+              (a) =>
+                selectedAssetIds.includes(a.id) && a.type === "preset-brick",
+            )
+          : [];
+        const showForGroup =
+          isMulti && selectedPresetAssets.length === selectedAssetIds.length;
+        const showForSingle =
+          !isMulti &&
+          asset?.type === "preset-brick" &&
+          asset.preset &&
+          asset.preset.studsX !== asset.preset.studsY;
+
+        if (!showForGroup && !showForSingle) return null;
+
+        const label = showForGroup
+          ? "Rotate 90° CW"
+          : asset!.preset!.studsX > asset!.preset!.studsY
+            ? "Rotate 90° CW"
+            : "Rotate 90° CCW";
+
+        return (
           <div className="flex flex-col gap-0.5">
             <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
               Rotation
             </span>
-            <Button
-              onClick={() =>
-                updateAsset(asset.id, {
-                  preset: {
-                    studsX: asset.preset!.studsY,
-                    studsY: asset.preset!.studsX,
-                  },
-                })
-              }
-              className="w-full"
-            >
-              {asset.preset.studsX > asset.preset.studsY
-                ? "Rotate 90° CW"
-                : "Rotate 90° CCW"}
+            <Button onClick={rotateSelectedAssets} className="w-full">
+              {label}
             </Button>
           </div>
-        )}
+        );
+      })()}
 
       <div className="flex flex-col gap-0.5">
         <span className="text-[10px] text-zinc-400 dark:text-zinc-500">

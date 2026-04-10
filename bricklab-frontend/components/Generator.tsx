@@ -6,6 +6,8 @@ import { OrbitControls, Environment } from "@react-three/drei";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import ParametricBrick from "@/components/ParametricBrick";
+import { useScene } from "@/store/sceneStore";
+import type { SceneAsset } from "@/store/sceneStore";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -17,6 +19,10 @@ interface BrickData {
   x: number;
   y: number;
   z: number;
+}
+
+interface GeneratorProps {
+  onClose: () => void;
 }
 
 const PREVIEW_FOV = 35;
@@ -39,23 +45,19 @@ function computePreviewCamera(bricks: BrickData[]): {
     minZ = Math.min(minZ, b.z);       maxZ = Math.max(maxZ, b.z + 1);
   }
 
-  // Scene center (Y is flipped because bricks render at -b.y)
   const cx = (minX + maxX) / 2;
   const cy = (minY + maxY) / 2;
   const cz = (minZ + maxZ) / 2;
   const target: [number, number, number] = [cx, -cy, cz];
 
-  // Bounding sphere radius
   const spanX = maxX - minX;
   const spanY = maxY - minY;
   const spanZ = maxZ - minZ;
   const radius = Math.sqrt(spanX * spanX + spanY * spanY + spanZ * spanZ) / 2;
 
-  // Camera distance so the bounding sphere fills 1/PADDING of the view
   const halfFovRad = (PREVIEW_FOV * Math.PI) / 180 / 2;
   const dist = (radius * PREVIEW_PADDING) / Math.tan(halfFovRad);
 
-  // Isometric direction [1, -1, 1] normalised
   const iso = dist / Math.sqrt(3);
   const position: [number, number, number] = [cx + iso, -cy - iso, cz + iso];
 
@@ -86,7 +88,8 @@ function BrickPreviewScene({ bricks }: { bricks: BrickData[] }) {
   );
 }
 
-export default function Generator() {
+export default function Generator({ onClose }: GeneratorProps) {
+  const { addAssetsAsGroup, assets, defaultBrickColor } = useScene();
   const [tab, setTab] = useState<Tab>("text-to-3d");
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -134,6 +137,44 @@ export default function Generator() {
     }
   }
 
+  function handleCancel() {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    onClose();
+  }
+
+  function handleAddToScene() {
+    abortRef.current?.abort();
+    abortRef.current = null;
+
+    if (bricks.length > 0) {
+      let minX = Infinity, minY = Infinity, minZ = Infinity;
+      for (const b of bricks) {
+        minX = Math.min(minX, b.x);
+        minY = Math.min(minY, -b.y);
+        minZ = Math.min(minZ, b.z);
+      }
+
+      const ts = Date.now();
+      const sceneAssets: SceneAsset[] = bricks.map((b, i) => ({
+        id: `gen-${i}-${ts}`,
+        name: `Brick ${assets.length + i + 1}`,
+        type: "preset-brick",
+        visible: true,
+        selectable: true,
+        position: [b.x - minX, -b.y - minY, b.z - minZ] as [number, number, number],
+        materialColor: defaultBrickColor,
+        materialRoughness: 0.88,
+        materialMetalness: 0.2,
+        preset: { studsX: b.h, studsY: b.w },
+      }));
+      const label = prompt.trim().slice(0, 20);
+      addAssetsAsGroup(sceneAssets, `Generated (${label})`);
+    }
+
+    onClose();
+  }
+
   const hasResult = bricks.length > 0;
 
   const { position: cameraPosition } = useMemo(
@@ -179,13 +220,14 @@ export default function Generator() {
                 onKeyDown={(e) => e.key === "Enter" && handleGenerate()}
                 placeholder="Describe a 3D brick structure..."
                 className="flex-1"
+                disabled={isGenerating}
               />
               <Button
                 onClick={handleGenerate}
                 disabled={!prompt.trim() || isGenerating}
-                className="whitespace-nowrap px-6"
+                className="whitespace-nowrap shrink-0"
               >
-                {isGenerating ? "Generating…" : "Generate"}
+                Generate
               </Button>
             </div>
 
@@ -221,14 +263,42 @@ export default function Generator() {
                 </Canvas>
               )}
             </div>
+
+            {/* Cancel / Add to Scene */}
+            <div className="flex gap-2 justify-end">
+              <Button onClick={handleCancel}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleAddToScene}
+                disabled={!hasResult}
+              >
+                Add to Scene
+              </Button>
+            </div>
           </div>
         )}
 
         {tab === "image-to-3d" && (
-          <div className="flex h-full items-center justify-center">
-            <span className="text-sm text-zinc-400 dark:text-zinc-500">
-              Coming soon
-            </span>
+          <div className="flex flex-col h-full p-[1vw] gap-[1vw]">
+            <div className="flex-1 flex items-center justify-center">
+              <span className="text-sm text-zinc-400 dark:text-zinc-500">
+                Coming soon
+              </span>
+            </div>
+
+            {/* Cancel / Add to Scene (always visible regardless of tab) */}
+            <div className="flex gap-2 justify-end">
+              <Button onClick={handleCancel}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleAddToScene}
+                disabled={!hasResult}
+              >
+                Add to Scene
+              </Button>
+            </div>
           </div>
         )}
       </div>

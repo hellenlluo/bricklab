@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Docs from "@/components/Docs";
 import Generator from "@/components/Generator";
 import Library from "@/components/Library";
@@ -19,12 +19,26 @@ const NAV_ITEMS: Panel[] = [
 
 export default function TopNav() {
   const [activePanel, setActivePanel] = useState<Panel | null>(null);
+  const isGeneratorLocked = activePanel === "Generator";
 
   const closePanel = () => setActivePanel(null);
 
   const handleButtonClick = (panel: Panel) => {
+    if (isGeneratorLocked) return;
     setActivePanel((prev) => (prev === panel ? null : panel));
   };
+
+  useEffect(() => {
+    if (!isGeneratorLocked) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+    window.addEventListener("keydown", handler, true);
+    return () => window.removeEventListener("keydown", handler, true);
+  }, [isGeneratorLocked]);
 
   function renderPanel(panel: Panel) {
     switch (panel) {
@@ -33,7 +47,7 @@ export default function TopNav() {
       case "Docs":
         return <Docs />;
       case "Generator":
-        return <Generator />;
+        return <Generator onClose={closePanel} />;
       case "Exporter":
         return <Exporter />;
       case "Importer":
@@ -74,7 +88,7 @@ export default function TopNav() {
       {activePanel && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-          onClick={closePanel}
+          onClick={isGeneratorLocked ? undefined : closePanel}
         >
           <div
             className={`rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 ${

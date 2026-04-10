@@ -74,6 +74,7 @@ interface SceneStore {
   // Per-scene state (proxied from active scene)
   assets: SceneAsset[];
   addAsset: (asset: SceneAsset) => void;
+  addAssetsAsGroup: (assets: SceneAsset[], groupName: string) => void;
   removeAsset: (id: string) => void;
   updateAsset: (id: string, updates: Partial<SceneAsset>) => void;
   decomposeBrick: (id: string) => void;
@@ -86,6 +87,7 @@ interface SceneStore {
   selectAsset: (id: string | null) => void;
   selectGroup: (groupId: string) => void;
   toggleAssetSelection: (id: string) => void;
+  rotateSelectedAssets: () => void;
   sceneBackground: string;
   setSceneBackground: (color: string) => void;
   plateSize: number;
@@ -189,6 +191,19 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
 
   function addAsset(asset: SceneAsset) {
     updateActiveScene((s) => ({ ...s, assets: [...s.assets, asset] }));
+  }
+
+  function addAssetsAsGroup(newAssets: SceneAsset[], groupName: string) {
+    const groupId = `group-${Date.now()}`;
+    const group: BrickGroup = { id: groupId, name: groupName };
+    updateActiveScene((s) => ({
+      ...s,
+      assets: [
+        ...s.assets,
+        ...newAssets.map((a) => ({ ...a, groupId })),
+      ],
+      groups: [...s.groups, group],
+    }));
   }
 
   function removeAsset(id: string) {
@@ -336,6 +351,62 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
     });
   }
 
+  function rotateSelectedAssets() {
+    const ids = selectedAssetIds;
+    if (ids.length === 0) return;
+
+    if (ids.length === 1) {
+      const asset = assets.find((a) => a.id === ids[0]);
+      if (!asset?.preset) return;
+      updateAsset(asset.id, {
+        preset: { studsX: asset.preset.studsY, studsY: asset.preset.studsX },
+      });
+      return;
+    }
+
+    // Multi-asset: rotate the whole group 90° CW around its bounding box.
+    // Coordinate system: position[0] = X (right), position[1] = Y (world Y,
+    // where higher value = "top" row because decomposeBrick uses by - iy).
+    const selected = assets.filter(
+      (a) => ids.includes(a.id) && a.preset && a.position,
+    );
+    if (selected.length === 0) return;
+
+    const maxY = Math.max(...selected.map((a) => a.position![1]));
+    const minY = Math.min(
+      ...selected.map((a) => a.position![1] - a.preset!.studsY + 1),
+    );
+    const minX = Math.min(...selected.map((a) => a.position![0]));
+    const groupH = maxY - minY + 1;
+
+    updateActiveScene((s) => ({
+      ...s,
+      assets: s.assets.map((a) => {
+        if (!ids.includes(a.id) || !a.preset || !a.position) return a;
+        const [px, py, pz] = a.position;
+        const { studsX, studsY } = a.preset;
+
+        // Relative coordinates: (rx, ry) with (0,0) at top-left, y going down.
+        const rx = px - minX;
+        const ry = maxY - py;
+
+        // 90° CW in grid space: (rx, ry) → (groupH - ry - studsY, rx)
+        const newRx = groupH - ry - studsY;
+        const newRy = rx;
+
+        return {
+          ...a,
+          position: [minX + newRx, maxY - newRy, pz] as [
+            number,
+            number,
+            number,
+          ],
+          preset: { studsX: studsY, studsY: studsX },
+        };
+      }),
+    }));
+  }
+
   function selectAsset(id: string | null) {
     updateActiveScene((s) => ({
       ...s,
@@ -378,6 +449,7 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
         setActiveScene,
         assets,
         addAsset,
+        addAssetsAsGroup,
         removeAsset,
         updateAsset,
         decomposeBrick,
@@ -390,6 +462,7 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
         selectAsset,
         selectGroup,
         toggleAssetSelection,
+        rotateSelectedAssets,
         sceneBackground,
         setSceneBackground: (color: string) =>
           updateActiveScene((s) => ({ ...s, sceneBackground: color })),

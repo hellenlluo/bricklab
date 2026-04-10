@@ -87,7 +87,7 @@ interface SceneStore {
   selectAsset: (id: string | null) => void;
   selectGroup: (groupId: string) => void;
   toggleAssetSelection: (id: string) => void;
-  rotateSelectedAssets: () => void;
+  rotateSelectedAssets: (direction: "cw" | "ccw") => void;
   sceneBackground: string;
   setSceneBackground: (color: string) => void;
   plateSize: number;
@@ -351,60 +351,96 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
     });
   }
 
-  function rotateSelectedAssets() {
+  function rotateSelectedAssets(direction: "cw" | "ccw") {
     const ids = selectedAssetIds;
     if (ids.length === 0) return;
 
-    if (ids.length === 1) {
-      const asset = assets.find((a) => a.id === ids[0]);
-      if (!asset?.preset) return;
-      updateAsset(asset.id, {
-        preset: { studsX: asset.preset.studsY, studsY: asset.preset.studsX },
-      });
-      return;
-    }
-
-    // Multi-asset: rotate the whole group 90° CW around its bounding box.
-    // Coordinate system: position[0] = X (right), position[1] = Y (world Y,
-    // where higher value = "top" row because decomposeBrick uses by - iy).
     const selected = assets.filter(
       (a) => ids.includes(a.id) && a.preset && a.position,
     );
     if (selected.length === 0) return;
 
-    const maxY = Math.max(...selected.map((a) => a.position![1]));
+    // Bounding box in world coords.
+    // position[0] = X (right), position[1] = Y (top-row anchor).
+    // Each brick occupies [px, px+studsX) in X and [py-studsY+1, py] in Y.
+    const minX = Math.min(...selected.map((a) => a.position![0]));
+    const maxX = Math.max(
+      ...selected.map((a) => a.position![0] + a.preset!.studsX),
+    );
     const minY = Math.min(
       ...selected.map((a) => a.position![1] - a.preset!.studsY + 1),
     );
-    const minX = Math.min(...selected.map((a) => a.position![0]));
+    const maxY = Math.max(...selected.map((a) => a.position![1]));
+
+    const groupW = maxX - minX;
     const groupH = maxY - minY + 1;
 
-    updateActiveScene((s) => ({
-      ...s,
-      assets: s.assets.map((a) => {
+    const cx = groupW / 2;
+    const cy = groupH / 2;
+
+    updateActiveScene((s) => {
+      const mapped = s.assets.map((a) => {
         if (!ids.includes(a.id) || !a.preset || !a.position) return a;
         const [px, py, pz] = a.position;
         const { studsX, studsY } = a.preset;
 
-        // Relative coordinates: (rx, ry) with (0,0) at top-left, y going down.
         const rx = px - minX;
         const ry = maxY - py;
 
-        // 90° CW in grid space: (rx, ry) → (groupH - ry - studsY, rx)
-        const newRx = groupH - ry - studsY;
-        const newRy = rx;
+        // Brick center in grid space.
+        const bcx = rx + studsX / 2;
+        const bcy = ry + studsY / 2;
+
+        // Rotate brick center around bounding-box center (cx, cy).
+        // Grid space has Y going down, so visual CW (from +Z) is:
+        //   CW:  (cx - (y-cy), cy + (x-cx))
+        //   CCW: (cx + (y-cy), cy - (x-cx))
+        const rotCx =
+          direction === "cw"
+            ? cx - (bcy - cy)
+            : cx + (bcy - cy);
+        const rotCy =
+          direction === "cw"
+            ? cy + (bcx - cx)
+            : cy - (bcx - cx);
+
+        // New top-left in grid space (studs swap after 90° rotation).
+        const newRx = rotCx - studsY / 2;
+        const newRy = rotCy - studsX / 2;
 
         return {
           ...a,
-          position: [minX + newRx, maxY - newRy, pz] as [
-            number,
-            number,
-            number,
-          ],
+          position: [minX + newRx, maxY - newRy, pz] as [number, number, number],
           preset: { studsX: studsY, studsY: studsX },
         };
-      }),
-    }));
+      });
+
+      // When groupW and groupH have different parities, center rotation
+      // produces half-integer positions. Round to keep positions on-grid.
+      const sample = mapped.find((a) => ids.includes(a.id) && a.position);
+      if (sample) {
+        const fracX = sample.position![0] - Math.round(sample.position![0]);
+        const fracY = sample.position![1] - Math.round(sample.position![1]);
+        if (fracX !== 0 || fracY !== 0) {
+          return {
+            ...s,
+            assets: mapped.map((a) => {
+              if (!ids.includes(a.id) || !a.position) return a;
+              return {
+                ...a,
+                position: [
+                  Math.round(a.position[0]),
+                  Math.round(a.position[1]),
+                  a.position[2],
+                ] as [number, number, number],
+              };
+            }),
+          };
+        }
+      }
+
+      return { ...s, assets: mapped };
+    });
   }
 
   function selectAsset(id: string | null) {

@@ -194,27 +194,23 @@ export default function PropertiesPanel() {
         const showForGroup =
           isMulti && selectedPresetAssets.length === selectedAssetIds.length;
         const showForSingle =
-          !isMulti &&
-          asset?.type === "preset-brick" &&
-          asset.preset &&
-          asset.preset.studsX !== asset.preset.studsY;
+          !isMulti && asset?.type === "preset-brick" && asset.preset;
 
         if (!showForGroup && !showForSingle) return null;
-
-        const label = showForGroup
-          ? "Rotate 90° CW"
-          : asset!.preset!.studsX > asset!.preset!.studsY
-            ? "Rotate 90° CW"
-            : "Rotate 90° CCW";
 
         return (
           <div className="flex flex-col gap-0.5">
             <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
               Rotation
             </span>
-            <Button onClick={rotateSelectedAssets} className="w-full">
-              {label}
-            </Button>
+            <div className="grid grid-cols-2 gap-1.5">
+              <Button onClick={() => rotateSelectedAssets("ccw")} className="w-full">
+                90° CCW
+              </Button>
+              <Button onClick={() => rotateSelectedAssets("cw")} className="w-full">
+                90° CW
+              </Button>
+            </div>
           </div>
         );
       })()}

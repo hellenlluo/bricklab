@@ -26,7 +26,7 @@ interface GeneratorProps {
 }
 
 const PREVIEW_FOV = 35;
-const PREVIEW_PADDING = 1.35; // fill ~1/1.35 of the view — fits 1.25–1.5x the bounding box
+const PREVIEW_PADDING = 1.35;
 
 function computePreviewCamera(bricks: BrickData[]): {
   position: [number, number, number];
@@ -287,7 +287,7 @@ export default function Generator({ onClose }: GeneratorProps) {
               </span>
             </div>
 
-            {/* Cancel / Add to Scene (always visible regardless of tab) */}
+            {/* Cancel / Add to Scene */}
             <div className="flex gap-2 justify-end">
               <Button onClick={handleCancel}>
                 Cancel

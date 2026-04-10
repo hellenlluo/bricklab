@@ -42,9 +42,16 @@ class LLM:
             encoded_input = self.tokenizer(prompt, return_tensors='pt')
             input_ids = encoded_input['input_ids'].to(self.device)
             attention_mask = encoded_input['attention_mask'].to(self.device)
-        else:
+        # --- BEGIN BRICKLAB PATCH (original: single else branch with prompt.to(device)) ---
+        # Newer transformers (>=4.47) apply_chat_template returns BatchEncoding,
+        # not a plain tensor. Split into tensor vs dict-like to handle both.
+        elif isinstance(prompt, torch.Tensor):
             input_ids = prompt.to(self.device)
             attention_mask = torch.ones_like(input_ids)
+        else:
+            input_ids = prompt['input_ids'].to(self.device)
+            attention_mask = prompt.get('attention_mask', torch.ones_like(input_ids)).to(self.device)
+        # --- END BRICKLAB PATCH ---
 
         # Run generation
         output_dict = self.model.generate(

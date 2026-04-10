@@ -1,7 +1,17 @@
+import asyncio
+
 from fastapi import APIRouter
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/generate", tags=["generate"])
+
+
+class BrickData(BaseModel):
+    h: int
+    w: int
+    x: int
+    y: int
+    z: int
 
 
 class GenerateRequest(BaseModel):
@@ -9,17 +19,18 @@ class GenerateRequest(BaseModel):
 
 
 class GenerateResponse(BaseModel):
-    session_id: str
-    message: str
+    bricks: list[BrickData]
+    total_bricks: int
 
 
 @router.post("", response_model=GenerateResponse)
 async def generate(req: GenerateRequest) -> GenerateResponse:
     """
-    Submit a natural-language prompt to kick off BrickGPT generation.
-    Returns a session_id used to stream results via the WebSocket endpoint.
+    Submit a natural-language prompt and run BrickGPT inference.
+    Returns the generated brick structure as a list of positioned bricks.
     """
-    import uuid
-    session_id = str(uuid.uuid4())
-    # TODO: enqueue inference task keyed by session_id
-    return GenerateResponse(session_id=session_id, message="Generation queued.")
+    from app.services.brickgpt_service import generate_bricks
+
+    loop = asyncio.get_running_loop()
+    bricks = await loop.run_in_executor(None, generate_bricks, req.prompt)
+    return GenerateResponse(bricks=bricks, total_bricks=len(bricks))

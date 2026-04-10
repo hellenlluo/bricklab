@@ -1,16 +1,98 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useRef } from "react";
+import { Canvas } from "@react-three/fiber";
+import { OrbitControls, Environment } from "@react-three/drei";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import ParametricBrick from "@/components/ParametricBrick";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 type Tab = "text-to-3d" | "image-to-3d";
+
+interface BrickData {
+  h: number;
+  w: number;
+  x: number;
+  y: number;
+  z: number;
+}
+
+const PREVIEW_FOV = 35;
+const PREVIEW_PADDING = 1.35; // fill ~1/1.35 of the view — fits 1.25–1.5x the bounding box
+
+function computePreviewCamera(bricks: BrickData[]): {
+  position: [number, number, number];
+  target: [number, number, number];
+} {
+  if (bricks.length === 0) {
+    return { position: [15, -15, 12], target: [0, 0, 0] };
+  }
+
+  let minX = Infinity, maxX = -Infinity;
+  let minY = Infinity, maxY = -Infinity;
+  let minZ = Infinity, maxZ = -Infinity;
+  for (const b of bricks) {
+    minX = Math.min(minX, b.x);       maxX = Math.max(maxX, b.x + b.h);
+    minY = Math.min(minY, b.y);       maxY = Math.max(maxY, b.y + b.w);
+    minZ = Math.min(minZ, b.z);       maxZ = Math.max(maxZ, b.z + 1);
+  }
+
+  // Scene center (Y is flipped because bricks render at -b.y)
+  const cx = (minX + maxX) / 2;
+  const cy = (minY + maxY) / 2;
+  const cz = (minZ + maxZ) / 2;
+  const target: [number, number, number] = [cx, -cy, cz];
+
+  // Bounding sphere radius
+  const spanX = maxX - minX;
+  const spanY = maxY - minY;
+  const spanZ = maxZ - minZ;
+  const radius = Math.sqrt(spanX * spanX + spanY * spanY + spanZ * spanZ) / 2;
+
+  // Camera distance so the bounding sphere fills 1/PADDING of the view
+  const halfFovRad = (PREVIEW_FOV * Math.PI) / 180 / 2;
+  const dist = (radius * PREVIEW_PADDING) / Math.tan(halfFovRad);
+
+  // Isometric direction [1, -1, 1] normalised
+  const iso = dist / Math.sqrt(3);
+  const position: [number, number, number] = [cx + iso, -cy - iso, cz + iso];
+
+  return { position, target };
+}
+
+function BrickPreviewScene({ bricks }: { bricks: BrickData[] }) {
+  const { target } = useMemo(() => computePreviewCamera(bricks), [bricks]);
+
+  return (
+    <>
+      <ambientLight intensity={0.4} />
+      <directionalLight position={[10, -5, 15]} intensity={1.2} />
+      <Environment preset="city" />
+      <OrbitControls
+        target={target}
+        enableDamping
+        dampingFactor={0.1}
+      />
+      <group>
+        {bricks.map((b, i) => (
+          <group key={i} position={[b.x, -b.y, b.z]}>
+            <ParametricBrick studsX={b.h} studsY={b.w} color="#74a7fe" />
+          </group>
+        ))}
+      </group>
+    </>
+  );
+}
 
 export default function Generator() {
   const [tab, setTab] = useState<Tab>("text-to-3d");
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [hasResult, setHasResult] = useState(false);
+  const [bricks, setBricks] = useState<BrickData[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   const tabClass = (t: Tab) =>
     `flex-1 py-1.5 text-sm font-normal transition-colors rounded-md ${
@@ -19,16 +101,45 @@ export default function Generator() {
         : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-zinc-50 dark:hover:bg-zinc-800"
     }`;
 
-  function handleGenerate() {
+  async function handleGenerate() {
     if (!prompt.trim()) return;
+
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setIsGenerating(true);
-    setHasResult(false);
-    // Placeholder: simulate generation
-    setTimeout(() => {
+    setBricks([]);
+    setError(null);
+
+    try {
+      const res = await fetch(`${API_URL}/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
+        signal: controller.signal,
+      });
+      if (!res.ok) {
+        const body = await res.text();
+        throw new Error(body || `Server error ${res.status}`);
+      }
+      const data: { bricks: BrickData[]; total_bricks: number } =
+        await res.json();
+      setBricks(data.bricks);
+    } catch (e: unknown) {
+      if (e instanceof DOMException && e.name === "AbortError") return;
+      setError(e instanceof Error ? e.message : "Generation failed");
+    } finally {
       setIsGenerating(false);
-      setHasResult(true);
-    }, 1500);
+    }
   }
+
+  const hasResult = bricks.length > 0;
+
+  const { position: cameraPosition } = useMemo(
+    () => computePreviewCamera(bricks),
+    [bricks],
+  );
 
   return (
     <div className="flex flex-col h-[70vh]">
@@ -79,21 +190,35 @@ export default function Generator() {
             </div>
 
             {/* Viewport */}
-            <div className="flex-1 min-h-0 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden">
+            <div className="relative flex-1 min-h-0 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden">
               {isGenerating && (
                 <span className="text-xs text-zinc-400 dark:text-zinc-500 animate-pulse">
                   Generating…
                 </span>
               )}
-              {!isGenerating && !hasResult && (
+              {!isGenerating && error && (
+                <span className="text-xs text-red-500 dark:text-red-400 px-4 text-center">
+                  {error}
+                </span>
+              )}
+              {!isGenerating && !error && !hasResult && (
                 <span className="text-xs text-zinc-400 dark:text-zinc-500">
                   Preview
                 </span>
               )}
               {!isGenerating && hasResult && (
-                <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                  [3D preview placeholder]
-                </span>
+                <Canvas
+                  camera={{
+                    position: cameraPosition,
+                    fov: 35,
+                    up: [0, 0, 1],
+                  }}
+                  gl={{ antialias: true }}
+                  style={{ position: "absolute", inset: 0 }}
+                >
+                  <color attach="background" args={["#f4f4f5"]} />
+                  <BrickPreviewScene bricks={bricks} />
+                </Canvas>
               )}
             </div>
           </div>

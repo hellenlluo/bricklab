@@ -2,12 +2,15 @@
 
 import React, { createContext, useContext, useState } from "react";
 
+export type AssetCategory = "primitive" | "text-to-3d" | "image-to-3d";
+
 export interface SceneAsset {
   id: string;
   name: string;
   type: string;
   visible: boolean;
   selectable: boolean;
+  category?: AssetCategory;
   groupId?: string;
   modelPath?: string;
   position?: [number, number, number];
@@ -20,10 +23,19 @@ export interface SceneAsset {
   };
 }
 
+export interface GenerationHistoryEntry {
+  x: number;
+  y: number;
+  z: number;
+  studsX: number;
+  studsY: number;
+}
+
 export interface BrickGroup {
   id: string;
   name: string;
   parentGroupId?: string;
+  generationHistory?: GenerationHistoryEntry[];
 }
 
 export interface CustomBrickDefinition {
@@ -74,7 +86,7 @@ interface SceneStore {
   // Per-scene state (proxied from active scene)
   assets: SceneAsset[];
   addAsset: (asset: SceneAsset) => void;
-  addAssetsAsGroup: (assets: SceneAsset[], groupName: string) => void;
+  addAssetsAsGroup: (assets: SceneAsset[], groupName: string, generationHistory?: GenerationHistoryEntry[]) => void;
   removeAsset: (id: string) => void;
   updateAsset: (id: string, updates: Partial<SceneAsset>) => void;
   decomposeBrick: (id: string) => void;
@@ -193,9 +205,9 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
     updateActiveScene((s) => ({ ...s, assets: [...s.assets, asset] }));
   }
 
-  function addAssetsAsGroup(newAssets: SceneAsset[], groupName: string) {
+  function addAssetsAsGroup(newAssets: SceneAsset[], groupName: string, generationHistory?: GenerationHistoryEntry[]) {
     const groupId = `group-${Date.now()}`;
-    const group: BrickGroup = { id: groupId, name: groupName };
+    const group: BrickGroup = { id: groupId, name: groupName, generationHistory };
     updateActiveScene((s) => ({
       ...s,
       assets: [
@@ -333,6 +345,7 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
             type: "preset-brick",
             visible: true,
             selectable: true,
+            category: brick.category,
             modelPath: brick.modelPath,
             position: [bx + ix, by - iy, bz],
             materialColor: brick.materialColor,

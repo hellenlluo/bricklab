@@ -20,6 +20,7 @@ function createAssetFromBrick(
     type: "preset-brick",
     visible: true,
     selectable: true,
+    category: "primitive",
     modelPath: isPreset ? (brick as BrickDefinition).modelPath : "/brick.glb",
     position: [0, 0, 0],
     materialColor: defaultBrickColor,

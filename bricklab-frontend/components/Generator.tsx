@@ -7,7 +7,7 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import ParametricBrick from "@/components/ParametricBrick";
 import { useScene } from "@/store/sceneStore";
-import type { SceneAsset } from "@/store/sceneStore";
+import type { SceneAsset, AssetCategory, GenerationHistoryEntry } from "@/store/sceneStore";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -155,6 +155,7 @@ export default function Generator({ onClose }: GeneratorProps) {
         minZ = Math.min(minZ, b.z);
       }
 
+      const category: AssetCategory = tab === "image-to-3d" ? "image-to-3d" : "text-to-3d";
       const ts = Date.now();
       const sceneAssets: SceneAsset[] = bricks.map((b, i) => ({
         id: `gen-${i}-${ts}`,
@@ -162,14 +163,22 @@ export default function Generator({ onClose }: GeneratorProps) {
         type: "preset-brick",
         visible: true,
         selectable: true,
+        category,
         position: [b.x - minX, -b.y - minY, b.z - minZ] as [number, number, number],
         materialColor: defaultBrickColor,
         materialRoughness: 0.88,
         materialMetalness: 0.2,
         preset: { studsX: b.h, studsY: b.w },
       }));
+      const generationHistory: GenerationHistoryEntry[] = bricks.map((b) => ({
+        x: b.x - minX,
+        y: -b.y - minY,
+        z: b.z - minZ,
+        studsX: b.h,
+        studsY: b.w,
+      }));
       const label = prompt.trim().slice(0, 20);
-      addAssetsAsGroup(sceneAssets, `Generated (${label})`);
+      addAssetsAsGroup(sceneAssets, label, generationHistory);
     }
 
     onClose();

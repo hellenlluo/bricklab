@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
 import { OrbitControls, TransformControls } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
@@ -22,7 +22,7 @@ interface ConstraintBuilderProps {
 
 function BoundingGrid() {
   return (
-    <group position={[WORLD_DIM / 2, WORLD_DIM / 2, WORLD_DIM / 2]}>
+    <group position={[WORLD_DIM / 2, -WORLD_DIM / 2, WORLD_DIM / 2]}>
       <mesh>
         <boxGeometry args={[WORLD_DIM, WORLD_DIM, WORLD_DIM]} />
         <meshBasicMaterial
@@ -31,13 +31,23 @@ function BoundingGrid() {
           opacity={0.06}
           side={THREE.DoubleSide}
           depthWrite={false}
+          polygonOffset
+          polygonOffsetFactor={2}
+          polygonOffsetUnits={2}
         />
       </mesh>
       <lineSegments>
         <edgesGeometry
           args={[new THREE.BoxGeometry(WORLD_DIM, WORLD_DIM, WORLD_DIM)]}
         />
-        <lineBasicMaterial color={GRID_COLOR} transparent opacity={0.5} />
+        <lineBasicMaterial
+          color={GRID_COLOR}
+          transparent
+          opacity={0.5}
+          polygonOffset
+          polygonOffsetFactor={2}
+          polygonOffsetUnits={2}
+        />
       </lineSegments>
       {[0, 1].flatMap((xi) =>
         [0, 1].flatMap((yi) =>
@@ -51,13 +61,41 @@ function BoundingGrid() {
               ]}
             >
               <sphereGeometry args={[0.2, 8, 8]} />
-              <meshBasicMaterial color={GRID_COLOR} />
+              <meshBasicMaterial
+                color={GRID_COLOR}
+                polygonOffset
+                polygonOffsetFactor={2}
+                polygonOffsetUnits={2}
+              />
             </mesh>
           )),
         ),
       )}
     </group>
   );
+}
+
+function BuilderAxes() {
+  const axes = useMemo(() => {
+    const group = new THREE.Group();
+    const d = WORLD_DIM * 0.2;
+    const makeAxis = (color: number, to: [number, number, number]) => {
+      const pts = [new THREE.Vector3(0, 0, 0), new THREE.Vector3(...to)];
+      const geom = new THREE.BufferGeometry().setFromPoints(pts);
+      const mat = new THREE.LineBasicMaterial({
+        color,
+        transparent: true,
+        opacity: 0.45,
+        depthTest: true,
+      });
+      return new THREE.Line(geom, mat);
+    };
+    group.add(makeAxis(0xff0000, [d, 0, 0]));
+    group.add(makeAxis(0x00ff00, [0, d, 0]));
+    group.add(makeAxis(0x0000ff, [0, 0, d]));
+    return group;
+  }, []);
+  return <primitive object={axes} />;
 }
 
 const noRaycast = () => {};
@@ -72,7 +110,7 @@ function ConstraintBoxMesh({
   onSelect: () => void;
 }) {
   const cx = box.posX + box.sizeX / 2;
-  const cy = box.posY + box.sizeY / 2;
+  const cy = -(box.posY + box.sizeY / 2);
   const cz = box.posZ + box.sizeZ / 2;
 
   return (
@@ -86,12 +124,15 @@ function ConstraintBoxMesh({
     >
       <mesh raycast={isSelected ? noRaycast : undefined}>
         <boxGeometry args={[box.sizeX, box.sizeY, box.sizeZ]} />
-        <meshStandardMaterial
+        <meshBasicMaterial
           color={CONSTRAINT_COLOR}
           transparent
-          opacity={isSelected ? 0.45 : 0.3}
+          opacity={isSelected ? 0.3 : 0.18}
           side={THREE.DoubleSide}
           depthWrite={false}
+          polygonOffset
+          polygonOffsetFactor={1}
+          polygonOffsetUnits={1}
         />
       </mesh>
       <lineSegments>
@@ -100,7 +141,13 @@ function ConstraintBoxMesh({
             new THREE.BoxGeometry(box.sizeX, box.sizeY, box.sizeZ),
           ]}
         />
-        <lineBasicMaterial color={CONSTRAINT_EDGE_COLOR} linewidth={isSelected ? 2 : 1} />
+        <lineBasicMaterial
+          color={CONSTRAINT_EDGE_COLOR}
+          linewidth={isSelected ? 2 : 1}
+          polygonOffset
+          polygonOffsetFactor={1}
+          polygonOffsetUnits={1}
+        />
       </lineSegments>
       {[0, 1].flatMap((xi) =>
         [0, 1].flatMap((yi) =>
@@ -115,7 +162,12 @@ function ConstraintBoxMesh({
               ]}
             >
               <sphereGeometry args={[0.15, 8, 8]} />
-              <meshBasicMaterial color={CONSTRAINT_EDGE_COLOR} />
+              <meshBasicMaterial
+                color={CONSTRAINT_EDGE_COLOR}
+                polygonOffset
+                polygonOffsetFactor={1}
+                polygonOffsetUnits={1}
+              />
             </mesh>
           )),
         ),
@@ -149,7 +201,7 @@ function BuilderControls({
     if (selectedBox) {
       handle.position.set(
         selectedBox.posX + selectedBox.sizeX / 2,
-        selectedBox.posY + selectedBox.sizeY / 2,
+        -(selectedBox.posY + selectedBox.sizeY / 2),
         selectedBox.posZ + selectedBox.sizeZ / 2,
       );
       invalidate();
@@ -166,12 +218,12 @@ function BuilderControls({
     const { sizeX, sizeY, sizeZ } = box;
     const pos = handle.position;
     pos.set(
-      Math.round(Math.max(sizeX / 2, Math.min(WORLD_DIM - sizeX / 2, pos.x))),
-      Math.round(Math.max(sizeY / 2, Math.min(WORLD_DIM - sizeY / 2, pos.y))),
-      Math.round(Math.max(sizeZ / 2, Math.min(WORLD_DIM - sizeZ / 2, pos.z))),
+      Math.max(sizeX / 2, Math.min(WORLD_DIM - sizeX / 2, pos.x)),
+      Math.max(-(WORLD_DIM - sizeY / 2), Math.min(-sizeY / 2, pos.y)),
+      Math.max(sizeZ / 2, Math.min(WORLD_DIM - sizeZ / 2, pos.z)),
     );
     const newX = Math.max(0, Math.min(WORLD_DIM - sizeX, Math.round(pos.x - sizeX / 2)));
-    const newY = Math.max(0, Math.min(WORLD_DIM - sizeY, Math.round(pos.y - sizeY / 2)));
+    const newY = Math.max(0, Math.min(WORLD_DIM - sizeY, Math.round(-pos.y - sizeY / 2)));
     const newZ = Math.max(0, Math.min(WORLD_DIM - sizeZ, Math.round(pos.z - sizeZ / 2)));
     if (newX !== box.posX || newY !== box.posY || newZ !== box.posZ) {
       onBoxMove(box.id, newX, newY, newZ);
@@ -185,7 +237,7 @@ function BuilderControls({
   useEffect(() => {
     const orb = orbRef.current;
     if (!orb) return;
-    orb.target.set(WORLD_DIM / 2, WORLD_DIM / 2, WORLD_DIM / 2);
+    orb.target.set(WORLD_DIM / 2, -WORLD_DIM / 2, WORLD_DIM / 2);
     orb.update();
   }, []);
 
@@ -243,7 +295,7 @@ function BuilderScene({
           onSelect={() => onSelectBox(box.id)}
         />
       ))}
-      <primitive object={new THREE.AxesHelper(WORLD_DIM)} />
+      <BuilderAxes />
     </>
   );
 }
@@ -422,7 +474,7 @@ export default function ConstraintBuilder({
                 <select
                   value={selectedBoxId ?? ""}
                   onChange={(e) => setSelectedBoxId(e.target.value || null)}
-                  className="text-[10px] bg-transparent outline-none text-zinc-700 dark:text-zinc-200 cursor-pointer"
+                  className="text-xs bg-transparent outline-none text-zinc-700 dark:text-zinc-200 cursor-pointer"
                 >
                   <option value="">Select a constraint box</option>
                   {boxes.map((box, idx) => (
@@ -433,7 +485,6 @@ export default function ConstraintBuilder({
                 </select>
                 {selectedBox && (
                   <>
-                    <div className="w-px h-3 bg-zinc-300 dark:bg-zinc-600" />
                     <div className="flex gap-1 items-center">
                       <Input
                         type="number" min={1} max={WORLD_DIM}
@@ -441,14 +492,14 @@ export default function ConstraintBuilder({
                         onChange={(e) => handleBoxSizeChange(selectedBox.id, "x", e.target.value)}
                         className="w-12 text-center"
                       />
-                      <span className="text-[10px] text-zinc-400">×</span>
+                      <span className="text-xs text-zinc-400">×</span>
                       <Input
                         type="number" min={1} max={WORLD_DIM}
                         value={selectedBox.sizeY}
                         onChange={(e) => handleBoxSizeChange(selectedBox.id, "y", e.target.value)}
                         className="w-12 text-center"
                       />
-                      <span className="text-[10px] text-zinc-400">×</span>
+                      <span className="text-xs text-zinc-400">×</span>
                       <Input
                         type="number" min={1} max={WORLD_DIM}
                         value={selectedBox.sizeZ}

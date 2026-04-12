@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Environment } from "@react-three/drei";
+import * as THREE from "three";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import ParametricBrick from "@/components/ParametricBrick";
 import { useScene } from "@/store/sceneStore";
-import type { SceneAsset, AssetCategory, GenerationHistoryEntry } from "@/store/sceneStore";
+import type { SceneAsset, AssetCategory, GenerationHistoryEntry, ConstraintBox } from "@/store/sceneStore";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -64,7 +65,153 @@ function computePreviewCamera(bricks: BrickData[]): {
   return { position, target };
 }
 
-function BrickPreviewScene({ bricks }: { bricks: BrickData[] }) {
+const WORLD_DIM = 20;
+const CONSTRAINT_COLOR = "#FFAB91";
+const CONSTRAINT_EDGE_COLOR = "#FF8A65";
+const GRID_COLOR = "#7ec8e3";
+
+function PreviewAxes() {
+  const axes = useMemo(() => {
+    const group = new THREE.Group();
+    const d = WORLD_DIM * 0.2;
+    const makeAxis = (color: number, to: [number, number, number]) => {
+      const pts = [new THREE.Vector3(0, 0, 0), new THREE.Vector3(...to)];
+      const geom = new THREE.BufferGeometry().setFromPoints(pts);
+      const mat = new THREE.LineBasicMaterial({
+        color,
+        transparent: true,
+        opacity: 0.45,
+        depthTest: true,
+      });
+      return new THREE.Line(geom, mat);
+    };
+    group.add(makeAxis(0xff0000, [d, 0, 0]));
+    group.add(makeAxis(0x00ff00, [0, d, 0]));
+    group.add(makeAxis(0x0000ff, [0, 0, d]));
+    return group;
+  }, []);
+  return <primitive object={axes} />;
+}
+
+function WorldBoundingBox() {
+  return (
+    <group position={[WORLD_DIM / 2, -WORLD_DIM / 2, WORLD_DIM / 2]}>
+      <mesh>
+        <boxGeometry args={[WORLD_DIM, WORLD_DIM, WORLD_DIM]} />
+        <meshBasicMaterial
+          color={GRID_COLOR}
+          transparent
+          opacity={0.06}
+          side={THREE.DoubleSide}
+          depthWrite={false}
+          polygonOffset
+          polygonOffsetFactor={2}
+          polygonOffsetUnits={2}
+        />
+      </mesh>
+      <lineSegments>
+        <edgesGeometry
+          args={[new THREE.BoxGeometry(WORLD_DIM, WORLD_DIM, WORLD_DIM)]}
+        />
+        <lineBasicMaterial
+          color={GRID_COLOR}
+          transparent
+          opacity={0.5}
+          polygonOffset
+          polygonOffsetFactor={2}
+          polygonOffsetUnits={2}
+        />
+      </lineSegments>
+      {[0, 1].flatMap((xi) =>
+        [0, 1].flatMap((yi) =>
+          [0, 1].map((zi) => (
+            <mesh
+              key={`${xi}-${yi}-${zi}`}
+              position={[
+                (xi - 0.5) * WORLD_DIM,
+                (yi - 0.5) * WORLD_DIM,
+                (zi - 0.5) * WORLD_DIM,
+              ]}
+            >
+              <sphereGeometry args={[0.2, 8, 8]} />
+              <meshBasicMaterial
+                color={GRID_COLOR}
+                polygonOffset
+                polygonOffsetFactor={2}
+                polygonOffsetUnits={2}
+              />
+            </mesh>
+          )),
+        ),
+      )}
+    </group>
+  );
+}
+
+function ConstraintPreviewBox({ box }: { box: ConstraintBox }) {
+  const cx = box.posX + box.sizeX / 2;
+  const cy = -(box.posY + box.sizeY / 2);
+  const cz = box.posZ + box.sizeZ / 2;
+
+  return (
+    <group position={[cx, cy, cz]}>
+      <mesh>
+        <boxGeometry args={[box.sizeX, box.sizeY, box.sizeZ]} />
+        <meshBasicMaterial
+          color={CONSTRAINT_COLOR}
+          transparent
+          opacity={0.18}
+          side={THREE.DoubleSide}
+          depthWrite={false}
+          polygonOffset
+          polygonOffsetFactor={1}
+          polygonOffsetUnits={1}
+        />
+      </mesh>
+      <lineSegments>
+        <edgesGeometry
+          args={[new THREE.BoxGeometry(box.sizeX, box.sizeY, box.sizeZ)]}
+        />
+        <lineBasicMaterial
+          color={CONSTRAINT_EDGE_COLOR}
+          polygonOffset
+          polygonOffsetFactor={1}
+          polygonOffsetUnits={1}
+        />
+      </lineSegments>
+      {[0, 1].flatMap((xi) =>
+        [0, 1].flatMap((yi) =>
+          [0, 1].map((zi) => (
+            <mesh
+              key={`cv-${xi}-${yi}-${zi}`}
+              position={[
+                (xi - 0.5) * box.sizeX,
+                (yi - 0.5) * box.sizeY,
+                (zi - 0.5) * box.sizeZ,
+              ]}
+            >
+              <sphereGeometry args={[0.15, 8, 8]} />
+              <meshBasicMaterial
+                color={CONSTRAINT_EDGE_COLOR}
+                polygonOffset
+                polygonOffsetFactor={1}
+                polygonOffsetUnits={1}
+              />
+            </mesh>
+          )),
+        ),
+      )}
+    </group>
+  );
+}
+
+function BrickPreviewScene({
+  bricks,
+  constraintBoxes,
+}: {
+  bricks: BrickData[];
+  constraintBoxes: ConstraintBox[];
+}) {
   const { target } = useMemo(() => computePreviewCamera(bricks), [bricks]);
 
   return (
@@ -84,18 +231,67 @@ function BrickPreviewScene({ bricks }: { bricks: BrickData[] }) {
           </group>
         ))}
       </group>
+      {constraintBoxes.length > 0 && (
+        <>
+          <WorldBoundingBox />
+          {constraintBoxes.map((box) => (
+            <ConstraintPreviewBox key={box.id} box={box} />
+          ))}
+          <PreviewAxes />
+        </>
+      )}
     </>
   );
 }
 
 export default function Generator({ onClose }: GeneratorProps) {
-  const { addAssetsAsGroup, assets, defaultBrickColor } = useScene();
+  const { addAssetsAsGroup, assets, defaultBrickColor, constraints } = useScene();
   const [tab, setTab] = useState<Tab>("text-to-3d");
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [bricks, setBricks] = useState<BrickData[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [generationWarning, setGenerationWarning] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  const [selectedConstraintIds, setSelectedConstraintIds] = useState<string[]>([]);
+  const [showConstraints, setShowConstraints] = useState(false);
+  const [constraintDropdownOpen, setConstraintDropdownOpen] = useState(false);
+  const constraintDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!constraintDropdownOpen) return;
+    function handleMouseDown(e: MouseEvent) {
+      if (
+        constraintDropdownRef.current &&
+        !constraintDropdownRef.current.contains(e.target as Node)
+      ) {
+        setConstraintDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleMouseDown);
+    return () => document.removeEventListener("mousedown", handleMouseDown);
+  }, [constraintDropdownOpen]);
+
+  const selectedConstraints = constraints.filter((c) =>
+    selectedConstraintIds.includes(c.id),
+  );
+  const selectedBoxes = selectedConstraints.flatMap((c) => c.boxes);
+
+  const intersectionCount = useMemo(() => {
+    if (bricks.length === 0 || selectedBoxes.length === 0) return 0;
+    return bricks.filter((b) =>
+      selectedBoxes.some(
+        (box) =>
+          b.x < box.posX + box.sizeX &&
+          box.posX < b.x + b.h &&
+          b.y < box.posY + box.sizeY &&
+          box.posY < b.y + b.w &&
+          b.z < box.posZ + box.sizeZ &&
+          box.posZ < b.z + 1,
+      ),
+    ).length;
+  }, [bricks, selectedBoxes]);
 
   const tabClass = (t: Tab) =>
     `flex-1 py-1.5 text-sm font-normal transition-colors rounded-md ${
@@ -114,21 +310,41 @@ export default function Generator({ onClose }: GeneratorProps) {
     setIsGenerating(true);
     setBricks([]);
     setError(null);
+    setGenerationWarning(null);
+
+    const constraintPayload = selectedConstraints.flatMap((c) =>
+      c.boxes.map((box) => ({
+        pos_x: box.posX,
+        pos_y: box.posY,
+        pos_z: box.posZ,
+        size_x: box.sizeX,
+        size_y: box.sizeY,
+        size_z: box.sizeZ,
+      })),
+    );
 
     try {
       const res = await fetch(`${API_URL}/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({
+          prompt,
+          constraints: constraintPayload,
+        }),
         signal: controller.signal,
       });
       if (!res.ok) {
         const body = await res.text();
         throw new Error(body || `Server error ${res.status}`);
       }
-      const data: { bricks: BrickData[]; total_bricks: number } =
-        await res.json();
+      const data: {
+        bricks: BrickData[];
+        total_bricks: number;
+        partial: boolean;
+        warning: string | null;
+      } = await res.json();
       setBricks(data.bricks);
+      if (data.warning) setGenerationWarning(data.warning);
     } catch (e: unknown) {
       if (e instanceof DOMException && e.name === "AbortError") return;
       setError(e instanceof Error ? e.message : "Generation failed");
@@ -192,7 +408,7 @@ export default function Generator({ onClose }: GeneratorProps) {
   );
 
   return (
-    <div className="flex flex-col h-[70vh]">
+    <div className="flex flex-col h-[85vh]">
       {/* Header */}
       <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800">
         <span className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
@@ -220,21 +436,102 @@ export default function Generator({ onClose }: GeneratorProps) {
       <div className="flex-1 min-h-0">
         {tab === "text-to-3d" && (
           <div className="flex flex-col h-full p-[1vw] gap-[1vw]">
-            {/* Prompt input + Generate button */}
-            <div className="flex gap-2">
+            {/* Prompt + constraints + Generate (single compact row height) */}
+            <div className="flex items-center gap-2 min-w-0">
               <Input
                 type="text"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleGenerate()}
                 placeholder="Describe a 3D brick structure..."
-                className="flex-1"
+                className="min-w-0 flex-1 h-7 py-0 text-[10px] leading-none"
                 disabled={isGenerating}
               />
+              {constraints.length > 0 && (
+                <>
+                  <div
+                    ref={constraintDropdownRef}
+                    className="relative inline-flex flex-shrink-0"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setConstraintDropdownOpen((o) => !o)}
+                      className={`flex h-7 items-center gap-1.5 px-2 border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-[10px] leading-none text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors ${
+                        constraintDropdownOpen
+                          ? "rounded-t-md rounded-b-none border-b-0"
+                          : "rounded-md"
+                      }`}
+                    >
+                      <span
+                        className="inline-block shrink-0 text-zinc-900 dark:text-zinc-100 transition-transform duration-200"
+                        style={{
+                          fontSize: "0.45rem",
+                          transform: constraintDropdownOpen
+                            ? "rotate(90deg)"
+                            : "rotate(0deg)",
+                          lineHeight: 1,
+                        }}
+                      >
+                        ▶
+                      </span>
+                      <span className="text-zinc-400 dark:text-zinc-500">Constraints:</span>
+                      <span>
+                        {selectedConstraintIds.length === 0
+                          ? "None"
+                          : `${selectedConstraintIds.length} selected`}
+                      </span>
+                    </button>
+                    {constraintDropdownOpen && (
+                      <div className="absolute top-full left-0 w-full bg-white dark:bg-zinc-900 border border-t-0 border-zinc-200 dark:border-zinc-800 rounded-b-xl z-50 overflow-hidden">
+                        <ul className="py-1">
+                          {constraints.map((c) => {
+                            const checked = selectedConstraintIds.includes(c.id);
+                            return (
+                              <li key={c.id}>
+                                <label className="flex cursor-pointer items-center gap-2 px-3 py-1 text-[10px] leading-none hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    onChange={() =>
+                                      setSelectedConstraintIds((prev) =>
+                                        checked
+                                          ? prev.filter((id) => id !== c.id)
+                                          : [...prev, c.id],
+                                      )
+                                    }
+                                    className="h-3 w-3 accent-zinc-700 dark:accent-zinc-400 cursor-pointer shrink-0"
+                                  />
+                                  <span className="truncate text-zinc-700 dark:text-zinc-200">
+                                    {c.name}
+                                  </span>
+                                </label>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+
+                  {selectedConstraintIds.length > 0 && (
+                    <label className="flex h-7 cursor-pointer select-none items-center gap-1.5 shrink-0 text-[10px] leading-none text-zinc-600 dark:text-zinc-400">
+                      <input
+                        type="checkbox"
+                        checked={showConstraints}
+                        onChange={(e) => setShowConstraints(e.target.checked)}
+                        className="h-3 w-3 accent-zinc-700 dark:accent-zinc-400 cursor-pointer shrink-0"
+                      />
+                      <span className="whitespace-nowrap">
+                        Show in preview
+                      </span>
+                    </label>
+                  )}
+                </>
+              )}
               <Button
                 onClick={handleGenerate}
                 disabled={!prompt.trim() || isGenerating}
-                className="whitespace-nowrap shrink-0"
+                className="inline-flex h-7 shrink-0 items-center justify-center whitespace-nowrap py-0 leading-none"
               >
                 Generate
               </Button>
@@ -268,10 +565,30 @@ export default function Generator({ onClose }: GeneratorProps) {
                   style={{ position: "absolute", inset: 0 }}
                 >
                   <color attach="background" args={["#f4f4f5"]} />
-                  <BrickPreviewScene bricks={bricks} />
+                  <BrickPreviewScene
+                    bricks={bricks}
+                    constraintBoxes={showConstraints ? selectedBoxes : []}
+                  />
                 </Canvas>
               )}
             </div>
+
+            {/* Partial-generation / resampling notice */}
+            {generationWarning && (
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                {generationWarning}
+              </p>
+            )}
+
+            {/* Intersection violation check */}
+            {hasResult && intersectionCount > 0 && (
+              <div className="px-2 py-1 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                <span className="text-xs text-red-600 dark:text-red-400">
+                  {intersectionCount} brick(s) intersect constraint volumes in the
+                  output. Try regenerating or adjusting constraints.
+                </span>
+              </div>
+            )}
 
             {/* Cancel / Add to Scene */}
             <div className="flex gap-2 justify-end">

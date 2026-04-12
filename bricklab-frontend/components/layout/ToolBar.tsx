@@ -110,30 +110,21 @@ export default function ToolBar() {
                 const disabled = !checked && selectedIds.length >= 6;
                 return (
                   <li key={brick.id}>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); toggleBrick(brick.id); }}
-                      disabled={disabled}
-                      className={`flex items-center gap-2 w-full px-3 py-1.5 text-xs text-left transition-colors
-                        ${disabled ? "opacity-40 cursor-not-allowed" : "hover:bg-zinc-100 dark:hover:bg-zinc-800"}
+                    <label
+                      className={`flex items-center gap-2 w-full px-3 py-1.5 text-xs text-left transition-colors select-none
+                        ${disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800"}
                         ${checked ? "text-zinc-900 dark:text-zinc-50" : "text-zinc-700 dark:text-zinc-300"}
                       `}
                     >
-                      <span
-                        className={`w-3.5 h-3.5 flex items-center justify-center rounded border flex-shrink-0 transition-colors
-                          ${checked
-                            ? "bg-zinc-600 dark:bg-zinc-400 border-zinc-600 dark:border-zinc-400"
-                            : "border-zinc-300 dark:border-zinc-600"
-                          }
-                        `}
-                      >
-                        {checked && (
-                          <span className="text-white dark:text-zinc-900 text-[8px] leading-none font-bold">
-                            ✓
-                          </span>
-                        )}
-                      </span>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        disabled={disabled}
+                        onChange={() => toggleBrick(brick.id)}
+                        className="w-3.5 h-3.5 accent-zinc-700 dark:accent-zinc-400 cursor-pointer flex-shrink-0 disabled:cursor-not-allowed"
+                      />
                       <span>{brick.name}</span>
-                    </button>
+                    </label>
                   </li>
                 );
               })}

@@ -84,10 +84,11 @@ export default function TopNav() {
         </div>
       </nav>
 
-      {/* Panel modal with dimmed backdrop */}
+      {/* Panel modal with dimmed backdrop — centered in the area below the nav */}
       {activePanel && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          className="fixed inset-x-0 bottom-0 z-50 flex items-center justify-center bg-black/40"
+          style={{ top: "8.5vh" }}
           onClick={isGeneratorLocked ? undefined : closePanel}
         >
           <div

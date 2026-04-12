@@ -108,9 +108,17 @@ export default function GenerationReplay({
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-zinc-200 dark:border-zinc-800">
-          <span className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-            Generation Replay
-          </span>
+          <div className="flex flex-col gap-0.5 min-w-0 pr-2">
+            <span className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+              Generation Replay
+            </span>
+            <span
+              className="text-xs text-zinc-500 dark:text-zinc-400 truncate"
+              title={groupName}
+            >
+              {groupName}
+            </span>
+          </div>
           <button
             onClick={onClose}
             className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 dark:text-zinc-400 transition-colors text-xs"

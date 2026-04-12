@@ -2,6 +2,7 @@
 
 import AssetsPanel from "@/components/panels/AssetsPanel";
 import ScenesPanel from "@/components/panels/ScenesPanel";
+import ConstraintsPanel from "@/components/panels/ConstraintsPanel";
 
 export default function LeftSidebar() {
   return (
@@ -11,6 +12,7 @@ export default function LeftSidebar() {
     >
       <ScenesPanel />
       <AssetsPanel />
+      <ConstraintsPanel />
     </aside>
   );
 }

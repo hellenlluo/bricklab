@@ -86,7 +86,6 @@ interface GenerationReplayProps {
 
 export default function GenerationReplay({
   generationHistory,
-  groupName,
   onClose,
 }: GenerationReplayProps) {
   const [step, setStep] = useState(generationHistory.length - 1);

@@ -45,6 +45,22 @@ export interface CustomBrickDefinition {
   studsY: number;
 }
 
+export interface ConstraintBox {
+  id: string;
+  sizeX: number;
+  sizeY: number;
+  sizeZ: number;
+  posX: number;
+  posY: number;
+  posZ: number;
+}
+
+export interface Constraint {
+  id: string;
+  name: string;
+  boxes: ConstraintBox[];
+}
+
 export interface SceneData {
   id: string;
   name: string;
@@ -108,6 +124,11 @@ interface SceneStore {
   setPlateColor: (color: string) => void;
   maxCameraDistance: number;
   setMaxCameraDistance: (d: number) => void;
+  // Constraints (global)
+  constraints: Constraint[];
+  addConstraint: (constraint: Constraint) => void;
+  updateConstraint: (id: string, updates: Partial<Constraint>) => void;
+  removeConstraint: (id: string) => void;
   // Global settings
   customBricks: CustomBrickDefinition[];
   addCustomBrick: (brick: CustomBrickDefinition) => void;
@@ -127,6 +148,7 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
     createDefaultScene(DEFAULT_SCENE_ID, "Scene 1"),
   ]);
   const [activeSceneId, setActiveSceneId] = useState<string>(DEFAULT_SCENE_ID);
+  const [constraints, setConstraints] = useState<Constraint[]>([]);
   const [customBricks, setCustomBricks] = useState<CustomBrickDefinition[]>([]);
   const [defaultBrickColor, setDefaultBrickColor] = useState<string>("#bfbfff");
   const [selectionColor, setSelectionColor] = useState<string>("#ff8c82");
@@ -179,6 +201,22 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
 
   function setActiveScene(id: string) {
     setActiveSceneId(id);
+  }
+
+  // ── Constraints ────────────────────────────────────────────────────────────
+
+  function addConstraint(constraint: Constraint) {
+    setConstraints((prev) => [...prev, constraint]);
+  }
+
+  function updateConstraint(id: string, updates: Partial<Constraint>) {
+    setConstraints((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, ...updates } : c)),
+    );
+  }
+
+  function removeConstraint(id: string) {
+    setConstraints((prev) => prev.filter((c) => c.id !== id));
   }
 
   // ── Global settings ────────────────────────────────────────────────────────
@@ -523,6 +561,10 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
         maxCameraDistance,
         setMaxCameraDistance: (d: number) =>
           updateActiveScene((s) => ({ ...s, maxCameraDistance: d })),
+        constraints,
+        addConstraint,
+        updateConstraint,
+        removeConstraint,
         customBricks,
         addCustomBrick,
         removeCustomBrick,

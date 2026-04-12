@@ -1,7 +1,3 @@
-function Divider() {
-  return <hr className="border-zinc-200 dark:border-zinc-800 my-3" />;
-}
-
 function SectionHeader({ children }: { children: React.ReactNode }) {
   return (
     <h3 className="text-xs font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 mb-2">

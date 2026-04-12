@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useScene } from "@/store/sceneStore";
 import type { Constraint } from "@/store/sceneStore";
 import Button from "@/components/ui/Button";
-import ConstraintBuilder from "@/components/ConstraintBuilder";
+import ConstraintBuilder from "../ConstraintBuilder";
 
 export default function ConstraintsPanel() {
   const { constraints, removeConstraint } = useScene();

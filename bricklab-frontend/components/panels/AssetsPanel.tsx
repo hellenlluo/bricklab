@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useScene, type BrickGroup, type SceneAsset } from "@/store/sceneStore";
+import Input from "@/components/ui/Input";
 
 // ─── Module-level helpers ────────────────────────────────────────────────────
 
@@ -22,6 +23,47 @@ function isGroupFullySelected(
   );
 }
 
+function getSelectedRounding(isSelected: boolean, prevSelected: boolean, nextSelected: boolean) {
+  if (!isSelected) return null;
+  if (!prevSelected && !nextSelected) return "rounded-md";
+  if (!prevSelected) return "rounded-t-md";
+  if (!nextSelected) return "rounded-b-md";
+  return "rounded-none";
+}
+
+function buildVisibleRows(
+  parentGroupId: string | undefined,
+  allGroups: BrickGroup[],
+  allAssets: SceneAsset[],
+  expandedGroups: Record<string, boolean>,
+  selectedIds: string[],
+): Array<{ key: string; selected: boolean }> {
+  const childGroups = allGroups.filter((g) => g.parentGroupId === parentGroupId);
+  const directMembers = allAssets.filter((a) => a.groupId === parentGroupId);
+  const rows: Array<{ key: string; selected: boolean }> = [];
+
+  childGroups.forEach((group) => {
+    rows.push({
+      key: `group:${group.id}`,
+      selected: isGroupFullySelected(group.id, allGroups, allAssets, selectedIds),
+    });
+    if (expandedGroups[group.id]) {
+      rows.push(
+        ...buildVisibleRows(group.id, allGroups, allAssets, expandedGroups, selectedIds),
+      );
+    }
+  });
+
+  directMembers.forEach((asset) => {
+    rows.push({
+      key: `asset:${asset.id}`,
+      selected: selectedIds.includes(asset.id),
+    });
+  });
+
+  return rows;
+}
+
 // ─── Shared callbacks bundled to avoid deep prop-drilling ────────────────────
 
 interface GroupRowShared {
@@ -32,8 +74,9 @@ interface GroupRowShared {
   allGroups: BrickGroup[];
   allAssets: SceneAsset[];
   expandedGroups: Record<string, boolean>;
+  selectedAdjacency: Record<string, { prev: boolean; next: boolean }>;
   onToggleExpand: (id: string) => void;
-  onSelectGroup: (id: string) => void;
+  onSelectGroup: (id: string, shiftKey: boolean) => void;
   onUngroup: (id: string) => void;
   onSelectAsset: (id: string, shiftKey: boolean) => void;
   onStartEdit: (id: string, name: string) => void;
@@ -41,6 +84,7 @@ interface GroupRowShared {
   onCommitEdit: (id: string, isGroup: boolean) => void;
   onCancelEdit: () => void;
   onKeyDown: (e: React.KeyboardEvent, id: string, isGroup?: boolean) => void;
+  onMoveToGroup: (assetId: string, groupId: string) => void;
 }
 
 // ─── GroupRow (recursive) ────────────────────────────────────────────────────
@@ -73,7 +117,10 @@ function GroupRow({
     onCommitEdit,
     onCancelEdit,
     onKeyDown,
+    onMoveToGroup,
   } = shared;
+
+  const [isDragOver, setIsDragOver] = useState(false);
 
   const isOpen = expandedGroups[group.id] ?? false;
   const childGroups = allGroups.filter((g) => g.parentGroupId === group.id);
@@ -88,6 +135,13 @@ function GroupRow({
 
   const indentStyle =
     depth > 0 ? { paddingLeft: `${depth * 2}rem` } : undefined;
+  const rowKey = `group:${group.id}`;
+  const adjacency = shared.selectedAdjacency[rowKey] ?? { prev: false, next: false };
+  const selectedRounding = getSelectedRounding(
+    grpSelected,
+    adjacency.prev,
+    adjacency.next,
+  );
 
   const headerRounding = isOpen
     ? "rounded-t-md"
@@ -101,13 +155,33 @@ function GroupRow({
       <div
         onClick={(e) => {
           e.stopPropagation();
-          onSelectGroup(group.id);
+          onSelectGroup(group.id, e.shiftKey);
+        }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "move";
+        }}
+        onDragEnter={(e) => {
+          e.preventDefault();
+          setIsDragOver(true);
+        }}
+        onDragLeave={() => setIsDragOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setIsDragOver(false);
+          const assetId = e.dataTransfer.getData("application/x-brick-asset-id");
+          if (assetId && !allAssets.some((a) => a.id === assetId && a.groupId === group.id)) {
+            onMoveToGroup(assetId, group.id);
+          }
         }}
         style={indentStyle}
-        className={`flex items-center gap-1 mx-3 px-2 py-1.5 text-xs cursor-default group transition-colors ${headerRounding} ${
-          grpSelected
-            ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
-            : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+        className={`flex items-center gap-1 mx-3 px-2 py-1.5 text-xs cursor-default group transition-colors ${selectedRounding ?? headerRounding} ${
+          isDragOver
+            ? "ring-2 ring-[#74a7fe] bg-blue-50 dark:bg-blue-900/20"
+            : grpSelected
+              ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
+              : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
         }`}
       >
         <button
@@ -191,8 +265,7 @@ function GroupRow({
               asset={asset}
               depth={depth + 1}
               isLast={idx === directMembers.length - 1}
-              isPrevSelected={selectedAssetIds.includes(directMembers[idx - 1]?.id)}
-              isNextSelected={selectedAssetIds.includes(directMembers[idx + 1]?.id)}
+              selectedAdjacency={shared.selectedAdjacency}
               editingId={editingId}
               editingValue={editingValue}
               inputRef={inputRef}
@@ -222,11 +295,14 @@ export default function AssetsPanel() {
     updateAsset,
     selectedAssetIds,
     selectAsset,
+    peekAsset,
     toggleAssetSelection,
+    toggleGroupSelection,
     groups,
     ungroupAssets,
     selectGroup,
     updateGroup,
+    moveAssetToGroup,
   } = useScene();
   const [expanded, setExpanded] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(
@@ -304,11 +380,27 @@ export default function AssetsPanel() {
     allGroups: groups,
     allAssets: assets,
     expandedGroups,
+    selectedAdjacency: useMemo(() => {
+      const rows = buildVisibleRows(undefined, groups, assets, expandedGroups, selectedAssetIds);
+      const adjacency: Record<string, { prev: boolean; next: boolean }> = {};
+      rows.forEach((row, idx) => {
+        adjacency[row.key] = {
+          prev: rows[idx - 1]?.selected ?? false,
+          next: rows[idx + 1]?.selected ?? false,
+        };
+      });
+      return adjacency;
+    }, [groups, assets, expandedGroups, selectedAssetIds]),
     onToggleExpand: (id) =>
       setExpandedGroups((prev) => ({ ...prev, [id]: !prev[id] })),
-    onSelectGroup: selectGroup,
+    onSelectGroup: (id, shiftKey) => {
+      if (shiftKey) toggleGroupSelection(id);
+      else selectGroup(id);
+    },
     onUngroup: ungroupAssets,
     onSelectAsset: (id, shiftKey) => {
+      const a = assets.find((x) => x.id === id);
+      if (a?.selectable === false) { peekAsset(id); return; }
       if (shiftKey) toggleAssetSelection(id);
       else selectAsset(id);
     },
@@ -317,6 +409,7 @@ export default function AssetsPanel() {
     onCommitEdit: commitEdit,
     onCancelEdit: () => setEditingId(null),
     onKeyDown: handleKeyDown,
+    onMoveToGroup: (assetId: string, groupId: string) => moveAssetToGroup(assetId, groupId),
   };
 
   return (
@@ -326,12 +419,12 @@ export default function AssetsPanel() {
     >
       {/* Search */}
       <div className="px-3 pt-3 pb-2">
-        <input
+        <Input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search assets…"
-          className="w-full text-xs rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 px-2 py-1.5 text-zinc-800 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 outline-none focus:border-zinc-400 dark:focus:border-zinc-500"
+          className="w-full !h-7 !py-0 !text-[10px] !leading-none"
         />
       </div>
 
@@ -384,14 +477,14 @@ export default function AssetsPanel() {
               key={asset.id}
               asset={asset}
               depth={0}
-              isPrevSelected={selectedAssetIds.includes(ungroupedAssets[idx - 1]?.id)}
-              isNextSelected={selectedAssetIds.includes(ungroupedAssets[idx + 1]?.id)}
               editingId={editingId}
               editingValue={editingValue}
               inputRef={inputRef}
               selectedAssetIds={selectedAssetIds}
+              selectedAdjacency={shared.selectedAdjacency}
               onSelect={(e) => {
                 e.stopPropagation();
+                if (asset.selectable === false) { peekAsset(asset.id); return; }
                 if (e.shiftKey) toggleAssetSelection(asset.id);
                 else selectAsset(asset.id);
               }}
@@ -414,12 +507,11 @@ function AssetRow({
   asset,
   depth,
   isLast = false,
-  isPrevSelected = false,
-  isNextSelected = false,
   editingId,
   editingValue,
   inputRef,
   selectedAssetIds,
+  selectedAdjacency,
   onSelect,
   onStartEdit,
   onEditChange,
@@ -430,12 +522,11 @@ function AssetRow({
   asset: { id: string; name: string };
   depth: number;
   isLast?: boolean;
-  isPrevSelected?: boolean;
-  isNextSelected?: boolean;
   editingId: string | null;
   editingValue: string;
   inputRef: React.RefObject<HTMLInputElement | null>;
   selectedAssetIds: string[];
+  selectedAdjacency: Record<string, { prev: boolean; next: boolean }>;
   onSelect: (e: React.MouseEvent) => void;
   onStartEdit: () => void;
   onEditChange: (v: string) => void;
@@ -444,24 +535,26 @@ function AssetRow({
   onKeyDown: (e: React.KeyboardEvent) => void;
 }) {
   const isSelected = selectedAssetIds.includes(asset.id);
-  const rounding = isSelected
-    ? !isPrevSelected && !isNextSelected
-      ? "rounded-md"
-      : !isPrevSelected
-        ? "rounded-t-md"
-        : !isNextSelected
-          ? "rounded-b-md"
-          : "rounded-none"
-    : depth === 0
+  const adjacency = selectedAdjacency[`asset:${asset.id}`] ?? {
+    prev: false,
+    next: false,
+  };
+  const rounding = getSelectedRounding(isSelected, adjacency.prev, adjacency.next)
+    ?? (depth === 0
       ? "rounded-md"
       : isLast
         ? "rounded-b-md"
-        : "rounded-none";
+        : "rounded-none");
   const indentStyle =
     depth > 0 ? { paddingLeft: `${depth * 2}rem` } : undefined;
 
   return (
     <li
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData("application/x-brick-asset-id", asset.id);
+        e.dataTransfer.effectAllowed = "move";
+      }}
       onClick={onSelect}
       style={indentStyle}
       className={`flex items-center gap-2 mx-3 px-2 py-1.5 text-xs cursor-default group transition-colors ${rounding} ${

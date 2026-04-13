@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Environment } from "@react-three/drei";
 import ParametricBrick from "@/components/ParametricBrick";
+import Button from "@/components/ui/Button";
 import type { GenerationHistoryEntry } from "@/store/sceneStore";
 
 const PREVIEW_FOV = 35;
@@ -81,11 +82,17 @@ function ReplayScene({
 interface GenerationReplayProps {
   generationHistory: GenerationHistoryEntry[];
   groupName: string;
+  groupId: string;
+  canPrefixEdit: boolean;
+  onPrefixEdit?: (groupId: string, step: number) => void;
   onClose: () => void;
 }
 
 export default function GenerationReplay({
   generationHistory,
+  groupId,
+  canPrefixEdit,
+  onPrefixEdit,
   onClose,
 }: GenerationReplayProps) {
   const [step, setStep] = useState(generationHistory.length - 1);
@@ -147,6 +154,16 @@ export default function GenerationReplay({
           <div className="flex items-center justify-between text-[10px] text-zinc-400 dark:text-zinc-500">
             <span>Step {step + 1} of {generationHistory.length}</span>
             <div className="flex items-center gap-3">
+              {canPrefixEdit && onPrefixEdit && (
+                <Button
+                  onClick={() => {
+                    onPrefixEdit(groupId, step);
+                    onClose();
+                  }}
+                >
+                  Edit from here
+                </Button>
+              )}
               <span className="flex items-center gap-1">
                 <span
                   className="inline-block w-2.5 h-2.5 rounded-sm"

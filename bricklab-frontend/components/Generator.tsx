@@ -9,6 +9,7 @@ import Input from "@/components/ui/Input";
 import ParametricBrick from "@/components/ParametricBrick";
 import { useScene } from "@/store/sceneStore";
 import type { SceneAsset, AssetCategory, GenerationHistoryEntry, ConstraintBox } from "@/store/sceneStore";
+import { computeGenerationOffset } from "@/lib/prefixEditing";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -364,12 +365,8 @@ export default function Generator({ onClose }: GeneratorProps) {
     abortRef.current = null;
 
     if (bricks.length > 0) {
-      let minX = Infinity, minY = Infinity, minZ = Infinity;
-      for (const b of bricks) {
-        minX = Math.min(minX, b.x);
-        minY = Math.min(minY, -b.y);
-        minZ = Math.min(minZ, b.z);
-      }
+      const genOffset = computeGenerationOffset(bricks);
+      const { minX, minNegY, minZ } = genOffset;
 
       const category: AssetCategory = tab === "image-to-3d" ? "image-to-3d" : "text-to-3d";
       const ts = Date.now();
@@ -380,7 +377,7 @@ export default function Generator({ onClose }: GeneratorProps) {
         visible: true,
         selectable: true,
         category,
-        position: [b.x - minX, -b.y - minY, b.z - minZ] as [number, number, number],
+        position: [b.x - minX, -b.y - minNegY, b.z - minZ] as [number, number, number],
         materialColor: defaultBrickColor,
         materialRoughness: 0.88,
         materialMetalness: 0.2,
@@ -388,13 +385,13 @@ export default function Generator({ onClose }: GeneratorProps) {
       }));
       const generationHistory: GenerationHistoryEntry[] = bricks.map((b) => ({
         x: b.x - minX,
-        y: -b.y - minY,
+        y: -b.y - minNegY,
         z: b.z - minZ,
         studsX: b.h,
         studsY: b.w,
       }));
       const label = prompt.trim().slice(0, 20);
-      addAssetsAsGroup(sceneAssets, label, generationHistory);
+      addAssetsAsGroup(sceneAssets, label, generationHistory, prompt, genOffset);
     }
 
     onClose();

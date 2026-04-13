@@ -51,8 +51,8 @@ export default function ParametricBrick({
             emissive={emissive}
             emissiveIntensity={emissiveIntensity}
             polygonOffset={isSelected}
-            polygonOffsetFactor={isSelected ? -4 : 0}
-            polygonOffsetUnits={isSelected ? -4 : 0}
+            polygonOffsetFactor={isSelected ? -0.25 : 0}
+            polygonOffsetUnits={isSelected ? -0.25 : 0}
           />
         </mesh>,
       );
@@ -81,8 +81,8 @@ export default function ParametricBrick({
           emissive={emissive}
           emissiveIntensity={emissiveIntensity}
           polygonOffset={isSelected}
-          polygonOffsetFactor={isSelected ? -4 : 0}
-          polygonOffsetUnits={isSelected ? -4 : 0}
+          polygonOffsetFactor={isSelected ? -0.25 : 0}
+          polygonOffsetUnits={isSelected ? -0.25 : 0}
         />
       </mesh>
       {studs}

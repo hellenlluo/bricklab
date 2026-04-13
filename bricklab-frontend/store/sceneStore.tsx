@@ -1,6 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useRef } from "react";
+import type { GenerationOffset } from "@/lib/prefixEditing";
 
 export type AssetCategory = "primitive" | "text-to-3d" | "image-to-3d";
 
@@ -34,8 +35,11 @@ export interface GenerationHistoryEntry {
 export interface BrickGroup {
   id: string;
   name: string;
+  category?: AssetCategory;
   parentGroupId?: string;
   generationHistory?: GenerationHistoryEntry[];
+  originalPrompt?: string;
+  generationOffset?: GenerationOffset;
 }
 
 export interface CustomBrickDefinition {
@@ -91,6 +95,27 @@ function createDefaultScene(id: string, name: string): SceneData {
   };
 }
 
+function collectGroupMemberIds(
+  groupId: string,
+  sceneAssets: SceneAsset[],
+  sceneGroups: BrickGroup[],
+): string[] {
+  const direct = sceneAssets.filter((a) => a.groupId === groupId).map((a) => a.id);
+  const childIds = sceneGroups
+    .filter((g) => g.parentGroupId === groupId)
+    .flatMap((g) => collectGroupMemberIds(g.id, sceneAssets, sceneGroups));
+  return [...direct, ...childIds];
+}
+
+function inferGroupCategory(
+  sceneAssets: SceneAsset[],
+): AssetCategory | undefined {
+  const categories = new Set(sceneAssets.map((asset) => asset.category).filter(Boolean));
+  return categories.size === 1
+    ? (Array.from(categories)[0] as AssetCategory)
+    : undefined;
+}
+
 interface SceneStore {
   // Multi-scene management
   scenes: SceneData[];
@@ -102,18 +127,27 @@ interface SceneStore {
   // Per-scene state (proxied from active scene)
   assets: SceneAsset[];
   addAsset: (asset: SceneAsset) => void;
-  addAssetsAsGroup: (assets: SceneAsset[], groupName: string, generationHistory?: GenerationHistoryEntry[]) => void;
+  addAssetsAsGroup: (assets: SceneAsset[], groupName: string, generationHistory?: GenerationHistoryEntry[], originalPrompt?: string, generationOffset?: GenerationOffset) => void;
   removeAsset: (id: string) => void;
+  removeSelectedAssets: () => void;
+  removeGroup: (groupId: string) => void;
   updateAsset: (id: string, updates: Partial<SceneAsset>) => void;
   decomposeBrick: (id: string) => void;
   groups: BrickGroup[];
   groupSelected: () => void;
   ungroupAssets: (groupId: string) => void;
   updateGroup: (groupId: string, name: string) => void;
+  moveAssetToGroup: (assetId: string, targetGroupId: string | undefined) => void;
+  revertGroupToStep: (groupId: string, k: number) => void;
+  replaceGroupGeneration: (groupId: string, newAssets: SceneAsset[], newHistory: GenerationHistoryEntry[], newOffset?: GenerationOffset) => void;
+  undo: () => void;
+  captureUndoSnapshot: () => void;
   selectedAssetId: string | null;
   selectedAssetIds: string[];
   selectAsset: (id: string | null) => void;
+  peekAsset: (id: string) => void;
   selectGroup: (groupId: string) => void;
+  toggleGroupSelection: (groupId: string) => void;
   toggleAssetSelection: (id: string) => void;
   rotateSelectedAssets: (direction: "cw" | "ccw") => void;
   sceneBackground: string;
@@ -154,6 +188,9 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
   const [selectionColor, setSelectionColor] = useState<string>("#ff8c82");
   const [viewportType, setViewportType] = useState<string>("Perspective");
 
+  // Undo stack — stores up to 20 active-scene snapshots
+  const undoStackRef = useRef<SceneData[]>([]);
+
   // Derive active scene data
   const activeScene = scenes.find((s) => s.id === activeSceneId) ?? scenes[0];
   const {
@@ -166,6 +203,28 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
     plateColor,
     maxCameraDistance,
   } = activeScene;
+
+  function pushUndo() {
+    const snapshot = activeScene;
+    undoStackRef.current = [...undoStackRef.current.slice(-19), snapshot];
+  }
+
+  function undo() {
+    if (undoStackRef.current.length === 0) return;
+    const prev = undoStackRef.current[undoStackRef.current.length - 1];
+    undoStackRef.current = undoStackRef.current.slice(0, -1);
+    setScenes((scenes) =>
+      scenes.map((s) =>
+        s.id === activeSceneId
+          ? { ...prev, selectedAssetId: null, selectedAssetIds: [] }
+          : s,
+      ),
+    );
+  }
+
+  function captureUndoSnapshot() {
+    pushUndo();
+  }
 
   function updateActiveScene(updater: (scene: SceneData) => SceneData) {
     setScenes((prev) =>
@@ -240,12 +299,27 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
   }
 
   function addAsset(asset: SceneAsset) {
+    pushUndo();
     updateActiveScene((s) => ({ ...s, assets: [...s.assets, asset] }));
   }
 
-  function addAssetsAsGroup(newAssets: SceneAsset[], groupName: string, generationHistory?: GenerationHistoryEntry[]) {
+  function addAssetsAsGroup(
+    newAssets: SceneAsset[],
+    groupName: string,
+    generationHistory?: GenerationHistoryEntry[],
+    originalPrompt?: string,
+    genOffset?: GenerationOffset,
+  ) {
+    pushUndo();
     const groupId = `group-${Date.now()}`;
-    const group: BrickGroup = { id: groupId, name: groupName, generationHistory };
+    const group: BrickGroup = {
+      id: groupId,
+      name: groupName,
+      category: inferGroupCategory(newAssets),
+      generationHistory,
+      originalPrompt,
+      generationOffset: genOffset,
+    };
     updateActiveScene((s) => ({
       ...s,
       assets: [
@@ -257,6 +331,7 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
   }
 
   function removeAsset(id: string) {
+    pushUndo();
     updateActiveScene((s) => ({
       ...s,
       assets: s.assets.filter((a) => a.id !== id),
@@ -265,8 +340,45 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
     }));
   }
 
+  function removeSelectedAssets() {
+    const ids = new Set(selectedAssetIds);
+    if (ids.size === 0) return;
+    pushUndo();
+    updateActiveScene((s) => ({
+      ...s,
+      assets: s.assets.filter((a) => !ids.has(a.id)),
+      selectedAssetId: null,
+      selectedAssetIds: [],
+    }));
+  }
+
+  function removeGroup(groupId: string) {
+    pushUndo();
+    updateActiveScene((s) => {
+      function collectAssetIds(gId: string): string[] {
+        const direct = s.assets.filter((a) => a.groupId === gId).map((a) => a.id);
+        const childGroupIds = s.groups.filter((g) => g.parentGroupId === gId).map((g) => g.id);
+        return [...direct, ...childGroupIds.flatMap(collectAssetIds)];
+      }
+      function collectGroupIds(gId: string): string[] {
+        const childGroupIds = s.groups.filter((g) => g.parentGroupId === gId).map((g) => g.id);
+        return [gId, ...childGroupIds.flatMap(collectGroupIds)];
+      }
+      const assetIdsToRemove = new Set(collectAssetIds(groupId));
+      const groupIdsToRemove = new Set(collectGroupIds(groupId));
+      return {
+        ...s,
+        assets: s.assets.filter((a) => !assetIdsToRemove.has(a.id)),
+        groups: s.groups.filter((g) => !groupIdsToRemove.has(g.id)),
+        selectedAssetId: null,
+        selectedAssetIds: [],
+      };
+    });
+  }
+
   function groupSelected() {
     if (selectedAssetIds.length < 2) return;
+    pushUndo();
     const ids = selectedAssetIds;
 
     function collectAllAssetIds(gId: string): string[] {
@@ -321,6 +433,7 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
   }
 
   function ungroupAssets(groupId: string) {
+    pushUndo();
     const group = groups.find((g) => g.id === groupId);
     const parentId = group?.parentGroupId;
     updateActiveScene((s) => ({
@@ -343,15 +456,75 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
     }));
   }
 
+  function moveAssetToGroup(assetId: string, targetGroupId: string | undefined) {
+    pushUndo();
+    updateActiveScene((s) => ({
+      ...s,
+      assets: s.assets.map((a) =>
+        a.id === assetId ? { ...a, groupId: targetGroupId } : a,
+      ),
+    }));
+  }
+
+  function revertGroupToStep(groupId: string, k: number) {
+    pushUndo();
+    updateActiveScene((s) => {
+      const group = s.groups.find((g) => g.id === groupId);
+      if (!group?.generationHistory) return s;
+
+      const memberAssets = s.assets.filter((a) => a.groupId === groupId);
+      const keepIds = new Set(memberAssets.slice(0, k + 1).map((a) => a.id));
+      const selectedIds = memberAssets
+        .filter((a) => keepIds.has(a.id))
+        .map((a) => a.id);
+
+      return {
+        ...s,
+        assets: s.assets.filter((a) => a.groupId !== groupId || keepIds.has(a.id)),
+        groups: s.groups.map((g) =>
+          g.id === groupId
+            ? { ...g, generationHistory: g.generationHistory!.slice(0, k + 1) }
+            : g,
+        ),
+        selectedAssetId: selectedIds[selectedIds.length - 1] ?? null,
+        selectedAssetIds: selectedIds,
+      };
+    });
+  }
+
+  function replaceGroupGeneration(
+    groupId: string,
+    newAssets: SceneAsset[],
+    newHistory: GenerationHistoryEntry[],
+    newOffset?: GenerationOffset,
+  ) {
+    pushUndo();
+    updateActiveScene((s) => {
+      const otherAssets = s.assets.filter((a) => a.groupId !== groupId);
+      const taggedAssets = newAssets.map((a) => ({ ...a, groupId }));
+      const selectedIds = taggedAssets.map((a) => a.id);
+
+      return {
+        ...s,
+        assets: [...otherAssets, ...taggedAssets],
+        groups: s.groups.map((g) =>
+          g.id === groupId
+            ? {
+                ...g,
+                category: g.category ?? inferGroupCategory(newAssets),
+                generationHistory: newHistory,
+                ...(newOffset ? { generationOffset: newOffset } : {}),
+              }
+            : g,
+        ),
+        selectedAssetId: selectedIds[selectedIds.length - 1] ?? null,
+        selectedAssetIds: selectedIds,
+      };
+    });
+  }
+
   function selectGroup(groupId: string) {
-    function collectIds(gId: string): string[] {
-      const direct = assets.filter((a) => a.groupId === gId).map((a) => a.id);
-      const childIds = groups
-        .filter((g) => g.parentGroupId === gId)
-        .flatMap((g) => collectIds(g.id));
-      return [...direct, ...childIds];
-    }
-    const ids = collectIds(groupId);
+    const ids = collectGroupMemberIds(groupId, assets, groups);
     updateActiveScene((s) => ({
       ...s,
       selectedAssetIds: ids,
@@ -359,14 +532,63 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
     }));
   }
 
+  function toggleGroupSelection(groupId: string) {
+    updateActiveScene((s) => {
+      const groupIds = collectGroupMemberIds(groupId, s.assets, s.groups);
+      if (groupIds.length === 0) return s;
+
+      const selectedSet = new Set(s.selectedAssetIds);
+      const isFullySelected = groupIds.every((id) => selectedSet.has(id));
+
+      if (isFullySelected) {
+        const groupIdSet = new Set(groupIds);
+        const next = s.selectedAssetIds.filter((id) => !groupIdSet.has(id));
+        return {
+          ...s,
+          selectedAssetIds: next,
+          selectedAssetId: next.includes(s.selectedAssetId ?? "")
+            ? s.selectedAssetId
+            : (next[next.length - 1] ?? null),
+        };
+      }
+
+      const next = [...s.selectedAssetIds];
+      groupIds.forEach((id) => {
+        if (!selectedSet.has(id)) next.push(id);
+      });
+      return {
+        ...s,
+        selectedAssetIds: next,
+        selectedAssetId: groupIds[groupIds.length - 1] ?? s.selectedAssetId,
+      };
+    });
+  }
+
   function updateAsset(id: string, updates: Partial<SceneAsset>) {
-    updateActiveScene((s) => ({
-      ...s,
-      assets: s.assets.map((a) => (a.id === id ? { ...a, ...updates } : a)),
-    }));
+    updateActiveScene((s) => {
+      const updatedAssets = s.assets.map((a) => (a.id === id ? { ...a, ...updates } : a));
+      if (updates.selectable === false) {
+        // Remove from scene highlight/gizmo
+        return {
+          ...s,
+          assets: updatedAssets,
+          selectedAssetIds: s.selectedAssetIds.filter((x) => x !== id),
+        };
+      }
+      if (updates.selectable === true && s.selectedAssetId === id && !s.selectedAssetIds.includes(id)) {
+        // Restore highlight when selectable is turned back on for the focused asset
+        return {
+          ...s,
+          assets: updatedAssets,
+          selectedAssetIds: [id],
+        };
+      }
+      return { ...s, assets: updatedAssets };
+    });
   }
 
   function decomposeBrick(id: string) {
+    pushUndo();
     updateActiveScene((s) => {
       const brick = s.assets.find((a) => a.id === id);
       if (!brick?.preset) return s;
@@ -405,6 +627,7 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
   function rotateSelectedAssets(direction: "cw" | "ccw") {
     const ids = selectedAssetIds;
     if (ids.length === 0) return;
+    pushUndo();
 
     const selected = assets.filter(
       (a) => ids.includes(a.id) && a.preset && a.position,
@@ -502,6 +725,16 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
     }));
   }
 
+  // Show an asset's properties without highlighting it or showing the gizmo.
+  // Used for non-selectable assets clicked from the Assets Panel.
+  function peekAsset(id: string) {
+    updateActiveScene((s) => ({
+      ...s,
+      selectedAssetId: id,
+      selectedAssetIds: [],
+    }));
+  }
+
   function toggleAssetSelection(id: string) {
     updateActiveScene((s) => {
       const isAlreadySelected = s.selectedAssetIds.includes(id);
@@ -538,16 +771,25 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
         addAsset,
         addAssetsAsGroup,
         removeAsset,
+        removeSelectedAssets,
+        removeGroup,
         updateAsset,
         decomposeBrick,
         groups,
         groupSelected,
         ungroupAssets,
         updateGroup,
+        moveAssetToGroup,
+        revertGroupToStep,
+        replaceGroupGeneration,
+        undo,
+        captureUndoSnapshot,
         selectedAssetId,
         selectedAssetIds,
         selectAsset,
+        peekAsset,
         selectGroup,
+        toggleGroupSelection,
         toggleAssetSelection,
         rotateSelectedAssets,
         sceneBackground,

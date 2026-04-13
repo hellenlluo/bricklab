@@ -196,11 +196,14 @@ function ParametricBrickWrapper({
 function PlacedAssets({ assets }: { assets: SceneAsset[] }) {
   const {
     selectAsset,
+    toggleGroupSelection,
     toggleAssetSelection,
     selectedAssetIds,
     selectionColor: selectionHighlight,
     selectGroup,
     groupSelected,
+    removeSelectedAssets,
+    undo,
     groups,
   } = useScene();
   const placed = assets.filter((a) => a.visible && a.position);
@@ -225,12 +228,17 @@ function PlacedAssets({ assets }: { assets: SceneAsset[] }) {
   }
 
   function handleSelect(id: string, shiftKey: boolean, doubleClick: boolean) {
+    const chain = getAncestorChain(id);
+
     if (shiftKey) {
-      toggleAssetSelection(id);
+      if (chain.length === 0) {
+        toggleAssetSelection(id);
+        return;
+      }
+      const focusIdx = chain.indexOf(focusedGroupId.current ?? "");
+      toggleGroupSelection(focusIdx !== -1 ? chain[focusIdx] : chain[0]);
       return;
     }
-
-    const chain = getAncestorChain(id);
 
     if (chain.length === 0) {
       // Ungrouped brick — plain select
@@ -271,22 +279,39 @@ function PlacedAssets({ assets }: { assets: SceneAsset[] }) {
     }
   }
 
-  // ⌘G / Ctrl+G to group selected bricks
+  // Keyboard shortcuts
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
+      // Ignore shortcuts when typing in an input/textarea
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+
+      // ⌘G / Ctrl+G — group selected
       if ((e.metaKey || e.ctrlKey) && e.key === "g") {
         e.preventDefault();
         groupSelected();
+        return;
+      }
+      // ⌘Z / Ctrl+Z — undo
+      if ((e.metaKey || e.ctrlKey) && e.key === "z") {
+        e.preventDefault();
+        undo();
+        return;
+      }
+      // Delete / Backspace — delete selected assets
+      if (e.key === "Delete" || e.key === "Backspace") {
+        e.preventDefault();
+        removeSelectedAssets();
       }
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [groupSelected]);
+  }, [groupSelected, undo, removeSelectedAssets]);
 
   return (
     <>
       {placed.map((asset) => {
-        const selectionColor = selectedAssetIds.includes(asset.id) ? selectionHighlight : undefined;
+        const selectionColor = selectedAssetIds.includes(asset.id) && asset.selectable !== false ? selectionHighlight : undefined;
         if (asset.type === "preset-brick" && asset.preset) {
           return (
             <ParametricBrickWrapper
@@ -343,7 +368,7 @@ function getAssetWeight(asset: SceneAsset) {
 }
 
 function SceneControls() {
-  const { selectedAssetId, selectedAssetIds, updateAsset, plateSize, assets, maxCameraDistance, viewportType } = useScene();
+  const { selectedAssetId, selectedAssetIds, updateAsset, captureUndoSnapshot, plateSize, assets, maxCameraDistance, viewportType } = useScene();
   const scene = useThree((s) => s.scene);
   const camera = useThree((s) => s.camera);
   const orbRef = useRef<OrbitControlsImpl>(null);
@@ -441,14 +466,28 @@ function SceneControls() {
 
   const handleMouseUp = useCallback(() => {
     if (isMultiSelection) {
-      selectedAssets.forEach((asset) => {
-        const obj = scene.getObjectByName(asset.id);
-        if (!obj) return;
-        const { cx, cy, cz } = getAssetOffsets(asset);
-        const x = Math.round(obj.position.x - cx);
-        const y = Math.round(obj.position.y + cy);
-        const z = Math.max(0, Math.round(obj.position.z - cz));
-        updateAsset(asset.id, { position: [x, y, z] });
+      const movedAssets = selectedAssets
+        .map((asset) => {
+          const obj = scene.getObjectByName(asset.id);
+          if (!obj) return null;
+          const { cx, cy, cz } = getAssetOffsets(asset);
+          const x = Math.round(obj.position.x - cx);
+          const y = Math.round(obj.position.y + cy);
+          const z = Math.max(0, Math.round(obj.position.z - cz));
+          const nextPosition: [number, number, number] = [x, y, z];
+          const prevPosition = asset.position ?? [0, 0, 0];
+          const changed =
+            prevPosition[0] !== nextPosition[0] ||
+            prevPosition[1] !== nextPosition[1] ||
+            prevPosition[2] !== nextPosition[2];
+          return changed ? { id: asset.id, position: nextPosition } : null;
+        })
+        .filter((asset): asset is { id: string; position: [number, number, number] } => !!asset);
+
+      if (movedAssets.length === 0) return;
+      captureUndoSnapshot();
+      movedAssets.forEach((asset) => {
+        updateAsset(asset.id, { position: asset.position });
       });
       return;
     }
@@ -460,8 +499,13 @@ function SceneControls() {
     const x = Math.round(obj.position.x - cx);
     const y = Math.round(obj.position.y + cy);
     const z = Math.max(0, Math.round(obj.position.z - cz));
+    const prevPosition = asset?.position ?? [0, 0, 0];
+    if (prevPosition[0] === x && prevPosition[1] === y && prevPosition[2] === z) {
+      return;
+    }
+    captureUndoSnapshot();
     updateAsset(selectedAssetId, { position: [x, y, z] });
-  }, [assets, isMultiSelection, scene, selectedAssetId, selectedAssets, updateAsset]);
+  }, [assets, captureUndoSnapshot, isMultiSelection, scene, selectedAssetId, selectedAssets, updateAsset]);
 
   const isPerspective = viewportType === "Perspective";
 

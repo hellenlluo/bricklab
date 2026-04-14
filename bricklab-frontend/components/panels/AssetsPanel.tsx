@@ -472,7 +472,7 @@ export default function AssetsPanel() {
           ))}
 
           {/* Ungrouped assets */}
-          {ungroupedAssets.map((asset, idx) => (
+          {ungroupedAssets.map((asset) => (
             <AssetRow
               key={asset.id}
               asset={asset}

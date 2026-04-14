@@ -8,7 +8,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import generate, session, metrics
+from app.routers import generate, image3d, session, metrics
 
 app = FastAPI(title="BrickLab API", version="0.1.0")
 
@@ -21,6 +21,7 @@ app.add_middleware(
 )
 
 app.include_router(generate.router)
+app.include_router(image3d.router)
 app.include_router(session.router)
 app.include_router(metrics.router)
 

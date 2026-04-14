@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect } from "react";
+import Image from "next/image";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Environment } from "@react-three/drei";
 import * as THREE from "three";
@@ -10,6 +11,14 @@ import ParametricBrick from "@/components/ParametricBrick";
 import { useScene } from "@/store/sceneStore";
 import type { SceneAsset, AssetCategory, GenerationHistoryEntry, ConstraintBox } from "@/store/sceneStore";
 import { computeGenerationOffset } from "@/lib/prefixEditing";
+import {
+  uploadImage,
+  predictMask,
+  reconstruct as image3dReconstruct,
+  revoxelize,
+  type VoxelData,
+  type ClickPoint,
+} from "@/lib/image3dApi";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -70,6 +79,8 @@ const WORLD_DIM = 20;
 const CONSTRAINT_COLOR = "#FFAB91";
 const CONSTRAINT_EDGE_COLOR = "#FF8A65";
 const GRID_COLOR = "#7ec8e3";
+const TOOLBAR_BUTTON_CLASS =
+  "inline-flex h-7 shrink-0 items-center justify-center whitespace-nowrap py-0 leading-none";
 
 function PreviewAxes() {
   const axes = useMemo(() => {
@@ -255,6 +266,26 @@ export default function Generator({ onClose }: GeneratorProps) {
   const [generationWarning, setGenerationWarning] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
+  // ── Image-to-3D pipeline state ─────────────────────────────────────────
+  type ImgStage = "upload" | "encoding" | "segment" | "reconstructing" | "voxel-adjust";
+  const [imgStage, setImgStage] = useState<ImgStage>("upload");
+  const [imgFile, setImgFile] = useState<File | null>(null);
+  const [imgPreviewUrl, setImgPreviewUrl] = useState<string | null>(null);
+  const [imgImageId, setImgImageId] = useState<string | null>(null);
+  const [imgPoints, setImgPoints] = useState<ClickPoint[]>([]);
+  const [imgMaskOverlay, setImgMaskOverlay] = useState<string | null>(null);
+  const [imgNaturalSize, setImgNaturalSize] = useState<{ w: number; h: number } | null>(null);
+  const [imgPlyId, setImgPlyId] = useState<string | null>(null);
+  const [imgVoxels, setImgVoxels] = useState<VoxelData[]>([]);
+  const [imgDensity, setImgDensity] = useState(35);
+  const [imgError, setImgError] = useState<string | null>(null);
+  const [imgLoading, setImgLoading] = useState(false);
+  const [imgLoadingMsg, setImgLoadingMsg] = useState("");
+  const densityToVoxelSize = (d: number) => 0.15 - (d / 100) * (0.15 - 0.02);
+  const imgAbortRef = useRef<AbortController | null>(null);
+  const imgFileInputRef = useRef<HTMLInputElement>(null);
+  const segmentContainerRef = useRef<HTMLDivElement>(null);
+
   const [selectedConstraintIds, setSelectedConstraintIds] = useState<string[]>([]);
   const [showConstraints, setShowConstraints] = useState(false);
   const [constraintDropdownOpen, setConstraintDropdownOpen] = useState(false);
@@ -279,6 +310,65 @@ export default function Generator({ onClose }: GeneratorProps) {
   );
   const selectedBoxes = selectedConstraints.flatMap((c) => c.boxes);
 
+  const imgCenteredVoxels = useMemo(() => {
+    if (imgVoxels.length === 0) return [] as VoxelData[];
+
+    let minX = Infinity, maxX = -Infinity;
+    let minY = Infinity, maxY = -Infinity;
+    let minZ = Infinity, maxZ = -Infinity;
+
+    for (const v of imgVoxels) {
+      minX = Math.min(minX, v.x);
+      maxX = Math.max(maxX, v.x);
+      minY = Math.min(minY, v.y);
+      maxY = Math.max(maxY, v.y);
+      minZ = Math.min(minZ, v.z);
+      maxZ = Math.max(maxZ, v.z);
+    }
+
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    const cz = (minZ + maxZ) / 2;
+
+    return imgVoxels.map((v) => ({
+      ...v,
+      x: v.x - cx,
+      y: v.y - cy,
+      z: v.z - cz,
+    }));
+  }, [imgVoxels]);
+
+  // Camera fitted to the voxel bounding box, locked to initial density so it
+  // doesn't jump as the slider moves.
+  const imgVoxelCamera = useMemo(() => {
+    if (imgCenteredVoxels.length === 0) {
+      return { position: [15, -15, 12] as [number, number, number], target: [0, 0, 0] as [number, number, number] };
+    }
+    let minX = Infinity, maxX = -Infinity;
+    let minY = Infinity, maxY = -Infinity;
+    let minZ = Infinity, maxZ = -Infinity;
+    for (const v of imgCenteredVoxels) {
+      minX = Math.min(minX, v.x);      maxX = Math.max(maxX, v.x + 1);
+      minY = Math.min(minY, -v.y - 1); maxY = Math.max(maxY, -v.y);
+      minZ = Math.min(minZ, v.z);      maxZ = Math.max(maxZ, v.z + 1);
+    }
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    const cz = (minZ + maxZ) / 2;
+    const spanX = maxX - minX;
+    const spanY = maxY - minY;
+    const spanZ = maxZ - minZ;
+    const radius = Math.sqrt(spanX * spanX + spanY * spanY + spanZ * spanZ) / 2;
+    const halfFovRad = (PREVIEW_FOV * Math.PI) / 180 / 2;
+    const dist = (radius * PREVIEW_PADDING) / Math.tan(halfFovRad);
+    const iso = dist / Math.sqrt(3);
+    return {
+      position: [cx + iso, cy - iso, cz + iso] as [number, number, number],
+      target: [cx, cy, cz] as [number, number, number],
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [imgStage]); // intentionally only recompute when stage changes to voxel-adjust
+
   const intersectionCount = useMemo(() => {
     if (bricks.length === 0 || selectedBoxes.length === 0) return 0;
     return bricks.filter((b) =>
@@ -300,6 +390,198 @@ export default function Generator({ onClose }: GeneratorProps) {
         ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50"
         : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-zinc-50 dark:hover:bg-zinc-800"
     }`;
+
+  // ── Image-to-3D handlers ──────────────────────────────────────────────
+
+  function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImgFile(file);
+    setImgPreviewUrl(URL.createObjectURL(file));
+    setImgPoints([]);
+    setImgMaskOverlay(null);
+    setImgNaturalSize(null);
+    setImgPlyId(null);
+    setImgVoxels([]);
+    setImgError(null);
+    encodeImage(file);
+  }
+
+  async function encodeImage(file: File) {
+    imgAbortRef.current?.abort();
+    const controller = new AbortController();
+    imgAbortRef.current = controller;
+
+    setImgLoading(true);
+    setImgLoadingMsg("Preparing image for segmentation…");
+    setImgStage("encoding");
+
+    try {
+      const res = await uploadImage(file, controller.signal);
+      setImgImageId(res.image_id);
+      setImgStage("segment");
+    } catch (e: unknown) {
+      if (e instanceof DOMException && e.name === "AbortError") return;
+      setImgError(e instanceof Error ? e.message : "Image encoding failed");
+      setImgStage("upload");
+    } finally {
+      setImgLoading(false);
+    }
+  }
+
+  function handleSegmentClick(e: React.MouseEvent<HTMLDivElement>, forceNegative = false) {
+    if (imgStage !== "segment" || imgLoading || !imgNaturalSize) return;
+
+    const container = segmentContainerRef.current;
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+    const { w: naturalW, h: naturalH } = imgNaturalSize;
+    const scale = Math.min(rect.width / naturalW, rect.height / naturalH);
+    const displayW = naturalW * scale;
+    const displayH = naturalH * scale;
+    const offsetX = (rect.width - displayW) / 2;
+    const offsetY = (rect.height - displayH) / 2;
+
+    const imgX = Math.round((e.clientX - rect.left - offsetX) / scale);
+    const imgY = Math.round((e.clientY - rect.top - offsetY) / scale);
+
+    if (imgX < 0 || imgX >= naturalW || imgY < 0 || imgY >= naturalH) return;
+
+    const label = (forceNegative || e.altKey) ? 0 : 1;
+    const newPoints: ClickPoint[] = [...imgPoints, { x: imgX, y: imgY, label }];
+    setImgPoints(newPoints);
+    requestMaskPrediction(newPoints);
+  }
+
+  async function requestMaskPrediction(points: ClickPoint[]) {
+    if (!imgImageId) return;
+    imgAbortRef.current?.abort();
+    const controller = new AbortController();
+    imgAbortRef.current = controller;
+
+    setImgLoading(true);
+    setImgLoadingMsg("Predicting mask…");
+
+    try {
+      const res = await predictMask(imgImageId, points, controller.signal);
+      setImgMaskOverlay(res.mask_b64);
+    } catch (e: unknown) {
+      if (e instanceof DOMException && e.name === "AbortError") return;
+      setImgError(e instanceof Error ? e.message : "Mask prediction failed");
+    } finally {
+      setImgLoading(false);
+    }
+  }
+
+  function handleUndoPoint() {
+    const newPoints = imgPoints.slice(0, -1);
+    setImgPoints(newPoints);
+    if (newPoints.length === 0) {
+      setImgMaskOverlay(null);
+    } else {
+      requestMaskPrediction(newPoints);
+    }
+  }
+
+  function handleClearPoints() {
+    setImgPoints([]);
+    setImgMaskOverlay(null);
+  }
+
+  async function handleReconstruct() {
+    if (imgImageId == null || imgPoints.length === 0) return;
+    imgAbortRef.current?.abort();
+    const controller = new AbortController();
+    imgAbortRef.current = controller;
+
+    setImgLoading(true);
+    setImgLoadingMsg("Reconstructing 3D model…");
+    setImgError(null);
+    setImgStage("reconstructing");
+
+    try {
+      const res = await image3dReconstruct(
+        imgImageId, 42, densityToVoxelSize(imgDensity), controller.signal,
+      );
+      setImgPlyId(res.ply_id);
+      setImgVoxels(res.voxels);
+      setImgStage("voxel-adjust");
+    } catch (e: unknown) {
+      if (e instanceof DOMException && e.name === "AbortError") return;
+      setImgError(e instanceof Error ? e.message : "3D reconstruction failed");
+      setImgStage("segment");
+    } finally {
+      setImgLoading(false);
+    }
+  }
+
+  const revoxelizeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleDensityChange = useCallback((newDensity: number) => {
+    setImgDensity(newDensity);
+    if (!imgPlyId) return;
+
+    if (revoxelizeTimeoutRef.current) clearTimeout(revoxelizeTimeoutRef.current);
+    revoxelizeTimeoutRef.current = setTimeout(async () => {
+      imgAbortRef.current?.abort();
+      const controller = new AbortController();
+      imgAbortRef.current = controller;
+      setImgLoading(true);
+      setImgLoadingMsg("Re-voxelizing…");
+      try {
+        const res = await revoxelize(imgPlyId!, densityToVoxelSize(newDensity), controller.signal);
+        setImgVoxels(res.voxels);
+      } catch (e: unknown) {
+        if (e instanceof DOMException && e.name === "AbortError") return;
+        setImgError(e instanceof Error ? e.message : "Voxelization failed");
+      } finally {
+        setImgLoading(false);
+      }
+    }, 400);
+  }, [imgPlyId]);
+
+  function handleImgAddToScene() {
+    imgAbortRef.current?.abort();
+    imgAbortRef.current = null;
+
+    if (imgCenteredVoxels.length > 0) {
+      const ts = Date.now();
+      const category: AssetCategory = "image-to-3d";
+      const sceneAssets: SceneAsset[] = imgCenteredVoxels.map((v, i) => ({
+        id: `img3d-${i}-${ts}`,
+        name: `Voxel ${assets.length + i + 1}`,
+        type: "preset-brick",
+        visible: true,
+        selectable: true,
+        category,
+        position: [v.x, -v.y, v.z] as [number, number, number],
+        materialColor: v.color,
+        materialRoughness: 0.88,
+        materialMetalness: 0.2,
+        preset: { studsX: 1, studsY: 1 },
+      }));
+      addAssetsAsGroup(sceneAssets, "Image-to-3D");
+    }
+
+    onClose();
+  }
+
+  function handleImgReset() {
+    imgAbortRef.current?.abort();
+    setImgFile(null);
+    setImgPreviewUrl(null);
+    setImgImageId(null);
+    setImgPoints([]);
+    setImgMaskOverlay(null);
+    setImgNaturalSize(null);
+    setImgPlyId(null);
+    setImgVoxels([]);
+    setImgError(null);
+    setImgLoading(false);
+    setImgStage("upload");
+  }
+
+  // ── Text-to-3D handlers ─────────────────────────────────────────────
 
   async function handleGenerate() {
     if (!prompt.trim()) return;
@@ -357,6 +639,8 @@ export default function Generator({ onClose }: GeneratorProps) {
   function handleCancel() {
     abortRef.current?.abort();
     abortRef.current = null;
+    imgAbortRef.current?.abort();
+    imgAbortRef.current = null;
     onClose();
   }
 
@@ -528,7 +812,7 @@ export default function Generator({ onClose }: GeneratorProps) {
               <Button
                 onClick={handleGenerate}
                 disabled={!prompt.trim() || isGenerating}
-                className="inline-flex h-7 shrink-0 items-center justify-center whitespace-nowrap py-0 leading-none"
+                className={TOOLBAR_BUTTON_CLASS}
               >
                 Generate
               </Button>
@@ -589,12 +873,13 @@ export default function Generator({ onClose }: GeneratorProps) {
 
             {/* Cancel / Add to Scene */}
             <div className="flex gap-2 justify-end">
-              <Button onClick={handleCancel}>
+              <Button onClick={handleCancel} className={TOOLBAR_BUTTON_CLASS}>
                 Cancel
               </Button>
               <Button
                 onClick={handleAddToScene}
                 disabled={!hasResult}
+                className={TOOLBAR_BUTTON_CLASS}
               >
                 Add to Scene
               </Button>
@@ -604,20 +889,245 @@ export default function Generator({ onClose }: GeneratorProps) {
 
         {tab === "image-to-3d" && (
           <div className="flex flex-col h-full p-[1vw] gap-[1vw]">
-            <div className="flex-1 flex items-center justify-center">
-              <span className="text-sm text-zinc-400 dark:text-zinc-500">
-                Coming soon
-              </span>
+            {/* ── Toolbar ─────────────────────────────────────── */}
+            <div className="flex items-center gap-2 min-w-0">
+              <input
+                ref={imgFileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageSelect}
+                disabled={imgLoading && imgStage !== "segment"}
+              />
+              <Button
+                type="button"
+                onClick={() => imgFileInputRef.current?.click()}
+                disabled={imgLoading && imgStage !== "segment"}
+                className={TOOLBAR_BUTTON_CLASS}
+              >
+                {imgFile ? "Change Image" : "Upload Image"}
+              </Button>
+              {imgFile && (
+                <span className="text-[10px] text-zinc-500 dark:text-zinc-400 truncate min-w-0">
+                  {imgFile.name}
+                </span>
+              )}
+              <div className="flex-1" />
+              {imgStage === "segment" && imgPoints.length > 0 && (
+                <>
+                  <Button
+                    onClick={handleUndoPoint}
+                    disabled={imgLoading}
+                    className={TOOLBAR_BUTTON_CLASS}
+                  >
+                    Undo
+                  </Button>
+                  <Button
+                    onClick={handleClearPoints}
+                    disabled={imgLoading}
+                    className={TOOLBAR_BUTTON_CLASS}
+                  >
+                    Clear
+                  </Button>
+                  <Button
+                    onClick={handleReconstruct}
+                    disabled={imgLoading}
+                    className={TOOLBAR_BUTTON_CLASS}
+                  >
+                    Reconstruct 3D
+                  </Button>
+                </>
+              )}
+              {imgStage === "voxel-adjust" && (
+                <Button
+                  onClick={handleImgReset}
+                  className={TOOLBAR_BUTTON_CLASS}
+                >
+                  Start Over
+                </Button>
+              )}
+            </div>
+
+            {/* ── Segment hint ────────────────────────────────── */}
+            {imgStage === "segment" && (
+              <p className="text-[10px] text-zinc-400 dark:text-zinc-500 leading-tight">
+                Click on the object to select it. Alt+click or right-click to deselect regions.
+              </p>
+            )}
+
+            {/* ── Voxel density slider ────────────────────────── */}
+            {imgStage === "voxel-adjust" && imgPlyId && (
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
+                  Brick density
+                </span>
+                <input
+                  type="range"
+                  min={5}
+                  max={100}
+                  step={1}
+                  value={imgDensity}
+                  onChange={(e) => handleDensityChange(parseInt(e.target.value))}
+                  className="flex-1 h-1 accent-zinc-700 dark:accent-zinc-400 cursor-pointer"
+                  disabled={imgLoading}
+                />
+                <span className="text-[10px] text-zinc-400 dark:text-zinc-500 tabular-nums w-14 text-right">
+                  {imgVoxels.length} bricks
+                </span>
+              </div>
+            )}
+
+            {/* ── Viewport ────────────────────────────────────── */}
+            <div className="relative flex-1 min-h-0 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden">
+              {/* Loading overlay */}
+              {imgLoading && (
+                <div
+                  className={`absolute inset-0 flex items-center justify-center z-20 ${
+                    imgStage === "segment" || imgStage === "voxel-adjust"
+                      ? "bg-transparent"
+                      : "bg-zinc-100/60 dark:bg-zinc-800/60"
+                  }`}
+                >
+                  {imgStage !== "segment" && imgStage !== "voxel-adjust" && (
+                    <span className="text-xs text-zinc-400 dark:text-zinc-500 animate-pulse">
+                      {imgLoadingMsg}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Error */}
+              {!imgLoading && imgError && (
+                <span className="text-xs text-red-500 dark:text-red-400 px-4 text-center">
+                  {imgError}
+                </span>
+              )}
+
+              {/* Empty state */}
+              {imgStage === "upload" && !imgPreviewUrl && !imgLoading && !imgError && (
+                <span className="text-xs text-zinc-400 dark:text-zinc-500">
+                  Upload an image to begin
+                </span>
+              )}
+
+              {/* Image preview before processing starts */}
+              {imgStage === "upload" && imgPreviewUrl && (
+                <Image
+                  src={imgPreviewUrl}
+                  alt="Upload preview"
+                  fill
+                  unoptimized
+                  sizes="100vw"
+                  className="object-contain"
+                />
+              )}
+
+              {/* Click-to-segment viewport */}
+              {imgStage === "segment" && imgPreviewUrl && (
+                <div
+                  ref={segmentContainerRef}
+                  className="absolute inset-0 cursor-crosshair select-none"
+                  onClick={handleSegmentClick}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    handleSegmentClick(e, true);
+                  }}
+                >
+                  <Image
+                    src={imgPreviewUrl}
+                    alt="Segment source"
+                    fill
+                    unoptimized
+                    sizes="100vw"
+                    className="pointer-events-none object-contain"
+                    onLoad={(e) => {
+                      const el = e.currentTarget;
+                      setImgNaturalSize({ w: el.naturalWidth, h: el.naturalHeight });
+                    }}
+                  />
+                  {imgMaskOverlay && (
+                    <Image
+                      src={`data:image/png;base64,${imgMaskOverlay}`}
+                      alt="Segmentation overlay"
+                      fill
+                      unoptimized
+                      sizes="100vw"
+                      className="pointer-events-none object-contain"
+                    />
+                  )}
+                  {/* Point indicators via SVG overlay */}
+                  {imgNaturalSize && imgPoints.length > 0 && (
+                    <svg
+                      className="absolute inset-0 w-full h-full pointer-events-none"
+                      viewBox={`0 0 ${imgNaturalSize.w} ${imgNaturalSize.h}`}
+                      preserveAspectRatio="xMidYMid meet"
+                    >
+                      {imgPoints.map((p, i) => {
+                        const r = Math.max(imgNaturalSize.w, imgNaturalSize.h) * 0.007;
+                        return (
+                          <circle
+                            key={i}
+                            cx={p.x}
+                            cy={p.y}
+                            r={r}
+                            fill={p.label === 1 ? "#10b981" : "#ef4444"}
+                            stroke="white"
+                            strokeWidth={r * 0.5}
+                          />
+                        );
+                      })}
+                    </svg>
+                  )}
+                </div>
+              )}
+
+              {/* Reconstructing placeholder */}
+              {imgStage === "reconstructing" && !imgLoading && (
+                <span className="text-xs text-zinc-400 dark:text-zinc-500">
+                  Waiting for 3D reconstruction…
+                </span>
+              )}
+
+              {/* 3D voxel preview */}
+              {imgStage === "voxel-adjust" && imgCenteredVoxels.length > 0 && (
+                <Canvas
+                  camera={{
+                    position: imgVoxelCamera.position,
+                    fov: PREVIEW_FOV,
+                    up: [0, 0, 1],
+                  }}
+                  gl={{ antialias: true }}
+                  style={{ position: "absolute", inset: 0 }}
+                >
+                  <color attach="background" args={["#f4f4f5"]} />
+                  <ambientLight intensity={0.4} />
+                  <directionalLight position={[10, -5, 15]} intensity={1.2} />
+                  <Environment preset="city" />
+                  <OrbitControls
+                    target={imgVoxelCamera.target}
+                    enableDamping
+                    dampingFactor={0.1}
+                  />
+                  <group>
+                    {imgCenteredVoxels.map((v, i) => (
+                      <group key={i} position={[v.x, -v.y, v.z]}>
+                        <ParametricBrick studsX={1} studsY={1} color={v.color} />
+                      </group>
+                    ))}
+                  </group>
+                </Canvas>
+              )}
             </div>
 
             {/* Cancel / Add to Scene */}
             <div className="flex gap-2 justify-end">
-              <Button onClick={handleCancel}>
+              <Button onClick={handleCancel} className={TOOLBAR_BUTTON_CLASS}>
                 Cancel
               </Button>
               <Button
-                onClick={handleAddToScene}
-                disabled={!hasResult}
+                onClick={handleImgAddToScene}
+                disabled={imgVoxels.length === 0}
+                className={TOOLBAR_BUTTON_CLASS}
               >
                 Add to Scene
               </Button>

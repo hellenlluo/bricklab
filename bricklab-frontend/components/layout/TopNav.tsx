@@ -5,16 +5,14 @@ import Docs from "@/components/Docs";
 import Generator from "@/components/Generator";
 import Library from "@/components/Library";
 import Exporter from "@/components/Exporter";
-import Importer from "@/components/Importer";
 
-type Panel = "Docs" | "Generator" | "Library" | "Exporter" | "Importer";
+type Panel = "Docs" | "Generator" | "Library" | "Exporter";
 
 const NAV_ITEMS: Panel[] = [
   "Docs",
   "Generator",
   "Library",
   "Exporter",
-  "Importer",
 ];
 
 export default function TopNav() {
@@ -50,8 +48,6 @@ export default function TopNav() {
         return <Generator onClose={closePanel} />;
       case "Exporter":
         return <Exporter />;
-      case "Importer":
-        return <Importer />;
     }
   }
 
@@ -84,7 +80,7 @@ export default function TopNav() {
         </div>
       </nav>
 
-      {/* Panel modal with dimmed backdrop — centered in the area below the nav */}
+      {/* Panel modal */}
       {activePanel && (
         <div
           className="fixed inset-x-0 bottom-0 z-50 flex items-center justify-center bg-black/40"

@@ -9,6 +9,7 @@ rollback / temperature-escalation machinery handle resampling automatically.
 
 import sys
 import threading
+from collections import Counter
 from pathlib import Path
 from typing import TypedDict
 
@@ -16,7 +17,7 @@ BRICKGPT_SRC = Path(__file__).resolve().parents[2] / "external" / "BrickGPT" / "
 if str(BRICKGPT_SRC) not in sys.path:
     sys.path.insert(0, str(BRICKGPT_SRC))
 
-from brickgpt.data import Brick
+from brickgpt.data import Brick, BrickStructure
 from brickgpt.models import BrickGPT, BrickGPTConfig
 
 _model: BrickGPT | None = None
@@ -176,3 +177,128 @@ def generate_bricks(
         )
 
     return {"bricks": accepted, "partial": partial, "warning": warning}
+
+
+def generate_from_prefix(
+    prompt: str,
+    prefix_bricks: list[dict],
+    constraints: list[_ConstraintBox] | None = None,
+) -> dict:
+    """Continue BrickGPT generation from an edited prefix.
+
+    Builds a ``BrickStructure`` from *prefix_bricks* and feeds it to
+    BrickGPT with the same stability-rollback loop that normal generation
+    uses, so physically unstable continuations are re-attempted.
+
+    Returns ``{"bricks": [...], "prefix_count": int, "partial": bool,
+    "warning": str | None}``.  The ``bricks`` list contains **all** bricks
+    (prefix + newly generated).
+    """
+    model = get_model()
+    prefix_count = len(prefix_bricks)
+
+    # Re-normalize so the prefix starts at z=0 (the model's training
+    # distribution always begins structures on the ground plane).
+    z_min = min((b["z"] for b in prefix_bricks), default=0)
+    prefix_objs = [
+        Brick(h=b["h"], w=b["w"], x=b["x"], y=b["y"], z=b["z"] - z_min)
+        for b in prefix_bricks
+    ]
+
+    constraint_boxes = constraints or []
+    if z_min != 0 and constraint_boxes:
+        constraint_boxes = [
+            {**box, "pos_z": box["pos_z"] - z_min}
+            for box in constraint_boxes
+        ]
+
+    # Optionally patch _try_adding_brick for constraint enforcement.
+    orig_try = BrickGPT._try_adding_brick
+
+    def _constrained_try(brick_str, bricks, rejected_bricks):
+        result = orig_try(brick_str, bricks, rejected_bricks)
+        if result != "success":
+            return result
+        try:
+            brick = Brick.from_txt(brick_str)
+        except ValueError:
+            return "ill_formatted"
+        if _brick_in_any_constraint(
+            brick.h, brick.w, brick.x, brick.y, brick.z, constraint_boxes
+        ):
+            return "constraint_violation"
+        return "success"
+
+    total_rejection_reasons: Counter = Counter()
+
+    with _model_lock:
+        if constraint_boxes:
+            model._try_adding_brick = _constrained_try
+        try:
+            # Mirror the stability-rollback loop from BrickGPT.__call__
+            starting = BrickStructure(list(prefix_objs))
+            structure: BrickStructure | None = None
+
+            for _regen in range(model.max_regenerations + 1):
+                structure, reasons = model._generate_structure(
+                    prompt, starting_bricks=starting,
+                )
+                total_rejection_reasons.update(reasons)
+
+                if model.max_regenerations == 0 or model._is_stable(structure):
+                    break
+
+                # Roll back to last stable point, but never below the prefix
+                rollback = model._remove_all_bricks_after_first_unstable_brick(
+                    structure,
+                )
+                if len(rollback) < prefix_count:
+                    rollback = BrickStructure(list(prefix_objs))
+                starting = rollback
+        finally:
+            if constraint_boxes:
+                try:
+                    del model._try_adding_brick
+                except AttributeError:
+                    pass
+
+    assert structure is not None
+
+    # Post-generation constraint sweep (still in normalized coords)
+    accepted: list[dict] = []
+    post_sweep_removals = 0
+    for b in structure.bricks:
+        if constraint_boxes and _brick_in_any_constraint(
+            b.h, b.w, b.x, b.y, b.z, constraint_boxes
+        ):
+            post_sweep_removals += 1
+        else:
+            # Shift z back to the original coordinate space
+            accepted.append(
+                {"h": b.h, "w": b.w, "x": b.x, "y": b.y, "z": b.z + z_min}
+            )
+
+    constraint_rejections = total_rejection_reasons.get(
+        "constraint_violation", 0
+    )
+    total_rejections = constraint_rejections + post_sweep_removals
+    partial = total_rejections > 0
+    warning: str | None = None
+    if total_rejections >= _CONSTRAINT_REJECTION_WARNING_THRESHOLD:
+        warning = (
+            f"Constraint enforcement required {total_rejections} brick "
+            "rejection(s). The returned structure may be incomplete due to "
+            "overly restrictive constraints."
+        )
+    elif total_rejections > 0:
+        warning = (
+            f"{total_rejections} brick placement(s) were re-sampled during "
+            "generation due to constraint violations."
+        )
+
+    return {
+        "bricks": accepted,
+        "prefix_count": prefix_count,
+        "partial": partial,
+        "warning": warning,
+    }

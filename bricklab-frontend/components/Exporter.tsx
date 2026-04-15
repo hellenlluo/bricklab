@@ -1,10 +1,452 @@
-export default function Exporter() {
+"use client";
+
+import { useState, useRef, useEffect } from "react";
+import * as THREE from "three";
+import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter.js";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import JSZip from "jszip";
+import { useScene } from "@/store/sceneStore";
+import type { SceneData } from "@/store/sceneStore";
+import Input from "@/components/ui/Input";
+import Button from "@/components/ui/Button";
+
+// ── Brick geometry constants (mirrors ParametricBrick.tsx) ──────────────────
+const STUD_SPACING = 1;
+const BODY_HEIGHT = 1;
+const STUD_RADIUS = 0.25;
+const STUD_HEIGHT = 0.175;
+
+// ── Baseplate geometry constants (mirrors Baseplate.tsx) ────────────────────
+const PLATE_THICKNESS = 0.5;
+const PLATE_STUD_RADIUS = 0.25;
+const PLATE_STUD_HEIGHT = 0.175;
+const PLATE_STUD_SPACING = 1;
+
+// ── Three.js scene builders ─────────────────────────────────────────────────
+
+/**
+ * Build a single merged BufferGeometry for all studs of a brick or baseplate.
+ * CylinderGeometry is Y-aligned by default; we bake a PI/2 X-rotation into
+ * each clone so studs stand along Z (the app's up axis) before merging.
+ */
+function mergedStudsGeo(
+  positions: Array<[number, number, number]>,
+  radius: number,
+  height: number,
+  segments: number,
+): THREE.BufferGeometry {
+  const template = new THREE.CylinderGeometry(radius, radius, height, segments);
+  // Pre-compute the rotation matrix once (cylinder Y-axis → Z-axis)
+  const rotX = new THREE.Matrix4().makeRotationX(Math.PI / 2);
+  const geos = positions.map(([x, y, z]) => {
+    const clone = template.clone();
+    const m = new THREE.Matrix4()
+      .makeTranslation(x, y, z)
+      .multiply(rotX);
+    clone.applyMatrix4(m);
+    return clone;
+  });
+  template.dispose();
+  return mergeGeometries(geos);
+}
+
+function buildBrickGroup(
+  studsX: number,
+  studsY: number,
+  color: string,
+  roughness: number,
+  metalness: number,
+  name: string,
+): THREE.Group {
+  const group = new THREE.Group();
+  group.name = name;
+
+  const mat = new THREE.MeshStandardMaterial({
+    color: new THREE.Color(color),
+    roughness,
+    metalness,
+  });
+
+  // Body — bake position into geometry so it can be merged with studs
+  const bodyGeo = new THREE.BoxGeometry(
+    studsX * STUD_SPACING,
+    studsY * STUD_SPACING,
+    BODY_HEIGHT,
+  );
+  bodyGeo.applyMatrix4(
+    new THREE.Matrix4().makeTranslation(
+      (studsX * STUD_SPACING) / 2,
+      -(studsY * STUD_SPACING) / 2,
+      BODY_HEIGHT / 2,
+    ),
+  );
+
+  // Studs
+  const studPositions: Array<[number, number, number]> = [];
+  for (let ix = 0; ix < studsX; ix++) {
+    for (let iy = 0; iy < studsY; iy++) {
+      studPositions.push([
+        (ix + 0.5) * STUD_SPACING,
+        -(iy + 0.5) * STUD_SPACING,
+        BODY_HEIGHT + STUD_HEIGHT / 2,
+      ]);
+    }
+  }
+  const studsGeo = mergedStudsGeo(studPositions, STUD_RADIUS, STUD_HEIGHT, 12);
+
+  // Single mesh: body + all studs merged
+  const mesh = new THREE.Mesh(mergeGeometries([bodyGeo, studsGeo]), mat);
+  mesh.name = name;
+  group.add(mesh);
+
+  return group;
+}
+
+function buildBaseplateGroup(plateSize: number, plateColor: string): THREE.Group {
+  const group = new THREE.Group();
+  group.name = "Baseplate";
+
+  const mat = new THREE.MeshStandardMaterial({
+    color: new THREE.Color(plateColor),
+  });
+
+  // Slab — bake position into geometry so it can be merged with studs
+  const slabGeo = new THREE.BoxGeometry(plateSize, plateSize, PLATE_THICKNESS);
+  slabGeo.applyMatrix4(
+    new THREE.Matrix4().makeTranslation(0, 0, -PLATE_THICKNESS / 2),
+  );
+
+  // Studs
+  const studCount = Math.round(plateSize / PLATE_STUD_SPACING);
+  const start = -(plateSize / 2) + PLATE_STUD_SPACING / 2;
+  const studPositions: Array<[number, number, number]> = [];
+  for (let ix = 0; ix < studCount; ix++) {
+    for (let iy = 0; iy < studCount; iy++) {
+      studPositions.push([
+        start + ix * PLATE_STUD_SPACING,
+        start + iy * PLATE_STUD_SPACING,
+        PLATE_STUD_HEIGHT / 2,
+      ]);
+    }
+  }
+
+  // Single mesh: slab + all studs merged
+  const mesh = new THREE.Mesh(
+    mergeGeometries([slabGeo, mergedStudsGeo(studPositions, PLATE_STUD_RADIUS, PLATE_STUD_HEIGHT, 8)]),
+    mat,
+  );
+  mesh.name = "Baseplate";
+  group.add(mesh);
+
+  return group;
+}
+
+function buildThreeScene(sceneData: SceneData, includeBasePlate: boolean): THREE.Scene {
+  const exportScene = new THREE.Scene();
+
+  // BrickLab uses Z-up internally. glTF/Blender/Rhino default to Y-up.
+  // Wrapping everything in a root rotated −90° around X maps BrickLab's Z to
+  // the importers' Y so the scene stands upright with no manual correction.
+  const root = new THREE.Group();
+  root.name = sceneData.name;
+  root.rotation.x = -Math.PI / 2;
+  exportScene.add(root);
+
+  if (includeBasePlate) {
+    root.add(buildBaseplateGroup(sceneData.plateSize, sceneData.plateColor));
+  }
+
+  for (const asset of sceneData.assets) {
+    if (!asset.visible) continue;
+    if (asset.type === "preset-brick" && asset.preset) {
+      const { studsX, studsY } = asset.preset;
+      const brickGroup = buildBrickGroup(
+        studsX,
+        studsY,
+        asset.materialColor ?? "#bfbfff",
+        asset.materialRoughness ?? 0.88,
+        asset.materialMetalness ?? 0.2,
+        asset.name,
+      );
+      if (asset.position) {
+        brickGroup.position.set(asset.position[0], asset.position[1], asset.position[2]);
+      }
+      root.add(brickGroup);
+    }
+    // Non-preset (GLTF model) assets are recorded in metadata only;
+    // their source GLBs would need to be fetched separately.
+  }
+
+  return exportScene;
+}
+
+// ── Metadata builder ────────────────────────────────────────────────────────
+
+function buildMetadata(
+  sceneData: SceneData,
+  exportName: string,
+  includeBasePlate: boolean,
+) {
+  const presetAssets = sceneData.assets.filter((a) => a.type === "preset-brick" && a.preset);
+
+  const brickTypeMap = new Map<
+    string,
+    { studsX: number; studsY: number; count: number; label: string }
+  >();
+  for (const asset of presetAssets) {
+    const { studsX, studsY } = asset.preset!;
+    const key = `${studsX}x${studsY}`;
+    if (!brickTypeMap.has(key)) {
+      brickTypeMap.set(key, { studsX, studsY, count: 0, label: `${studsX}×${studsY}` });
+    }
+    brickTypeMap.get(key)!.count++;
+  }
+
+  const modelAssets = sceneData.assets.filter((a) => a.type !== "preset-brick");
+  const modelTypeMap = new Map<string, number>();
+  for (const asset of modelAssets) {
+    const key = asset.modelPath ?? asset.type;
+    modelTypeMap.set(key, (modelTypeMap.get(key) ?? 0) + 1);
+  }
+
+  return {
+    exportName,
+    sceneName: sceneData.name,
+    exportedAt: new Date().toISOString(),
+    format: "GLB (glTF 2.0)",
+    includesBasePlate: includeBasePlate,
+    scene: {
+      background: sceneData.sceneBackground,
+      plateSize: sceneData.plateSize,
+      plateColor: sceneData.plateColor,
+    },
+    bricks: {
+      total: presetAssets.length,
+      byType: Array.from(brickTypeMap.values()).sort(
+        (a, b) => b.count - a.count,
+      ),
+    },
+    models: {
+      total: modelAssets.length,
+      bySource: Object.fromEntries(modelTypeMap),
+    },
+    assets: sceneData.assets.map((a) => ({
+      id: a.id,
+      name: a.name,
+      type: a.type,
+      category: a.category,
+      position: a.position,
+      color: a.materialColor,
+      ...(a.preset
+        ? { studsX: a.preset.studsX, studsY: a.preset.studsY }
+        : { modelPath: a.modelPath }),
+    })),
+  };
+}
+
+// ── Component ────────────────────────────────────────────────────────────────
+
+interface ExporterProps {
+  onClose?: () => void;
+}
+
+export default function Exporter({ onClose }: ExporterProps) {
+  const { scenes, activeSceneId } = useScene();
+  const [selectedSceneId, setSelectedSceneId] = useState(activeSceneId);
+  const [sceneDropdownOpen, setSceneDropdownOpen] = useState(false);
+  const sceneDropdownRef = useRef<HTMLDivElement>(null);
+  const [exportName, setExportName] = useState("Untitled Scene");
+  const [includeBasePlate, setIncludeBasePlate] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const selectedScene = scenes.find((s) => s.id === selectedSceneId) ?? scenes[0];
+
+  useEffect(() => {
+    if (!sceneDropdownOpen) return;
+    function handleOutside(e: MouseEvent) {
+      if (sceneDropdownRef.current && !sceneDropdownRef.current.contains(e.target as Node)) {
+        setSceneDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [sceneDropdownOpen]);
+  const presetCount = selectedScene.assets.filter((a) => a.type === "preset-brick").length;
+  const modelCount = selectedScene.assets.filter((a) => a.type !== "preset-brick").length;
+
+  async function handleExport() {
+    const name = exportName.trim() || "Untitled Scene";
+    setIsExporting(true);
+    setError(null);
+
+    try {
+      const threeScene = buildThreeScene(selectedScene, includeBasePlate);
+      const metadata = buildMetadata(selectedScene, name, includeBasePlate);
+
+      const exporter = new GLTFExporter();
+      const glbBuffer = await new Promise<ArrayBuffer>((resolve, reject) => {
+        exporter.parse(
+          threeScene,
+          (result) => {
+            if (result instanceof ArrayBuffer) resolve(result);
+            else reject(new Error("Expected binary GLB output"));
+          },
+          (err) => reject(err),
+          { binary: true },
+        );
+      });
+
+      const zip = new JSZip();
+      zip.file(`${name}.glb`, glbBuffer);
+      zip.file(`${name}.metadata.json`, JSON.stringify(metadata, null, 2));
+
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(zipBlob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `${name}.zip`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+
+      onClose?.();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Export failed");
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
   return (
-    <div className="p-6">
-      <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50 mb-2">
-        Exporter
-      </h2>
-      <p className="text-sm text-zinc-500 dark:text-zinc-400">Coming soon</p>
+    <div className="flex flex-col">
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800">
+        <span className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+          Exporter
+        </span>
+      </div>
+
+      <div className="p-4 flex flex-col gap-4">
+        {/* Scene selection */}
+        <div className="flex flex-col gap-1.5">
+          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Scene</span>
+          <div ref={sceneDropdownRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setSceneDropdownOpen((o) => !o)}
+              className={`flex w-full h-7 items-center gap-1.5 px-2 border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-[10px] leading-none text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors ${
+                sceneDropdownOpen
+                  ? "rounded-t-md rounded-b-none border-b-0"
+                  : "rounded-md"
+              }`}
+            >
+              <span
+                className="inline-block shrink-0 text-zinc-900 dark:text-zinc-100 transition-transform duration-200"
+                style={{
+                  fontSize: "0.45rem",
+                  transform: sceneDropdownOpen ? "rotate(90deg)" : "rotate(0deg)",
+                  lineHeight: 1,
+                }}
+              >
+                ▶
+              </span>
+              <span className="text-zinc-400 dark:text-zinc-500">Scene:</span>
+              <span className="truncate">{selectedScene.name}</span>
+              <span className="ml-auto text-zinc-400 dark:text-zinc-500 shrink-0">
+                {selectedScene.assets.length} object{selectedScene.assets.length !== 1 ? "s" : ""}
+              </span>
+            </button>
+            {sceneDropdownOpen && (
+              <div className="absolute top-full left-0 w-full bg-white dark:bg-zinc-900 border border-t-0 border-zinc-200 dark:border-zinc-800 rounded-b-xl z-50 overflow-hidden">
+                <ul className="py-1">
+                  {scenes.map((scene) => (
+                    <li key={scene.id}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedSceneId(scene.id);
+                          setSceneDropdownOpen(false);
+                        }}
+                        className={`flex w-full cursor-pointer items-center justify-between gap-2 px-3 py-1 text-[10px] leading-none hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
+                          scene.id === selectedSceneId
+                            ? "text-zinc-900 dark:text-zinc-100"
+                            : "text-zinc-700 dark:text-zinc-200"
+                        }`}
+                      >
+                        <span className="truncate">{scene.name}</span>
+                        <span className="text-zinc-400 dark:text-zinc-500 shrink-0">
+                          {scene.assets.length} obj{scene.assets.length !== 1 ? "s" : ""}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Export name */}
+        <div className="flex flex-col gap-1.5">
+          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            Export name
+          </span>
+          <Input
+            value={exportName}
+            onChange={(e) => setExportName(e.target.value)}
+            placeholder="Untitled Scene"
+            className="w-full"
+          />
+        </div>
+
+        {/* Options */}
+        <div className="flex flex-col gap-2">
+          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Options</span>
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={includeBasePlate}
+              onChange={(e) => setIncludeBasePlate(e.target.checked)}
+              className="w-3.5 h-3.5 rounded border-zinc-300 dark:border-zinc-600 accent-zinc-700 dark:accent-zinc-300"
+            />
+            <span className="text-xs text-zinc-600 dark:text-zinc-400">
+              Include base plate
+            </span>
+          </label>
+        </div>
+
+        {/* Summary */}
+        <div className="flex flex-col gap-1 rounded-md bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-100 dark:border-zinc-700 px-3 py-2.5">
+          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-0.5">
+            Summary
+          </span>
+          <div className="flex justify-between text-xs">
+            <span className="text-zinc-500 dark:text-zinc-400">Preset bricks</span>
+            <span className="text-zinc-900 dark:text-zinc-100 tabular-nums">{presetCount}</span>
+          </div>
+          {modelCount > 0 && (
+            <div className="flex justify-between text-xs">
+              <span className="text-zinc-500 dark:text-zinc-400">3D models</span>
+              <span className="text-zinc-900 dark:text-zinc-100 tabular-nums">{modelCount}</span>
+            </div>
+          )}
+          <div className="flex justify-between text-xs">
+            <span className="text-zinc-500 dark:text-zinc-400">Format</span>
+            <span className="text-zinc-900 dark:text-zinc-100">GLB + JSON</span>
+          </div>
+        </div>
+
+        {error && <p className="text-xs text-red-500 dark:text-red-400">{error}</p>}
+
+        {/* Export button */}
+        <Button
+          onClick={handleExport}
+          disabled={isExporting || !exportName.trim()}
+          className="w-full py-2 text-xs justify-center"
+        >
+          {isExporting ? "Exporting…" : "Export as ZIP"}
+        </Button>
+      </div>
     </div>
   );
 }

@@ -22,6 +22,7 @@ export interface PrefixEditValue {
   groupId: string | null;
   revertedStepIndex: number;
   errorMessage: string | null;
+  generationOffset: GenerationOffset | null;
   startPrefixEdit: (groupId: string, stepK: number) => void;
   cancelEdit: () => void;
   regenerateFromPrefix: () => Promise<void>;
@@ -221,6 +222,7 @@ export function PrefixEditProvider({ children }: { children: React.ReactNode }) 
     groupId: state.groupId,
     revertedStepIndex: state.revertedStepIndex,
     errorMessage: state.errorMessage,
+    generationOffset: state.phase !== "idle" ? state.generationOffset : null,
     startPrefixEdit,
     cancelEdit,
     regenerateFromPrefix,

@@ -11,9 +11,14 @@ import {
 } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { useScene, type SceneAsset } from "@/store/sceneStore";
+import { usePrefixEdit } from "@/store/usePrefixEdit";
+import type { GenerationOffset } from "@/lib/prefixEditing";
 import Baseplate from "./Baseplate";
 import Gizmo from "./Gizmo";
 import ParametricBrick, { BODY_HEIGHT } from "@/components/ParametricBrick";
+
+const BRICKGPT_WORLD_DIM = 20;
+const BRICKGPT_GRID_COLOR = "#7ec8e3";
 
 useGLTF.preload("/brick.glb");
 
@@ -23,6 +28,65 @@ function ZUpCamera() {
     camera.up.set(0, 0, 1);
   }, [camera]);
   return null;
+}
+
+function BrickGPTWorldBox({ offset }: { offset: GenerationOffset }) {
+  const cx = BRICKGPT_WORLD_DIM / 2 - offset.minX;
+  const cy = -(BRICKGPT_WORLD_DIM / 2) - offset.minNegY;
+  const cz = BRICKGPT_WORLD_DIM / 2 - offset.minZ;
+
+  return (
+    <group position={[cx, cy, cz]}>
+      <mesh>
+        <boxGeometry args={[BRICKGPT_WORLD_DIM, BRICKGPT_WORLD_DIM, BRICKGPT_WORLD_DIM]} />
+        <meshBasicMaterial
+          color={BRICKGPT_GRID_COLOR}
+          transparent
+          opacity={0.06}
+          side={THREE.DoubleSide}
+          depthWrite={false}
+          polygonOffset
+          polygonOffsetFactor={2}
+          polygonOffsetUnits={2}
+        />
+      </mesh>
+      <lineSegments>
+        <edgesGeometry
+          args={[new THREE.BoxGeometry(BRICKGPT_WORLD_DIM, BRICKGPT_WORLD_DIM, BRICKGPT_WORLD_DIM)]}
+        />
+        <lineBasicMaterial
+          color={BRICKGPT_GRID_COLOR}
+          transparent
+          opacity={0.5}
+          polygonOffset
+          polygonOffsetFactor={2}
+          polygonOffsetUnits={2}
+        />
+      </lineSegments>
+      {[0, 1].flatMap((xi) =>
+        [0, 1].flatMap((yi) =>
+          [0, 1].map((zi) => (
+            <mesh
+              key={`bw-${xi}-${yi}-${zi}`}
+              position={[
+                (xi - 0.5) * BRICKGPT_WORLD_DIM,
+                (yi - 0.5) * BRICKGPT_WORLD_DIM,
+                (zi - 0.5) * BRICKGPT_WORLD_DIM,
+              ]}
+            >
+              <sphereGeometry args={[0.2, 8, 8]} />
+              <meshBasicMaterial
+                color={BRICKGPT_GRID_COLOR}
+                polygonOffset
+                polygonOffsetFactor={2}
+                polygonOffsetUnits={2}
+              />
+            </mesh>
+          )),
+        ),
+      )}
+    </group>
+  );
 }
 
 function applyMaterialOverrides(
@@ -367,8 +431,30 @@ function getAssetWeight(asset: SceneAsset) {
   return 1;
 }
 
+function clampToBrickGPTWorld(
+  x: number,
+  y: number,
+  z: number,
+  studsX: number,
+  studsY: number,
+  offset: GenerationOffset,
+): [number, number, number] {
+  const minX = -offset.minX;
+  const maxX = BRICKGPT_WORLD_DIM - offset.minX - studsX;
+  const minY = studsY - BRICKGPT_WORLD_DIM - offset.minNegY;
+  const maxY = -offset.minNegY;
+  const minZ = -offset.minZ;
+  const maxZ = BRICKGPT_WORLD_DIM - 1 - offset.minZ;
+  return [
+    Math.max(minX, Math.min(maxX, x)),
+    Math.max(minY, Math.min(maxY, y)),
+    Math.max(minZ, Math.min(maxZ, z)),
+  ];
+}
+
 function SceneControls() {
   const { selectedAssetId, selectedAssetIds, updateAsset, captureUndoSnapshot, plateSize, assets, maxCameraDistance, viewportType } = useScene();
+  const prefixEdit = usePrefixEdit();
   const scene = useThree((s) => s.scene);
   const camera = useThree((s) => s.camera);
   const orbRef = useRef<OrbitControlsImpl>(null);
@@ -447,10 +533,28 @@ function SceneControls() {
     if (isMultiSelection) {
       const delta = selectionPivot.position.clone().sub(lastPivotPositionRef.current);
       if (delta.lengthSq() === 0) return;
+
+      // Compute the minimum world-space bottom (obj.position.z - cz) across all
+      // selected objects, then clamp delta.z so no brick goes below the plate (z=0).
+      let minBottom = Infinity;
+      selectedAssets.forEach((asset) => {
+        const obj = scene.getObjectByName(asset.id);
+        if (!obj) return;
+        const { cz } = getAssetOffsets(asset);
+        minBottom = Math.min(minBottom, obj.position.z - cz);
+      });
+      if (isFinite(minBottom)) {
+        delta.z = Math.max(delta.z, -minBottom);
+      }
+
       selectedAssetIds.forEach((id) => {
         const obj = scene.getObjectByName(id);
         if (obj) obj.position.add(delta);
       });
+
+      // Write the clamped pivot position back so that subsequent delta calculations
+      // stay accurate and the gizmo cannot drift below the plate.
+      selectionPivot.position.copy(lastPivotPositionRef.current).add(delta);
       lastPivotPositionRef.current.copy(selectionPivot.position);
       return;
     }
@@ -459,36 +563,57 @@ function SceneControls() {
     if (!obj) return;
     const asset = assets.find((a) => a.id === selectedAssetId);
     const { cx, cy, cz } = asset ? getAssetOffsets(asset) : { cx: 0, cy: 0, cz: 0 };
-    obj.position.x = Math.round(obj.position.x - cx) + cx;
-    obj.position.y = Math.round(obj.position.y + cy) - cy;
-    obj.position.z = Math.max(cz, Math.round(obj.position.z - cz) + cz);
-  }, [assets, isMultiSelection, scene, selectedAssetId, selectedAssetIds, selectionPivot]);
+    let sx = Math.round(obj.position.x - cx);
+    let sy = Math.round(obj.position.y + cy);
+    let sz = Math.max(0, Math.round(obj.position.z - cz));
+    const peActive = prefixEdit.phase === "editing_prefix" || prefixEdit.phase === "error";
+    if (peActive && prefixEdit.generationOffset && asset?.groupId === prefixEdit.groupId && asset?.preset) {
+      [sx, sy, sz] = clampToBrickGPTWorld(sx, sy, sz, asset.preset.studsX, asset.preset.studsY, prefixEdit.generationOffset);
+    }
+    obj.position.x = sx + cx;
+    obj.position.y = sy - cy;
+    obj.position.z = sz + cz;
+  }, [assets, isMultiSelection, scene, selectedAssetId, selectedAssetIds, selectedAssets, selectionPivot, prefixEdit]);
 
   const handleMouseUp = useCallback(() => {
+    const peOffset = prefixEdit.generationOffset;
+    const peGroupId = prefixEdit.groupId;
+    const peActive = prefixEdit.phase === "editing_prefix" || prefixEdit.phase === "error";
+
     if (isMultiSelection) {
-      const movedAssets = selectedAssets
+      const candidates = selectedAssets
         .map((asset) => {
           const obj = scene.getObjectByName(asset.id);
           if (!obj) return null;
           const { cx, cy, cz } = getAssetOffsets(asset);
-          const x = Math.round(obj.position.x - cx);
-          const y = Math.round(obj.position.y + cy);
-          const z = Math.max(0, Math.round(obj.position.z - cz));
-          const nextPosition: [number, number, number] = [x, y, z];
-          const prevPosition = asset.position ?? [0, 0, 0];
-          const changed =
-            prevPosition[0] !== nextPosition[0] ||
-            prevPosition[1] !== nextPosition[1] ||
-            prevPosition[2] !== nextPosition[2];
-          return changed ? { id: asset.id, position: nextPosition } : null;
+          return {
+            id: asset.id,
+            asset,
+            x: Math.round(obj.position.x - cx),
+            y: Math.round(obj.position.y + cy),
+            z: Math.round(obj.position.z - cz),
+            prevPosition: (asset.position ?? [0, 0, 0]) as [number, number, number],
+          };
         })
-        .filter((asset): asset is { id: string; position: [number, number, number] } => !!asset);
+        .filter((c): c is NonNullable<typeof c> => c !== null);
+
+      const minZ = candidates.reduce((m, c) => Math.min(m, c.z), Infinity);
+      const zShift = minZ < 0 ? -minZ : 0;
+
+      const movedAssets = candidates
+        .map(({ id, asset, x, y, z, prevPosition }) => {
+          let fx = x, fy = y, fz = z + zShift;
+          if (peActive && peOffset && asset.groupId === peGroupId && asset.preset) {
+            [fx, fy, fz] = clampToBrickGPTWorld(fx, fy, fz, asset.preset.studsX, asset.preset.studsY, peOffset);
+          }
+          if (prevPosition[0] === fx && prevPosition[1] === fy && prevPosition[2] === fz) return null;
+          return { id, position: [fx, fy, fz] as [number, number, number] };
+        })
+        .filter((a): a is { id: string; position: [number, number, number] } => a !== null);
 
       if (movedAssets.length === 0) return;
       captureUndoSnapshot();
-      movedAssets.forEach((asset) => {
-        updateAsset(asset.id, { position: asset.position });
-      });
+      movedAssets.forEach(({ id, position }) => updateAsset(id, { position }));
       return;
     }
 
@@ -496,16 +621,19 @@ function SceneControls() {
     if (!obj || !selectedAssetId) return;
     const asset = assets.find((a) => a.id === selectedAssetId);
     const { cx, cy, cz } = asset ? getAssetOffsets(asset) : { cx: 0, cy: 0, cz: 0 };
-    const x = Math.round(obj.position.x - cx);
-    const y = Math.round(obj.position.y + cy);
-    const z = Math.max(0, Math.round(obj.position.z - cz));
+    let x = Math.round(obj.position.x - cx);
+    let y = Math.round(obj.position.y + cy);
+    let z = Math.max(0, Math.round(obj.position.z - cz));
+    if (peActive && peOffset && asset?.groupId === peGroupId && asset?.preset) {
+      [x, y, z] = clampToBrickGPTWorld(x, y, z, asset.preset.studsX, asset.preset.studsY, peOffset);
+    }
     const prevPosition = asset?.position ?? [0, 0, 0];
     if (prevPosition[0] === x && prevPosition[1] === y && prevPosition[2] === z) {
       return;
     }
     captureUndoSnapshot();
     updateAsset(selectedAssetId, { position: [x, y, z] });
-  }, [assets, captureUndoSnapshot, isMultiSelection, scene, selectedAssetId, selectedAssets, updateAsset]);
+  }, [assets, captureUndoSnapshot, isMultiSelection, scene, selectedAssetId, selectedAssets, updateAsset, prefixEdit]);
 
   const isPerspective = viewportType === "Perspective";
 
@@ -546,6 +674,13 @@ function SceneControls() {
   );
 }
 
+function PrefixEditWorldBox() {
+  const { generationOffset, phase } = usePrefixEdit();
+  if (phase !== "editing_prefix" && phase !== "error") return null;
+  if (!generationOffset) return null;
+  return <BrickGPTWorldBox offset={generationOffset} />;
+}
+
 export default function SceneCanvas() {
   const { assets, sceneBackground, selectAsset, plateSize, plateColor, viewportType } =
     useScene();
@@ -572,6 +707,7 @@ export default function SceneCanvas() {
         <Environment preset="city" />
         <SceneControls />
         <PlacedAssets assets={assets} />
+        <PrefixEditWorldBox />
         <Gizmo interactive={isPerspective} />
       </Canvas>
     </div>

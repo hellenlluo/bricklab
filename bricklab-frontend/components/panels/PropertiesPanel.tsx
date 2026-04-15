@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useScene, type AssetCategory, type BrickGroup } from "@/store/sceneStore";
+import { useScene, type AssetCategory, type BrickGroup, type SceneAsset } from "@/store/sceneStore";
 import { usePrefixEdit } from "@/store/usePrefixEdit";
 import Texture from "./Texture";
 import Button from "@/components/ui/Button";
@@ -58,6 +58,24 @@ function getCategoryLabel(category: AssetCategory | undefined, fallback: string)
 
 function isPrefixEditBlocking(phase: ReturnType<typeof usePrefixEdit>["phase"]) {
   return phase === "editing_prefix" || phase === "regenerating";
+}
+
+function isGroupUnmoved(group: BrickGroup, members: SceneAsset[]): boolean {
+  if (!group.generationHistory || !group.generationOffset) return false;
+  const history = group.generationHistory;
+  for (const asset of members) {
+    if (!asset.position || !asset.preset) return false;
+    const match = history.some(
+      (h) =>
+        h.x === asset.position![0] &&
+        h.y === asset.position![1] &&
+        h.z === asset.position![2] &&
+        h.studsX === asset.preset!.studsX &&
+        h.studsY === asset.preset!.studsY,
+    );
+    if (!match) return false;
+  }
+  return true;
 }
 
 function NumberValue({
@@ -335,7 +353,8 @@ export default function PropertiesPanel() {
                 canPrefixEdit={
                   !!genGroup.originalPrompt &&
                   !!genGroup.generationOffset &&
-                  !isPrefixEditBlocking(prefixEdit.phase)
+                  !isPrefixEditBlocking(prefixEdit.phase) &&
+                  isGroupUnmoved(genGroup, groupAssets)
                 }
                 onPrefixEdit={prefixEdit.startPrefixEdit}
                 onClose={() => setReplayOpen(false)}
@@ -645,6 +664,7 @@ export default function PropertiesPanel() {
         };
         const genGroup = findGen(singleAsset.groupId);
         if (!genGroup) return null;
+        const genGroupMembers = assets.filter((a) => a.groupId === genGroup.id);
         return (
           <Field label="Generation Process">
             <Button
@@ -661,7 +681,8 @@ export default function PropertiesPanel() {
                 canPrefixEdit={
                   !!genGroup.originalPrompt &&
                   !!genGroup.generationOffset &&
-                  !isPrefixEditBlocking(prefixEdit.phase)
+                  !isPrefixEditBlocking(prefixEdit.phase) &&
+                  isGroupUnmoved(genGroup, genGroupMembers)
                 }
                 onPrefixEdit={prefixEdit.startPrefixEdit}
                 onClose={() => setReplayOpen(false)}

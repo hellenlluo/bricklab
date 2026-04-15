@@ -544,17 +544,25 @@ export default function Generator({ onClose }: GeneratorProps) {
     imgAbortRef.current?.abort();
     imgAbortRef.current = null;
 
-    if (imgCenteredVoxels.length > 0) {
+    if (imgVoxels.length > 0) {
       const ts = Date.now();
       const category: AssetCategory = "image-to-3d";
-      const sceneAssets: SceneAsset[] = imgCenteredVoxels.map((v, i) => ({
+
+      let vMinX = Infinity, vMinY = Infinity, vMinZ = Infinity;
+      for (const v of imgVoxels) {
+        vMinX = Math.min(vMinX, v.x);
+        vMinY = Math.min(vMinY, v.y);
+        vMinZ = Math.min(vMinZ, v.z);
+      }
+
+      const sceneAssets: SceneAsset[] = imgVoxels.map((v, i) => ({
         id: `img3d-${i}-${ts}`,
         name: `Voxel ${assets.length + i + 1}`,
         type: "preset-brick",
         visible: true,
         selectable: true,
         category,
-        position: [v.x, -v.y, v.z] as [number, number, number],
+        position: [v.x - vMinX, -(v.y - vMinY), v.z - vMinZ] as [number, number, number],
         materialColor: v.color,
         materialRoughness: 0.88,
         materialMetalness: 0.2,

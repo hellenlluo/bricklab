@@ -47,7 +47,7 @@ export default function TopNav() {
       case "Generator":
         return <Generator onClose={closePanel} />;
       case "Exporter":
-        return <Exporter />;
+        return <Exporter onClose={closePanel} />;
     }
   }
 
@@ -93,7 +93,9 @@ export default function TopNav() {
                 ? "w-[40vw]"
                 : activePanel === "Generator"
                   ? "w-[50vw]"
-                : "w-72"
+                  : activePanel === "Exporter"
+                    ? "w-96"
+                    : "w-72"
             }`}
             onClick={(e) => e.stopPropagation()}
           >

@@ -36,21 +36,28 @@ const VALID_BRICK_DIMS = new Set([
 
 /**
  * Compute the generation offset from raw backend bricks.
- * This is the same normalisation that Generator.tsx applies when adding
- * bricks to the scene, captured so we can reverse it later.
+ *
+ * The offset places the top-left corner of the bounding box (viewed from
+ * the +Z axis) at the scene origin:
+ *   sceneX = b.x - minX          →  left edge at X = 0
+ *   sceneY = -b.y - maxNegY      →  top edge at Y = 0  (bricks extend -Y)
+ *   sceneZ = b.z - minZ          →  base at Z = 0
+ *
+ * `minNegY` stores max(-b.y) (i.e. -min(b.y)) so the field doubles as the
+ * Y anchor for the round-trip conversion in `sceneAssetsToBackendBricks`.
  */
 export function computeGenerationOffset(
   bricks: BackendBrick[],
 ): GenerationOffset {
   let minX = Infinity;
-  let minNegY = Infinity;
+  let maxNegY = -Infinity;
   let minZ = Infinity;
   for (const b of bricks) {
     minX = Math.min(minX, b.x);
-    minNegY = Math.min(minNegY, -b.y);
+    maxNegY = Math.max(maxNegY, -b.y);
     minZ = Math.min(minZ, b.z);
   }
-  return { minX, minNegY, minZ };
+  return { minX, minNegY: maxNegY, minZ };
 }
 
 /**
@@ -72,9 +79,9 @@ export function sceneAssetsToBackendBricks(
     .map((a) => ({
       h: a.preset!.studsX,
       w: a.preset!.studsY,
-      x: a.position![0] + offset.minX,
-      y: -(a.position![1] + offset.minNegY),
-      z: a.position![2] + offset.minZ,
+      x: Math.round(a.position![0] + offset.minX),
+      y: Math.round(-(a.position![1] + offset.minNegY)),
+      z: Math.round(a.position![2] + offset.minZ),
     }));
 }
 

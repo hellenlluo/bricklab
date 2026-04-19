@@ -76,10 +76,7 @@ export default function ConstraintsPanel() {
       </div>
 
       {builderOpen && (
-        <ConstraintBuilder
-          existing={editingConstraint}
-          onClose={handleClose}
-        />
+        <ConstraintBuilder existing={editingConstraint} onClose={handleClose} />
       )}
     </>
   );

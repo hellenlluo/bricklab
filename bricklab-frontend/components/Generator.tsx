@@ -9,7 +9,12 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import ParametricBrick from "@/components/ParametricBrick";
 import { useScene } from "@/store/sceneStore";
-import type { SceneAsset, AssetCategory, GenerationHistoryEntry, ConstraintBox } from "@/store/sceneStore";
+import type {
+  SceneAsset,
+  AssetCategory,
+  GenerationHistoryEntry,
+  ConstraintBox,
+} from "@/store/sceneStore";
 import { computeGenerationOffset } from "@/lib/prefixEditing";
 import {
   uploadImage,
@@ -47,13 +52,19 @@ function computePreviewCamera(bricks: BrickData[]): {
     return { position: [15, -15, 12], target: [0, 0, 0] };
   }
 
-  let minX = Infinity, maxX = -Infinity;
-  let minY = Infinity, maxY = -Infinity;
-  let minZ = Infinity, maxZ = -Infinity;
+  let minX = Infinity,
+    maxX = -Infinity;
+  let minY = Infinity,
+    maxY = -Infinity;
+  let minZ = Infinity,
+    maxZ = -Infinity;
   for (const b of bricks) {
-    minX = Math.min(minX, b.x);       maxX = Math.max(maxX, b.x + b.h);
-    minY = Math.min(minY, b.y);       maxY = Math.max(maxY, b.y + b.w);
-    minZ = Math.min(minZ, b.z);       maxZ = Math.max(maxZ, b.z + 1);
+    minX = Math.min(minX, b.x);
+    maxX = Math.max(maxX, b.x + b.h);
+    minY = Math.min(minY, b.y);
+    maxY = Math.max(maxY, b.y + b.w);
+    minZ = Math.min(minZ, b.z);
+    maxZ = Math.max(maxZ, b.z + 1);
   }
 
   const cx = (minX + maxX) / 2;
@@ -231,11 +242,7 @@ function BrickPreviewScene({
       <ambientLight intensity={0.4} />
       <directionalLight position={[10, -5, 15]} intensity={1.2} />
       <Environment preset="city" />
-      <OrbitControls
-        target={target}
-        enableDamping
-        dampingFactor={0.1}
-      />
+      <OrbitControls target={target} enableDamping dampingFactor={0.1} />
       <group>
         {bricks.map((b, i) => (
           <group key={i} position={[b.x, -b.y, b.z]}>
@@ -257,24 +264,35 @@ function BrickPreviewScene({
 }
 
 export default function Generator({ onClose }: GeneratorProps) {
-  const { addAssetsAsGroup, assets, defaultBrickColor, constraints } = useScene();
+  const { addAssetsAsGroup, assets, defaultBrickColor, constraints } =
+    useScene();
   const [tab, setTab] = useState<Tab>("text-to-3d");
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [bricks, setBricks] = useState<BrickData[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [generationWarning, setGenerationWarning] = useState<string | null>(null);
+  const [generationWarning, setGenerationWarning] = useState<string | null>(
+    null,
+  );
   const abortRef = useRef<AbortController | null>(null);
 
   // ── Image-to-3D pipeline state ─────────────────────────────────────────
-  type ImgStage = "upload" | "encoding" | "segment" | "reconstructing" | "voxel-adjust";
+  type ImgStage =
+    | "upload"
+    | "encoding"
+    | "segment"
+    | "reconstructing"
+    | "voxel-adjust";
   const [imgStage, setImgStage] = useState<ImgStage>("upload");
   const [imgFile, setImgFile] = useState<File | null>(null);
   const [imgPreviewUrl, setImgPreviewUrl] = useState<string | null>(null);
   const [imgImageId, setImgImageId] = useState<string | null>(null);
   const [imgPoints, setImgPoints] = useState<ClickPoint[]>([]);
   const [imgMaskOverlay, setImgMaskOverlay] = useState<string | null>(null);
-  const [imgNaturalSize, setImgNaturalSize] = useState<{ w: number; h: number } | null>(null);
+  const [imgNaturalSize, setImgNaturalSize] = useState<{
+    w: number;
+    h: number;
+  } | null>(null);
   const [imgPlyId, setImgPlyId] = useState<string | null>(null);
   const [imgVoxels, setImgVoxels] = useState<VoxelData[]>([]);
   const [imgDensity, setImgDensity] = useState(35);
@@ -286,7 +304,9 @@ export default function Generator({ onClose }: GeneratorProps) {
   const imgFileInputRef = useRef<HTMLInputElement>(null);
   const segmentContainerRef = useRef<HTMLDivElement>(null);
 
-  const [selectedConstraintIds, setSelectedConstraintIds] = useState<string[]>([]);
+  const [selectedConstraintIds, setSelectedConstraintIds] = useState<string[]>(
+    [],
+  );
   const [showConstraints, setShowConstraints] = useState(false);
   const [constraintDropdownOpen, setConstraintDropdownOpen] = useState(false);
   const constraintDropdownRef = useRef<HTMLDivElement>(null);
@@ -313,9 +333,12 @@ export default function Generator({ onClose }: GeneratorProps) {
   const imgCenteredVoxels = useMemo(() => {
     if (imgVoxels.length === 0) return [] as VoxelData[];
 
-    let minX = Infinity, maxX = -Infinity;
-    let minY = Infinity, maxY = -Infinity;
-    let minZ = Infinity, maxZ = -Infinity;
+    let minX = Infinity,
+      maxX = -Infinity;
+    let minY = Infinity,
+      maxY = -Infinity;
+    let minZ = Infinity,
+      maxZ = -Infinity;
 
     for (const v of imgVoxels) {
       minX = Math.min(minX, v.x);
@@ -342,15 +365,24 @@ export default function Generator({ onClose }: GeneratorProps) {
   // doesn't jump as the slider moves.
   const imgVoxelCamera = useMemo(() => {
     if (imgCenteredVoxels.length === 0) {
-      return { position: [15, -15, 12] as [number, number, number], target: [0, 0, 0] as [number, number, number] };
+      return {
+        position: [15, -15, 12] as [number, number, number],
+        target: [0, 0, 0] as [number, number, number],
+      };
     }
-    let minX = Infinity, maxX = -Infinity;
-    let minY = Infinity, maxY = -Infinity;
-    let minZ = Infinity, maxZ = -Infinity;
+    let minX = Infinity,
+      maxX = -Infinity;
+    let minY = Infinity,
+      maxY = -Infinity;
+    let minZ = Infinity,
+      maxZ = -Infinity;
     for (const v of imgCenteredVoxels) {
-      minX = Math.min(minX, v.x);      maxX = Math.max(maxX, v.x + 1);
-      minY = Math.min(minY, -v.y - 1); maxY = Math.max(maxY, -v.y);
-      minZ = Math.min(minZ, v.z);      maxZ = Math.max(maxZ, v.z + 1);
+      minX = Math.min(minX, v.x);
+      maxX = Math.max(maxX, v.x + 1);
+      minY = Math.min(minY, -v.y - 1);
+      maxY = Math.max(maxY, -v.y);
+      minZ = Math.min(minZ, v.z);
+      maxZ = Math.max(maxZ, v.z + 1);
     }
     const cx = (minX + maxX) / 2;
     const cy = (minY + maxY) / 2;
@@ -366,7 +398,7 @@ export default function Generator({ onClose }: GeneratorProps) {
       position: [cx + iso, cy - iso, cz + iso] as [number, number, number],
       target: [cx, cy, cz] as [number, number, number],
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [imgStage]); // intentionally only recompute when stage changes to voxel-adjust
 
   const intersectionCount = useMemo(() => {
@@ -429,7 +461,10 @@ export default function Generator({ onClose }: GeneratorProps) {
     }
   }
 
-  function handleSegmentClick(e: React.MouseEvent<HTMLDivElement>, forceNegative = false) {
+  function handleSegmentClick(
+    e: React.MouseEvent<HTMLDivElement>,
+    forceNegative = false,
+  ) {
     if (imgStage !== "segment" || imgLoading || !imgNaturalSize) return;
 
     const container = segmentContainerRef.current;
@@ -448,7 +483,7 @@ export default function Generator({ onClose }: GeneratorProps) {
 
     if (imgX < 0 || imgX >= naturalW || imgY < 0 || imgY >= naturalH) return;
 
-    const label = (forceNegative || e.altKey) ? 0 : 1;
+    const label = forceNegative || e.altKey ? 0 : 1;
     const newPoints: ClickPoint[] = [...imgPoints, { x: imgX, y: imgY, label }];
     setImgPoints(newPoints);
     requestMaskPrediction(newPoints);
@@ -502,7 +537,10 @@ export default function Generator({ onClose }: GeneratorProps) {
 
     try {
       const res = await image3dReconstruct(
-        imgImageId, 42, densityToVoxelSize(imgDensity), controller.signal,
+        imgImageId,
+        42,
+        densityToVoxelSize(imgDensity),
+        controller.signal,
       );
       setImgPlyId(res.ply_id);
       setImgVoxels(res.voxels);
@@ -516,29 +554,39 @@ export default function Generator({ onClose }: GeneratorProps) {
     }
   }
 
-  const revoxelizeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const handleDensityChange = useCallback((newDensity: number) => {
-    setImgDensity(newDensity);
-    if (!imgPlyId) return;
+  const revoxelizeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const handleDensityChange = useCallback(
+    (newDensity: number) => {
+      setImgDensity(newDensity);
+      if (!imgPlyId) return;
 
-    if (revoxelizeTimeoutRef.current) clearTimeout(revoxelizeTimeoutRef.current);
-    revoxelizeTimeoutRef.current = setTimeout(async () => {
-      imgAbortRef.current?.abort();
-      const controller = new AbortController();
-      imgAbortRef.current = controller;
-      setImgLoading(true);
-      setImgLoadingMsg("Re-voxelizing…");
-      try {
-        const res = await revoxelize(imgPlyId!, densityToVoxelSize(newDensity), controller.signal);
-        setImgVoxels(res.voxels);
-      } catch (e: unknown) {
-        if (e instanceof DOMException && e.name === "AbortError") return;
-        setImgError(e instanceof Error ? e.message : "Voxelization failed");
-      } finally {
-        setImgLoading(false);
-      }
-    }, 400);
-  }, [imgPlyId]);
+      if (revoxelizeTimeoutRef.current)
+        clearTimeout(revoxelizeTimeoutRef.current);
+      revoxelizeTimeoutRef.current = setTimeout(async () => {
+        imgAbortRef.current?.abort();
+        const controller = new AbortController();
+        imgAbortRef.current = controller;
+        setImgLoading(true);
+        setImgLoadingMsg("Re-voxelizing…");
+        try {
+          const res = await revoxelize(
+            imgPlyId!,
+            densityToVoxelSize(newDensity),
+            controller.signal,
+          );
+          setImgVoxels(res.voxels);
+        } catch (e: unknown) {
+          if (e instanceof DOMException && e.name === "AbortError") return;
+          setImgError(e instanceof Error ? e.message : "Voxelization failed");
+        } finally {
+          setImgLoading(false);
+        }
+      }, 400);
+    },
+    [imgPlyId],
+  );
 
   function handleImgAddToScene() {
     imgAbortRef.current?.abort();
@@ -548,7 +596,9 @@ export default function Generator({ onClose }: GeneratorProps) {
       const ts = Date.now();
       const category: AssetCategory = "image-to-3d";
 
-      let vMinX = Infinity, vMinY = Infinity, vMinZ = Infinity;
+      let vMinX = Infinity,
+        vMinY = Infinity,
+        vMinZ = Infinity;
       for (const v of imgVoxels) {
         vMinX = Math.min(vMinX, v.x);
         vMinY = Math.min(vMinY, v.y);
@@ -562,7 +612,11 @@ export default function Generator({ onClose }: GeneratorProps) {
         visible: true,
         selectable: true,
         category,
-        position: [v.x - vMinX, -(v.y - vMinY), v.z - vMinZ] as [number, number, number],
+        position: [v.x - vMinX, -(v.y - vMinY), v.z - vMinZ] as [
+          number,
+          number,
+          number,
+        ],
         materialColor: v.color,
         materialRoughness: 0.88,
         materialMetalness: 0.2,
@@ -660,7 +714,8 @@ export default function Generator({ onClose }: GeneratorProps) {
       const genOffset = computeGenerationOffset(bricks);
       const { minX, minNegY, minZ } = genOffset;
 
-      const category: AssetCategory = tab === "image-to-3d" ? "image-to-3d" : "text-to-3d";
+      const category: AssetCategory =
+        tab === "image-to-3d" ? "image-to-3d" : "text-to-3d";
       const ts = Date.now();
       const sceneAssets: SceneAsset[] = bricks.map((b, i) => ({
         id: `gen-${i}-${ts}`,
@@ -669,7 +724,11 @@ export default function Generator({ onClose }: GeneratorProps) {
         visible: true,
         selectable: true,
         category,
-        position: [b.x - minX, -b.y - minNegY, b.z - minZ] as [number, number, number],
+        position: [b.x - minX, -b.y - minNegY, b.z - minZ] as [
+          number,
+          number,
+          number,
+        ],
         materialColor: defaultBrickColor,
         materialRoughness: 0.88,
         materialMetalness: 0.2,
@@ -683,7 +742,13 @@ export default function Generator({ onClose }: GeneratorProps) {
         studsY: b.w,
       }));
       const label = prompt.trim().slice(0, 20);
-      addAssetsAsGroup(sceneAssets, label, generationHistory, prompt, genOffset);
+      addAssetsAsGroup(
+        sceneAssets,
+        label,
+        generationHistory,
+        prompt,
+        genOffset,
+      );
     }
 
     onClose();
@@ -763,7 +828,9 @@ export default function Generator({ onClose }: GeneratorProps) {
                       >
                         ▶
                       </span>
-                      <span className="text-zinc-400 dark:text-zinc-500">Constraints:</span>
+                      <span className="text-zinc-400 dark:text-zinc-500">
+                        Constraints:
+                      </span>
                       <span>
                         {selectedConstraintIds.length === 0
                           ? "None"
@@ -774,7 +841,9 @@ export default function Generator({ onClose }: GeneratorProps) {
                       <div className="absolute top-full left-0 w-full bg-white dark:bg-zinc-900 border border-t-0 border-zinc-200 dark:border-zinc-800 rounded-b-xl z-50 overflow-hidden">
                         <ul className="py-1">
                           {constraints.map((c) => {
-                            const checked = selectedConstraintIds.includes(c.id);
+                            const checked = selectedConstraintIds.includes(
+                              c.id,
+                            );
                             return (
                               <li key={c.id}>
                                 <label className="flex cursor-pointer items-center gap-2 px-3 py-1 text-[10px] leading-none hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
@@ -810,9 +879,7 @@ export default function Generator({ onClose }: GeneratorProps) {
                         onChange={(e) => setShowConstraints(e.target.checked)}
                         className="h-3 w-3 accent-zinc-700 dark:accent-zinc-400 cursor-pointer shrink-0"
                       />
-                      <span className="whitespace-nowrap">
-                        Show in preview
-                      </span>
+                      <span className="whitespace-nowrap">Show in preview</span>
                     </label>
                   )}
                 </>
@@ -873,8 +940,8 @@ export default function Generator({ onClose }: GeneratorProps) {
             {hasResult && intersectionCount > 0 && (
               <div className="px-2 py-1 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
                 <span className="text-xs text-red-600 dark:text-red-400">
-                  {intersectionCount} brick(s) intersect constraint volumes in the
-                  output. Try regenerating or adjusting constraints.
+                  {intersectionCount} brick(s) intersect constraint volumes in
+                  the output. Try regenerating or adjusting constraints.
                 </span>
               </div>
             )}
@@ -959,7 +1026,8 @@ export default function Generator({ onClose }: GeneratorProps) {
             {/* ── Segment hint ────────────────────────────────── */}
             {imgStage === "segment" && (
               <p className="text-[10px] text-zinc-400 dark:text-zinc-500 leading-tight">
-                Click on the object to select it. Alt+click or right-click to deselect regions.
+                Click on the object to select it. Alt+click or right-click to
+                deselect regions.
               </p>
             )}
 
@@ -975,7 +1043,9 @@ export default function Generator({ onClose }: GeneratorProps) {
                   max={100}
                   step={1}
                   value={imgDensity}
-                  onChange={(e) => handleDensityChange(parseInt(e.target.value))}
+                  onChange={(e) =>
+                    handleDensityChange(parseInt(e.target.value))
+                  }
                   className="flex-1 h-1 accent-zinc-700 dark:accent-zinc-400 cursor-pointer"
                   disabled={imgLoading}
                 />
@@ -1012,11 +1082,14 @@ export default function Generator({ onClose }: GeneratorProps) {
               )}
 
               {/* Empty state */}
-              {imgStage === "upload" && !imgPreviewUrl && !imgLoading && !imgError && (
-                <span className="text-xs text-zinc-400 dark:text-zinc-500">
-                  Upload an image to begin
-                </span>
-              )}
+              {imgStage === "upload" &&
+                !imgPreviewUrl &&
+                !imgLoading &&
+                !imgError && (
+                  <span className="text-xs text-zinc-400 dark:text-zinc-500">
+                    Upload an image to begin
+                  </span>
+                )}
 
               {/* Image preview before processing starts */}
               {imgStage === "upload" && imgPreviewUrl && (
@@ -1050,7 +1123,10 @@ export default function Generator({ onClose }: GeneratorProps) {
                     className="pointer-events-none object-contain"
                     onLoad={(e) => {
                       const el = e.currentTarget;
-                      setImgNaturalSize({ w: el.naturalWidth, h: el.naturalHeight });
+                      setImgNaturalSize({
+                        w: el.naturalWidth,
+                        h: el.naturalHeight,
+                      });
                     }}
                   />
                   {imgMaskOverlay && (
@@ -1071,7 +1147,8 @@ export default function Generator({ onClose }: GeneratorProps) {
                       preserveAspectRatio="xMidYMid meet"
                     >
                       {imgPoints.map((p, i) => {
-                        const r = Math.max(imgNaturalSize.w, imgNaturalSize.h) * 0.007;
+                        const r =
+                          Math.max(imgNaturalSize.w, imgNaturalSize.h) * 0.007;
                         return (
                           <circle
                             key={i}
@@ -1119,7 +1196,11 @@ export default function Generator({ onClose }: GeneratorProps) {
                   <group>
                     {imgCenteredVoxels.map((v, i) => (
                       <group key={i} position={[v.x, -v.y, v.z]}>
-                        <ParametricBrick studsX={1} studsY={1} color={v.color} />
+                        <ParametricBrick
+                          studsX={1}
+                          studsY={1}
+                          color={v.color}
+                        />
                       </group>
                     ))}
                   </group>

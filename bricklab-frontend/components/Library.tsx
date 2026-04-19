@@ -221,9 +221,7 @@ export default function Library({ onClose }: LibraryProps) {
                   className="w-16"
                 />
               </div>
-              <Button onClick={handleAddCustom}>
-                Add
-              </Button>
+              <Button onClick={handleAddCustom}>Add</Button>
             </div>
             {formError && (
               <p className="text-xs text-red-500 mb-2">{formError}</p>

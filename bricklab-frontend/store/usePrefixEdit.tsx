@@ -1,9 +1,19 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, useRef } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useRef,
+} from "react";
 import { useScene } from "@/store/sceneStore";
 import type { GenerationHistoryEntry, SceneAsset } from "@/store/sceneStore";
-import type { PrefixEditPhase, GenerationOffset, BackendBrick } from "@/lib/prefixEditing";
+import type {
+  PrefixEditPhase,
+  GenerationOffset,
+  BackendBrick,
+} from "@/lib/prefixEditing";
 import {
   normalizeEditableBricks,
   derivePrefixOrder,
@@ -60,7 +70,11 @@ const INITIAL_STATE: PrefixEditState = {
 
 const PrefixEditContext = createContext<PrefixEditValue | null>(null);
 
-export function PrefixEditProvider({ children }: { children: React.ReactNode }) {
+export function PrefixEditProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const {
     assets,
     groups,
@@ -76,7 +90,11 @@ export function PrefixEditProvider({ children }: { children: React.ReactNode }) 
   const startPrefixEdit = useCallback(
     (groupId: string, stepK: number) => {
       const group = groups.find((g) => g.id === groupId);
-      if (!group?.generationHistory || !group.originalPrompt || !group.generationOffset) {
+      if (
+        !group?.generationHistory ||
+        !group.originalPrompt ||
+        !group.generationOffset
+      ) {
         return;
       }
 
@@ -188,17 +206,20 @@ export function PrefixEditProvider({ children }: { children: React.ReactNode }) 
       } = await res.json();
 
       const newOffset = computeGenerationOffset(data.bricks);
-      const { assets: newSceneAssets, history: newHistory } = backendBricksToScene(
-        data.bricks,
-        {
+      const { assets: newSceneAssets, history: newHistory } =
+        backendBricksToScene(data.bricks, {
           defaultColor: defaultBrickColor,
           category: "text-to-3d",
           idPrefix: "regen",
           startingIndex: 0,
-        },
-      );
+        });
 
-      replaceGroupGeneration(state.groupId!, newSceneAssets, newHistory, newOffset);
+      replaceGroupGeneration(
+        state.groupId!,
+        newSceneAssets,
+        newHistory,
+        newOffset,
+      );
 
       setState(INITIAL_STATE);
     } catch (e: unknown) {
@@ -209,13 +230,7 @@ export function PrefixEditProvider({ children }: { children: React.ReactNode }) 
         errorMessage: e instanceof Error ? e.message : "Regeneration failed",
       }));
     }
-  }, [
-    state,
-    assets,
-    constraints,
-    defaultBrickColor,
-    replaceGroupGeneration,
-  ]);
+  }, [state, assets, constraints, defaultBrickColor, replaceGroupGeneration]);
 
   const value: PrefixEditValue = {
     phase: state.phase,
@@ -237,6 +252,7 @@ export function PrefixEditProvider({ children }: { children: React.ReactNode }) 
 
 export function usePrefixEdit(): PrefixEditValue {
   const ctx = useContext(PrefixEditContext);
-  if (!ctx) throw new Error("usePrefixEdit must be used within PrefixEditProvider");
+  if (!ctx)
+    throw new Error("usePrefixEdit must be used within PrefixEditProvider");
   return ctx;
 }

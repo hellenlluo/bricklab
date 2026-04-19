@@ -100,7 +100,9 @@ function collectGroupMemberIds(
   sceneAssets: SceneAsset[],
   sceneGroups: BrickGroup[],
 ): string[] {
-  const direct = sceneAssets.filter((a) => a.groupId === groupId).map((a) => a.id);
+  const direct = sceneAssets
+    .filter((a) => a.groupId === groupId)
+    .map((a) => a.id);
   const childIds = sceneGroups
     .filter((g) => g.parentGroupId === groupId)
     .flatMap((g) => collectGroupMemberIds(g.id, sceneAssets, sceneGroups));
@@ -110,7 +112,9 @@ function collectGroupMemberIds(
 function inferGroupCategory(
   sceneAssets: SceneAsset[],
 ): AssetCategory | undefined {
-  const categories = new Set(sceneAssets.map((asset) => asset.category).filter(Boolean));
+  const categories = new Set(
+    sceneAssets.map((asset) => asset.category).filter(Boolean),
+  );
   return categories.size === 1
     ? (Array.from(categories)[0] as AssetCategory)
     : undefined;
@@ -127,7 +131,13 @@ interface SceneStore {
   // Per-scene state (proxied from active scene)
   assets: SceneAsset[];
   addAsset: (asset: SceneAsset) => void;
-  addAssetsAsGroup: (assets: SceneAsset[], groupName: string, generationHistory?: GenerationHistoryEntry[], originalPrompt?: string, generationOffset?: GenerationOffset) => void;
+  addAssetsAsGroup: (
+    assets: SceneAsset[],
+    groupName: string,
+    generationHistory?: GenerationHistoryEntry[],
+    originalPrompt?: string,
+    generationOffset?: GenerationOffset,
+  ) => void;
   removeAsset: (id: string) => void;
   removeSelectedAssets: () => void;
   removeGroup: (groupId: string) => void;
@@ -137,9 +147,17 @@ interface SceneStore {
   groupSelected: () => void;
   ungroupAssets: (groupId: string) => void;
   updateGroup: (groupId: string, name: string) => void;
-  moveAssetToGroup: (assetId: string, targetGroupId: string | undefined) => void;
+  moveAssetToGroup: (
+    assetId: string,
+    targetGroupId: string | undefined,
+  ) => void;
   revertGroupToStep: (groupId: string, k: number) => void;
-  replaceGroupGeneration: (groupId: string, newAssets: SceneAsset[], newHistory: GenerationHistoryEntry[], newOffset?: GenerationOffset) => void;
+  replaceGroupGeneration: (
+    groupId: string,
+    newAssets: SceneAsset[],
+    newHistory: GenerationHistoryEntry[],
+    newOffset?: GenerationOffset,
+  ) => void;
   undo: () => void;
   captureUndoSnapshot: () => void;
   selectedAssetId: string | null;
@@ -322,10 +340,7 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
     };
     updateActiveScene((s) => ({
       ...s,
-      assets: [
-        ...s.assets,
-        ...newAssets.map((a) => ({ ...a, groupId })),
-      ],
+      assets: [...s.assets, ...newAssets.map((a) => ({ ...a, groupId }))],
       groups: [...s.groups, group],
     }));
   }
@@ -356,12 +371,18 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
     pushUndo();
     updateActiveScene((s) => {
       function collectAssetIds(gId: string): string[] {
-        const direct = s.assets.filter((a) => a.groupId === gId).map((a) => a.id);
-        const childGroupIds = s.groups.filter((g) => g.parentGroupId === gId).map((g) => g.id);
+        const direct = s.assets
+          .filter((a) => a.groupId === gId)
+          .map((a) => a.id);
+        const childGroupIds = s.groups
+          .filter((g) => g.parentGroupId === gId)
+          .map((g) => g.id);
         return [...direct, ...childGroupIds.flatMap(collectAssetIds)];
       }
       function collectGroupIds(gId: string): string[] {
-        const childGroupIds = s.groups.filter((g) => g.parentGroupId === gId).map((g) => g.id);
+        const childGroupIds = s.groups
+          .filter((g) => g.parentGroupId === gId)
+          .map((g) => g.id);
         return [gId, ...childGroupIds.flatMap(collectGroupIds)];
       }
       const assetIdsToRemove = new Set(collectAssetIds(groupId));
@@ -456,7 +477,10 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
     }));
   }
 
-  function moveAssetToGroup(assetId: string, targetGroupId: string | undefined) {
+  function moveAssetToGroup(
+    assetId: string,
+    targetGroupId: string | undefined,
+  ) {
     pushUndo();
     updateActiveScene((s) => ({
       ...s,
@@ -480,7 +504,9 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
 
       return {
         ...s,
-        assets: s.assets.filter((a) => a.groupId !== groupId || keepIds.has(a.id)),
+        assets: s.assets.filter(
+          (a) => a.groupId !== groupId || keepIds.has(a.id),
+        ),
         groups: s.groups.map((g) =>
           g.id === groupId
             ? { ...g, generationHistory: g.generationHistory!.slice(0, k + 1) }
@@ -566,7 +592,9 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
 
   function updateAsset(id: string, updates: Partial<SceneAsset>) {
     updateActiveScene((s) => {
-      const updatedAssets = s.assets.map((a) => (a.id === id ? { ...a, ...updates } : a));
+      const updatedAssets = s.assets.map((a) =>
+        a.id === id ? { ...a, ...updates } : a,
+      );
       if (updates.selectable === false) {
         // Remove from scene highlight/gizmo
         return {
@@ -575,7 +603,11 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
           selectedAssetIds: s.selectedAssetIds.filter((x) => x !== id),
         };
       }
-      if (updates.selectable === true && s.selectedAssetId === id && !s.selectedAssetIds.includes(id)) {
+      if (
+        updates.selectable === true &&
+        s.selectedAssetId === id &&
+        !s.selectedAssetIds.includes(id)
+      ) {
         // Restore highlight when selectable is turned back on for the focused asset
         return {
           ...s,
@@ -669,14 +701,8 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
         // Grid space has Y going down, so visual CW (from +Z) is:
         //   CW:  (cx - (y-cy), cy + (x-cx))
         //   CCW: (cx + (y-cy), cy - (x-cx))
-        const rotCx =
-          direction === "cw"
-            ? cx - (bcy - cy)
-            : cx + (bcy - cy);
-        const rotCy =
-          direction === "cw"
-            ? cy + (bcx - cx)
-            : cy - (bcx - cx);
+        const rotCx = direction === "cw" ? cx - (bcy - cy) : cx + (bcy - cy);
+        const rotCy = direction === "cw" ? cy + (bcx - cx) : cy - (bcx - cx);
 
         // New top-left in grid space (studs swap after 90° rotation).
         const newRx = rotCx - studsY / 2;
@@ -684,7 +710,11 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
 
         return {
           ...a,
-          position: [minX + newRx, maxY - newRy, pz] as [number, number, number],
+          position: [minX + newRx, maxY - newRy, pz] as [
+            number,
+            number,
+            number,
+          ],
           preset: { studsX: studsY, studsY: studsX },
         };
       });

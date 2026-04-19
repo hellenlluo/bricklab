@@ -8,12 +8,7 @@ import Exporter from "@/components/Exporter";
 
 type Panel = "Docs" | "Generator" | "Library" | "Exporter";
 
-const NAV_ITEMS: Panel[] = [
-  "Docs",
-  "Generator",
-  "Library",
-  "Exporter",
-];
+const NAV_ITEMS: Panel[] = ["Docs", "Generator", "Library", "Exporter"];
 
 export default function TopNav() {
   const [activePanel, setActivePanel] = useState<Panel | null>(null);

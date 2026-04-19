@@ -40,9 +40,7 @@ function mergedStudsGeo(
   const rotX = new THREE.Matrix4().makeRotationX(Math.PI / 2);
   const geos = positions.map(([x, y, z]) => {
     const clone = template.clone();
-    const m = new THREE.Matrix4()
-      .makeTranslation(x, y, z)
-      .multiply(rotX);
+    const m = new THREE.Matrix4().makeTranslation(x, y, z).multiply(rotX);
     clone.applyMatrix4(m);
     return clone;
   });
@@ -102,7 +100,10 @@ function buildBrickGroup(
   return group;
 }
 
-function buildBaseplateGroup(plateSize: number, plateColor: string): THREE.Group {
+function buildBaseplateGroup(
+  plateSize: number,
+  plateColor: string,
+): THREE.Group {
   const group = new THREE.Group();
   group.name = "Baseplate";
 
@@ -132,7 +133,10 @@ function buildBaseplateGroup(plateSize: number, plateColor: string): THREE.Group
 
   // Single mesh: slab + all studs merged
   const mesh = new THREE.Mesh(
-    mergeGeometries([slabGeo, mergedStudsGeo(studPositions, PLATE_STUD_RADIUS, PLATE_STUD_HEIGHT, 8)]),
+    mergeGeometries([
+      slabGeo,
+      mergedStudsGeo(studPositions, PLATE_STUD_RADIUS, PLATE_STUD_HEIGHT, 8),
+    ]),
     mat,
   );
   mesh.name = "Baseplate";
@@ -141,7 +145,10 @@ function buildBaseplateGroup(plateSize: number, plateColor: string): THREE.Group
   return group;
 }
 
-function buildThreeScene(sceneData: SceneData, includeBasePlate: boolean): THREE.Scene {
+function buildThreeScene(
+  sceneData: SceneData,
+  includeBasePlate: boolean,
+): THREE.Scene {
   const exportScene = new THREE.Scene();
 
   // BrickLab uses Z-up internally. glTF/Blender/Rhino default to Y-up.
@@ -169,7 +176,11 @@ function buildThreeScene(sceneData: SceneData, includeBasePlate: boolean): THREE
         asset.name,
       );
       if (asset.position) {
-        brickGroup.position.set(asset.position[0], asset.position[1], asset.position[2]);
+        brickGroup.position.set(
+          asset.position[0],
+          asset.position[1],
+          asset.position[2],
+        );
       }
       root.add(brickGroup);
     }
@@ -187,7 +198,9 @@ function buildMetadata(
   exportName: string,
   includeBasePlate: boolean,
 ) {
-  const presetAssets = sceneData.assets.filter((a) => a.type === "preset-brick" && a.preset);
+  const presetAssets = sceneData.assets.filter(
+    (a) => a.type === "preset-brick" && a.preset,
+  );
 
   const brickTypeMap = new Map<
     string,
@@ -197,7 +210,12 @@ function buildMetadata(
     const { studsX, studsY } = asset.preset!;
     const key = `${studsX}x${studsY}`;
     if (!brickTypeMap.has(key)) {
-      brickTypeMap.set(key, { studsX, studsY, count: 0, label: `${studsX}×${studsY}` });
+      brickTypeMap.set(key, {
+        studsX,
+        studsY,
+        count: 0,
+        label: `${studsX}×${studsY}`,
+      });
     }
     brickTypeMap.get(key)!.count++;
   }
@@ -260,20 +278,28 @@ export default function Exporter({ onClose }: ExporterProps) {
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const selectedScene = scenes.find((s) => s.id === selectedSceneId) ?? scenes[0];
+  const selectedScene =
+    scenes.find((s) => s.id === selectedSceneId) ?? scenes[0];
 
   useEffect(() => {
     if (!sceneDropdownOpen) return;
     function handleOutside(e: MouseEvent) {
-      if (sceneDropdownRef.current && !sceneDropdownRef.current.contains(e.target as Node)) {
+      if (
+        sceneDropdownRef.current &&
+        !sceneDropdownRef.current.contains(e.target as Node)
+      ) {
         setSceneDropdownOpen(false);
       }
     }
     document.addEventListener("mousedown", handleOutside);
     return () => document.removeEventListener("mousedown", handleOutside);
   }, [sceneDropdownOpen]);
-  const presetCount = selectedScene.assets.filter((a) => a.type === "preset-brick").length;
-  const modelCount = selectedScene.assets.filter((a) => a.type !== "preset-brick").length;
+  const presetCount = selectedScene.assets.filter(
+    (a) => a.type === "preset-brick",
+  ).length;
+  const modelCount = selectedScene.assets.filter(
+    (a) => a.type !== "preset-brick",
+  ).length;
 
   async function handleExport() {
     const name = exportName.trim() || "Untitled Scene";
@@ -329,7 +355,9 @@ export default function Exporter({ onClose }: ExporterProps) {
       <div className="p-4 flex flex-col gap-4">
         {/* Scene selection */}
         <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Scene</span>
+          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            Scene
+          </span>
           <div ref={sceneDropdownRef} className="relative">
             <button
               type="button"
@@ -344,7 +372,9 @@ export default function Exporter({ onClose }: ExporterProps) {
                 className="inline-block shrink-0 text-zinc-900 dark:text-zinc-100 transition-transform duration-200"
                 style={{
                   fontSize: "0.45rem",
-                  transform: sceneDropdownOpen ? "rotate(90deg)" : "rotate(0deg)",
+                  transform: sceneDropdownOpen
+                    ? "rotate(90deg)"
+                    : "rotate(0deg)",
                   lineHeight: 1,
                 }}
               >
@@ -353,7 +383,8 @@ export default function Exporter({ onClose }: ExporterProps) {
               <span className="text-zinc-400 dark:text-zinc-500">Scene:</span>
               <span className="truncate">{selectedScene.name}</span>
               <span className="ml-auto text-zinc-400 dark:text-zinc-500 shrink-0">
-                {selectedScene.assets.length} object{selectedScene.assets.length !== 1 ? "s" : ""}
+                {selectedScene.assets.length} object
+                {selectedScene.assets.length !== 1 ? "s" : ""}
               </span>
             </button>
             {sceneDropdownOpen && (
@@ -375,7 +406,8 @@ export default function Exporter({ onClose }: ExporterProps) {
                       >
                         <span className="truncate">{scene.name}</span>
                         <span className="text-zinc-400 dark:text-zinc-500 shrink-0">
-                          {scene.assets.length} obj{scene.assets.length !== 1 ? "s" : ""}
+                          {scene.assets.length} obj
+                          {scene.assets.length !== 1 ? "s" : ""}
                         </span>
                       </button>
                     </li>
@@ -401,7 +433,9 @@ export default function Exporter({ onClose }: ExporterProps) {
 
         {/* Options */}
         <div className="flex flex-col gap-2">
-          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Options</span>
+          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            Options
+          </span>
           <label className="flex items-center gap-2 cursor-pointer select-none">
             <input
               type="checkbox"
@@ -421,13 +455,21 @@ export default function Exporter({ onClose }: ExporterProps) {
             Summary
           </span>
           <div className="flex justify-between text-xs">
-            <span className="text-zinc-500 dark:text-zinc-400">Preset bricks</span>
-            <span className="text-zinc-900 dark:text-zinc-100 tabular-nums">{presetCount}</span>
+            <span className="text-zinc-500 dark:text-zinc-400">
+              Preset bricks
+            </span>
+            <span className="text-zinc-900 dark:text-zinc-100 tabular-nums">
+              {presetCount}
+            </span>
           </div>
           {modelCount > 0 && (
             <div className="flex justify-between text-xs">
-              <span className="text-zinc-500 dark:text-zinc-400">3D models</span>
-              <span className="text-zinc-900 dark:text-zinc-100 tabular-nums">{modelCount}</span>
+              <span className="text-zinc-500 dark:text-zinc-400">
+                3D models
+              </span>
+              <span className="text-zinc-900 dark:text-zinc-100 tabular-nums">
+                {modelCount}
+              </span>
             </div>
           )}
           <div className="flex justify-between text-xs">
@@ -436,7 +478,9 @@ export default function Exporter({ onClose }: ExporterProps) {
           </div>
         </div>
 
-        {error && <p className="text-xs text-red-500 dark:text-red-400">{error}</p>}
+        {error && (
+          <p className="text-xs text-red-500 dark:text-red-400">{error}</p>
+        )}
 
         {/* Export button */}
         <Button

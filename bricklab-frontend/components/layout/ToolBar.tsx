@@ -7,7 +7,11 @@ import type { SceneAsset } from "@/store/sceneStore";
 
 type AnyBrick = BrickDefinition | CustomBrickDefinition;
 
-function createAssetFromBrick(brick: AnyBrick, index: number, defaultBrickColor: string): SceneAsset {
+function createAssetFromBrick(
+  brick: AnyBrick,
+  index: number,
+  defaultBrickColor: string,
+): SceneAsset {
   const isPreset = "type" in brick;
   return {
     id: `${brick.id}-${Date.now()}`,
@@ -79,7 +83,10 @@ export default function ToolBar() {
       className="fixed flex items-center px-3 gap-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl z-40"
     >
       {/* Drop-up brick type selector */}
-      <div ref={dropupRef} className="relative flex-shrink-0 self-stretch flex items-center">
+      <div
+        ref={dropupRef}
+        className="relative flex-shrink-0 self-stretch flex items-center"
+      >
         <button
           onClick={() => setExpanded((v) => !v)}
           className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
@@ -141,7 +148,9 @@ export default function ToolBar() {
           title={`Add ${brick.name} brick`}
           className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors flex-shrink-0"
         >
-          <span className="text-zinc-500 dark:text-zinc-400 font-bold leading-none">+</span>
+          <span className="text-zinc-500 dark:text-zinc-400 font-bold leading-none">
+            +
+          </span>
           <span className="font-medium">{brick.name}</span>
         </button>
       ))}

@@ -45,11 +45,7 @@ function ShortcutRow({
   );
 }
 
-function ShortcutColumn({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function ShortcutColumn({ children }: { children: React.ReactNode }) {
   return <div className="flex-1 min-w-0">{children}</div>;
 }
 
@@ -128,7 +124,8 @@ export default function Docs() {
             <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
               Create bricks from text prompts or images. Use the Text-to-3D tab
               to describe what you want or use the Image-to-3D tab to upload a
-              reference. Optionally attach constraints to guide the output shape.
+              reference. Optionally attach constraints to guide the output
+              shape.
             </p>
           </div>
 
@@ -170,9 +167,9 @@ export default function Docs() {
             <SectionHeader>Assets &amp; Groups</SectionHeader>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
               The Assets panel lists every brick and group in the active scene.
-              Select multiple bricks and press ⌘G / Ctrl+G to group them.
-              Drag an asset onto a group to move it inside. Hover a group row
-              and click ✕ to ungroup.
+              Select multiple bricks and press ⌘G / Ctrl+G to group them. Drag
+              an asset onto a group to move it inside. Hover a group row and
+              click ✕ to ungroup.
             </p>
           </div>
 
@@ -188,7 +185,9 @@ export default function Docs() {
           <div>
             <SectionHeader>Properties &amp; Scene Settings</SectionHeader>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-              Select a brick (or group of bricks) to reveal its properties on the right sidebar. The panel shows scene-wide settings when nothing is selected.
+              Select a brick (or group of bricks) to reveal its properties on
+              the right sidebar. The panel shows scene-wide settings when
+              nothing is selected.
             </p>
           </div>
         </div>

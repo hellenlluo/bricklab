@@ -26,8 +26,20 @@ export type PrefixEditPhase =
   | "error";
 
 const VALID_BRICK_DIMS = new Set([
-  "1x1", "1x2", "2x1", "1x4", "4x1", "1x6", "6x1", "1x8", "8x1",
-  "2x2", "2x4", "4x2", "2x6", "6x2",
+  "1x1",
+  "1x2",
+  "2x1",
+  "1x4",
+  "4x1",
+  "1x6",
+  "6x1",
+  "1x8",
+  "8x1",
+  "2x2",
+  "2x4",
+  "4x2",
+  "2x6",
+  "6x2",
 ]);
 
 // ---------------------------------------------------------------------------
@@ -89,9 +101,10 @@ export function sceneAssetsToBackendBricks(
  * Strip UI-only fields from scene assets and validate that every brick's
  * dimensions belong to BrickGPT's library. Returns only the geometric data.
  */
-export function normalizeEditableBricks(
-  assets: SceneAsset[],
-): { valid: SceneAsset[]; invalid: SceneAsset[] } {
+export function normalizeEditableBricks(assets: SceneAsset[]): {
+  valid: SceneAsset[];
+  invalid: SceneAsset[];
+} {
   const valid: SceneAsset[] = [];
   const invalid: SceneAsset[] = [];
   for (const a of assets) {
@@ -165,11 +178,11 @@ export function backendBricksToScene(
     visible: true,
     selectable: true,
     category: defaults.category,
-    position: [
-      b.x - offset.minX,
-      -b.y - offset.minNegY,
-      b.z - offset.minZ,
-    ] as [number, number, number],
+    position: [b.x - offset.minX, -b.y - offset.minNegY, b.z - offset.minZ] as [
+      number,
+      number,
+      number,
+    ],
     materialColor: defaults.defaultColor,
     materialRoughness: 0.88,
     materialMetalness: 0.2,

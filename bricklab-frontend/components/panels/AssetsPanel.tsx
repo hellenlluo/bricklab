@@ -23,7 +23,11 @@ function isGroupFullySelected(
   );
 }
 
-function getSelectedRounding(isSelected: boolean, prevSelected: boolean, nextSelected: boolean) {
+function getSelectedRounding(
+  isSelected: boolean,
+  prevSelected: boolean,
+  nextSelected: boolean,
+) {
   if (!isSelected) return null;
   if (!prevSelected && !nextSelected) return "rounded-md";
   if (!prevSelected) return "rounded-t-md";
@@ -38,18 +42,31 @@ function buildVisibleRows(
   expandedGroups: Record<string, boolean>,
   selectedIds: string[],
 ): Array<{ key: string; selected: boolean }> {
-  const childGroups = allGroups.filter((g) => g.parentGroupId === parentGroupId);
+  const childGroups = allGroups.filter(
+    (g) => g.parentGroupId === parentGroupId,
+  );
   const directMembers = allAssets.filter((a) => a.groupId === parentGroupId);
   const rows: Array<{ key: string; selected: boolean }> = [];
 
   childGroups.forEach((group) => {
     rows.push({
       key: `group:${group.id}`,
-      selected: isGroupFullySelected(group.id, allGroups, allAssets, selectedIds),
+      selected: isGroupFullySelected(
+        group.id,
+        allGroups,
+        allAssets,
+        selectedIds,
+      ),
     });
     if (expandedGroups[group.id]) {
       rows.push(
-        ...buildVisibleRows(group.id, allGroups, allAssets, expandedGroups, selectedIds),
+        ...buildVisibleRows(
+          group.id,
+          allGroups,
+          allAssets,
+          expandedGroups,
+          selectedIds,
+        ),
       );
     }
   });
@@ -136,7 +153,10 @@ function GroupRow({
   const indentStyle =
     depth > 0 ? { paddingLeft: `${depth * 2}rem` } : undefined;
   const rowKey = `group:${group.id}`;
-  const adjacency = shared.selectedAdjacency[rowKey] ?? { prev: false, next: false };
+  const adjacency = shared.selectedAdjacency[rowKey] ?? {
+    prev: false,
+    next: false,
+  };
   const selectedRounding = getSelectedRounding(
     grpSelected,
     adjacency.prev,
@@ -170,8 +190,13 @@ function GroupRow({
           e.preventDefault();
           e.stopPropagation();
           setIsDragOver(false);
-          const assetId = e.dataTransfer.getData("application/x-brick-asset-id");
-          if (assetId && !allAssets.some((a) => a.id === assetId && a.groupId === group.id)) {
+          const assetId = e.dataTransfer.getData(
+            "application/x-brick-asset-id",
+          );
+          if (
+            assetId &&
+            !allAssets.some((a) => a.id === assetId && a.groupId === group.id)
+          ) {
             onMoveToGroup(assetId, group.id);
           }
         }}
@@ -381,7 +406,13 @@ export default function AssetsPanel() {
     allAssets: assets,
     expandedGroups,
     selectedAdjacency: useMemo(() => {
-      const rows = buildVisibleRows(undefined, groups, assets, expandedGroups, selectedAssetIds);
+      const rows = buildVisibleRows(
+        undefined,
+        groups,
+        assets,
+        expandedGroups,
+        selectedAssetIds,
+      );
       const adjacency: Record<string, { prev: boolean; next: boolean }> = {};
       rows.forEach((row, idx) => {
         adjacency[row.key] = {
@@ -400,7 +431,10 @@ export default function AssetsPanel() {
     onUngroup: ungroupAssets,
     onSelectAsset: (id, shiftKey) => {
       const a = assets.find((x) => x.id === id);
-      if (a?.selectable === false) { peekAsset(id); return; }
+      if (a?.selectable === false) {
+        peekAsset(id);
+        return;
+      }
       if (shiftKey) toggleAssetSelection(id);
       else selectAsset(id);
     },
@@ -409,7 +443,8 @@ export default function AssetsPanel() {
     onCommitEdit: commitEdit,
     onCancelEdit: () => setEditingId(null),
     onKeyDown: handleKeyDown,
-    onMoveToGroup: (assetId: string, groupId: string) => moveAssetToGroup(assetId, groupId),
+    onMoveToGroup: (assetId: string, groupId: string) =>
+      moveAssetToGroup(assetId, groupId),
   };
 
   return (
@@ -484,7 +519,10 @@ export default function AssetsPanel() {
               selectedAdjacency={shared.selectedAdjacency}
               onSelect={(e) => {
                 e.stopPropagation();
-                if (asset.selectable === false) { peekAsset(asset.id); return; }
+                if (asset.selectable === false) {
+                  peekAsset(asset.id);
+                  return;
+                }
                 if (e.shiftKey) toggleAssetSelection(asset.id);
                 else selectAsset(asset.id);
               }}
@@ -539,12 +577,9 @@ function AssetRow({
     prev: false,
     next: false,
   };
-  const rounding = getSelectedRounding(isSelected, adjacency.prev, adjacency.next)
-    ?? (depth === 0
-      ? "rounded-md"
-      : isLast
-        ? "rounded-b-md"
-        : "rounded-none");
+  const rounding =
+    getSelectedRounding(isSelected, adjacency.prev, adjacency.next) ??
+    (depth === 0 ? "rounded-md" : isLast ? "rounded-b-md" : "rounded-none");
   const indentStyle =
     depth > 0 ? { paddingLeft: `${depth * 2}rem` } : undefined;
 

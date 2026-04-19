@@ -38,7 +38,9 @@ function BrickGPTWorldBox({ offset }: { offset: GenerationOffset }) {
   return (
     <group position={[cx, cy, cz]}>
       <mesh>
-        <boxGeometry args={[BRICKGPT_WORLD_DIM, BRICKGPT_WORLD_DIM, BRICKGPT_WORLD_DIM]} />
+        <boxGeometry
+          args={[BRICKGPT_WORLD_DIM, BRICKGPT_WORLD_DIM, BRICKGPT_WORLD_DIM]}
+        />
         <meshBasicMaterial
           color={BRICKGPT_GRID_COLOR}
           transparent
@@ -52,7 +54,13 @@ function BrickGPTWorldBox({ offset }: { offset: GenerationOffset }) {
       </mesh>
       <lineSegments>
         <edgesGeometry
-          args={[new THREE.BoxGeometry(BRICKGPT_WORLD_DIM, BRICKGPT_WORLD_DIM, BRICKGPT_WORLD_DIM)]}
+          args={[
+            new THREE.BoxGeometry(
+              BRICKGPT_WORLD_DIM,
+              BRICKGPT_WORLD_DIM,
+              BRICKGPT_WORLD_DIM,
+            ),
+          ]}
         />
         <lineBasicMaterial
           color={BRICKGPT_GRID_COLOR}
@@ -166,7 +174,8 @@ function BrickModel({
       renderOrder={selectionColor ? 1 : 0}
       onClick={(e) => {
         e.stopPropagation();
-        if (asset.selectable !== false) onSelect(asset.id, e.nativeEvent.shiftKey, false);
+        if (asset.selectable !== false)
+          onSelect(asset.id, e.nativeEvent.shiftKey, false);
       }}
       onDoubleClick={(e) => {
         e.stopPropagation();
@@ -195,7 +204,8 @@ function PlaceholderBox({
       castShadow
       onClick={(e) => {
         e.stopPropagation();
-        if (asset.selectable !== false) onSelect(asset.id, e.nativeEvent.shiftKey, false);
+        if (asset.selectable !== false)
+          onSelect(asset.id, e.nativeEvent.shiftKey, false);
       }}
       onDoubleClick={(e) => {
         e.stopPropagation();
@@ -236,7 +246,8 @@ function ParametricBrickWrapper({
       renderOrder={selectionColor ? 1 : 0}
       onClick={(e) => {
         e.stopPropagation();
-        if (asset.selectable !== false) onSelect(asset.id, e.nativeEvent.shiftKey, false);
+        if (asset.selectable !== false)
+          onSelect(asset.id, e.nativeEvent.shiftKey, false);
       }}
       onDoubleClick={(e) => {
         e.stopPropagation();
@@ -375,7 +386,10 @@ function PlacedAssets({ assets }: { assets: SceneAsset[] }) {
   return (
     <>
       {placed.map((asset) => {
-        const selectionColor = selectedAssetIds.includes(asset.id) && asset.selectable !== false ? selectionHighlight : undefined;
+        const selectionColor =
+          selectedAssetIds.includes(asset.id) && asset.selectable !== false
+            ? selectionHighlight
+            : undefined;
         if (asset.type === "preset-brick" && asset.preset) {
           return (
             <ParametricBrickWrapper
@@ -389,12 +403,21 @@ function PlacedAssets({ assets }: { assets: SceneAsset[] }) {
         if (asset.modelPath) {
           return (
             <Suspense fallback={null} key={asset.id}>
-              <BrickModel asset={asset} onSelect={handleSelect} selectionColor={selectionColor} />
+              <BrickModel
+                asset={asset}
+                onSelect={handleSelect}
+                selectionColor={selectionColor}
+              />
             </Suspense>
           );
         }
         return (
-          <PlaceholderBox key={asset.id} asset={asset} onSelect={handleSelect} selectionColor={selectionColor} />
+          <PlaceholderBox
+            key={asset.id}
+            asset={asset}
+            onSelect={handleSelect}
+            selectionColor={selectionColor}
+          />
         );
       })}
     </>
@@ -453,7 +476,16 @@ function clampToBrickGPTWorld(
 }
 
 function SceneControls() {
-  const { selectedAssetId, selectedAssetIds, updateAsset, captureUndoSnapshot, plateSize, assets, maxCameraDistance, viewportType } = useScene();
+  const {
+    selectedAssetId,
+    selectedAssetIds,
+    updateAsset,
+    captureUndoSnapshot,
+    plateSize,
+    assets,
+    maxCameraDistance,
+    viewportType,
+  } = useScene();
   const prefixEdit = usePrefixEdit();
   const scene = useThree((s) => s.scene);
   const camera = useThree((s) => s.camera);
@@ -470,16 +502,37 @@ function SceneControls() {
     let pos: V3;
     let up: V3 = [0, 0, 1];
     switch (viewportType) {
-      case "Top":   pos = [0, 0, d];      up = [0, 1, 0]; break;
-      case "Front": pos = [0, -d, 0];                     break;
-      case "Back":  pos = [0,  d, 0];                     break;
-      case "Left":  pos = [-d, 0, 0];                     break;
-      case "Right": pos = [ d, 0, 0];                     break;
-      case "Iso NE": pos = [ iso, -iso, iso]; break;
-      case "Iso NW": pos = [-iso, -iso, iso]; break;
-      case "Iso SE": pos = [ iso,  iso, iso]; break;
-      case "Iso SW": pos = [-iso,  iso, iso]; break;
-      default:      pos = [30, -30, 20];                  break;
+      case "Top":
+        pos = [0, 0, d];
+        up = [0, 1, 0];
+        break;
+      case "Front":
+        pos = [0, -d, 0];
+        break;
+      case "Back":
+        pos = [0, d, 0];
+        break;
+      case "Left":
+        pos = [-d, 0, 0];
+        break;
+      case "Right":
+        pos = [d, 0, 0];
+        break;
+      case "Iso NE":
+        pos = [iso, -iso, iso];
+        break;
+      case "Iso NW":
+        pos = [-iso, -iso, iso];
+        break;
+      case "Iso SE":
+        pos = [iso, iso, iso];
+        break;
+      case "Iso SW":
+        pos = [-iso, iso, iso];
+        break;
+      default:
+        pos = [30, -30, 20];
+        break;
     }
     camera.up.set(...up);
     camera.position.set(...pos);
@@ -501,10 +554,16 @@ function SceneControls() {
   const isMultiSelection = selectedAssets.length > 1;
   const selectedAsset = assets.find((a) => a.id === selectedAssetId);
   const rawObj =
-    selectedAsset?.visible && selectedAsset?.selectable !== false && selectedAssetId
+    selectedAsset?.visible &&
+    selectedAsset?.selectable !== false &&
+    selectedAssetId
       ? scene.getObjectByName(selectedAssetId)
       : null;
-  const selectedObject = isMultiSelection ? selectionPivot : rawObj?.parent ? rawObj : undefined;
+  const selectedObject = isMultiSelection
+    ? selectionPivot
+    : rawObj?.parent
+      ? rawObj
+      : undefined;
 
   useEffect(() => {
     if (!isMultiSelection) return;
@@ -513,17 +572,14 @@ function SceneControls() {
       (sum, asset) => sum + getAssetWeight(asset),
       0,
     );
-    const center = selectedAssets.reduce(
-      (acc, asset) => {
-        const [x, y, z] = getAssetCenter(asset);
-        const weight = getAssetWeight(asset);
-        acc.x += x * weight;
-        acc.y += y * weight;
-        acc.z += z * weight;
-        return acc;
-      },
-      new THREE.Vector3(),
-    );
+    const center = selectedAssets.reduce((acc, asset) => {
+      const [x, y, z] = getAssetCenter(asset);
+      const weight = getAssetWeight(asset);
+      acc.x += x * weight;
+      acc.y += y * weight;
+      acc.z += z * weight;
+      return acc;
+    }, new THREE.Vector3());
     center.divideScalar(totalWeight || 1);
     selectionPivot.position.copy(center);
     lastPivotPositionRef.current.copy(center);
@@ -531,7 +587,9 @@ function SceneControls() {
 
   const handleChange = useCallback(() => {
     if (isMultiSelection) {
-      const delta = selectionPivot.position.clone().sub(lastPivotPositionRef.current);
+      const delta = selectionPivot.position
+        .clone()
+        .sub(lastPivotPositionRef.current);
       if (delta.lengthSq() === 0) return;
 
       // Compute the minimum world-space bottom (obj.position.z - cz) across all
@@ -562,23 +620,48 @@ function SceneControls() {
     const obj = selectedAssetId ? scene.getObjectByName(selectedAssetId) : null;
     if (!obj) return;
     const asset = assets.find((a) => a.id === selectedAssetId);
-    const { cx, cy, cz } = asset ? getAssetOffsets(asset) : { cx: 0, cy: 0, cz: 0 };
+    const { cx, cy, cz } = asset
+      ? getAssetOffsets(asset)
+      : { cx: 0, cy: 0, cz: 0 };
     let sx = Math.round(obj.position.x - cx);
     let sy = Math.round(obj.position.y + cy);
     let sz = Math.max(0, Math.round(obj.position.z - cz));
-    const peActive = prefixEdit.phase === "editing_prefix" || prefixEdit.phase === "error";
-    if (peActive && prefixEdit.generationOffset && asset?.groupId === prefixEdit.groupId && asset?.preset) {
-      [sx, sy, sz] = clampToBrickGPTWorld(sx, sy, sz, asset.preset.studsX, asset.preset.studsY, prefixEdit.generationOffset);
+    const peActive =
+      prefixEdit.phase === "editing_prefix" || prefixEdit.phase === "error";
+    if (
+      peActive &&
+      prefixEdit.generationOffset &&
+      asset?.groupId === prefixEdit.groupId &&
+      asset?.preset
+    ) {
+      [sx, sy, sz] = clampToBrickGPTWorld(
+        sx,
+        sy,
+        sz,
+        asset.preset.studsX,
+        asset.preset.studsY,
+        prefixEdit.generationOffset,
+      );
     }
     obj.position.x = sx + cx;
     obj.position.y = sy - cy;
     obj.position.z = sz + cz;
-  }, [assets, isMultiSelection, scene, selectedAssetId, selectedAssetIds, selectedAssets, selectionPivot, prefixEdit]);
+  }, [
+    assets,
+    isMultiSelection,
+    scene,
+    selectedAssetId,
+    selectedAssetIds,
+    selectedAssets,
+    selectionPivot,
+    prefixEdit,
+  ]);
 
   const handleMouseUp = useCallback(() => {
     const peOffset = prefixEdit.generationOffset;
     const peGroupId = prefixEdit.groupId;
-    const peActive = prefixEdit.phase === "editing_prefix" || prefixEdit.phase === "error";
+    const peActive =
+      prefixEdit.phase === "editing_prefix" || prefixEdit.phase === "error";
 
     if (isMultiSelection) {
       const candidates = selectedAssets
@@ -592,7 +675,11 @@ function SceneControls() {
             x: Math.round(obj.position.x - cx),
             y: Math.round(obj.position.y + cy),
             z: Math.round(obj.position.z - cz),
-            prevPosition: (asset.position ?? [0, 0, 0]) as [number, number, number],
+            prevPosition: (asset.position ?? [0, 0, 0]) as [
+              number,
+              number,
+              number,
+            ],
           };
         })
         .filter((c): c is NonNullable<typeof c> => c !== null);
@@ -602,14 +689,36 @@ function SceneControls() {
 
       const movedAssets = candidates
         .map(({ id, asset, x, y, z, prevPosition }) => {
-          let fx = x, fy = y, fz = z + zShift;
-          if (peActive && peOffset && asset.groupId === peGroupId && asset.preset) {
-            [fx, fy, fz] = clampToBrickGPTWorld(fx, fy, fz, asset.preset.studsX, asset.preset.studsY, peOffset);
+          let fx = x,
+            fy = y,
+            fz = z + zShift;
+          if (
+            peActive &&
+            peOffset &&
+            asset.groupId === peGroupId &&
+            asset.preset
+          ) {
+            [fx, fy, fz] = clampToBrickGPTWorld(
+              fx,
+              fy,
+              fz,
+              asset.preset.studsX,
+              asset.preset.studsY,
+              peOffset,
+            );
           }
-          if (prevPosition[0] === fx && prevPosition[1] === fy && prevPosition[2] === fz) return null;
+          if (
+            prevPosition[0] === fx &&
+            prevPosition[1] === fy &&
+            prevPosition[2] === fz
+          )
+            return null;
           return { id, position: [fx, fy, fz] as [number, number, number] };
         })
-        .filter((a): a is { id: string; position: [number, number, number] } => a !== null);
+        .filter(
+          (a): a is { id: string; position: [number, number, number] } =>
+            a !== null,
+        );
 
       if (movedAssets.length === 0) return;
       captureUndoSnapshot();
@@ -620,26 +729,50 @@ function SceneControls() {
     const obj = selectedAssetId ? scene.getObjectByName(selectedAssetId) : null;
     if (!obj || !selectedAssetId) return;
     const asset = assets.find((a) => a.id === selectedAssetId);
-    const { cx, cy, cz } = asset ? getAssetOffsets(asset) : { cx: 0, cy: 0, cz: 0 };
+    const { cx, cy, cz } = asset
+      ? getAssetOffsets(asset)
+      : { cx: 0, cy: 0, cz: 0 };
     let x = Math.round(obj.position.x - cx);
     let y = Math.round(obj.position.y + cy);
     let z = Math.max(0, Math.round(obj.position.z - cz));
     if (peActive && peOffset && asset?.groupId === peGroupId && asset?.preset) {
-      [x, y, z] = clampToBrickGPTWorld(x, y, z, asset.preset.studsX, asset.preset.studsY, peOffset);
+      [x, y, z] = clampToBrickGPTWorld(
+        x,
+        y,
+        z,
+        asset.preset.studsX,
+        asset.preset.studsY,
+        peOffset,
+      );
     }
     const prevPosition = asset?.position ?? [0, 0, 0];
-    if (prevPosition[0] === x && prevPosition[1] === y && prevPosition[2] === z) {
+    if (
+      prevPosition[0] === x &&
+      prevPosition[1] === y &&
+      prevPosition[2] === z
+    ) {
       return;
     }
     captureUndoSnapshot();
     updateAsset(selectedAssetId, { position: [x, y, z] });
-  }, [assets, captureUndoSnapshot, isMultiSelection, scene, selectedAssetId, selectedAssets, updateAsset, prefixEdit]);
+  }, [
+    assets,
+    captureUndoSnapshot,
+    isMultiSelection,
+    scene,
+    selectedAssetId,
+    selectedAssets,
+    updateAsset,
+    prefixEdit,
+  ]);
 
   const isPerspective = viewportType === "Perspective";
 
   return (
     <>
-      {isMultiSelection && <primitive object={selectionPivot} visible={false} />}
+      {isMultiSelection && (
+        <primitive object={selectionPivot} visible={false} />
+      )}
       {selectedObject && (
         <TransformControls
           object={selectedObject}
@@ -661,13 +794,23 @@ function SceneControls() {
         panSpeed={0.8}
         zoomSpeed={1.2}
         rotateSpeed={0.6}
-        touches={isPerspective
-          ? { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN }
-          : { ONE: THREE.TOUCH.PAN,    TWO: THREE.TOUCH.DOLLY_PAN }
+        touches={
+          isPerspective
+            ? { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN }
+            : { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_PAN }
         }
-        mouseButtons={isPerspective
-          ? { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN }
-          : { LEFT: THREE.MOUSE.PAN,    MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN }
+        mouseButtons={
+          isPerspective
+            ? {
+                LEFT: THREE.MOUSE.ROTATE,
+                MIDDLE: THREE.MOUSE.DOLLY,
+                RIGHT: THREE.MOUSE.PAN,
+              }
+            : {
+                LEFT: THREE.MOUSE.PAN,
+                MIDDLE: THREE.MOUSE.DOLLY,
+                RIGHT: THREE.MOUSE.PAN,
+              }
         }
       />
     </>
@@ -682,8 +825,14 @@ function PrefixEditWorldBox() {
 }
 
 export default function SceneCanvas() {
-  const { assets, sceneBackground, selectAsset, plateSize, plateColor, viewportType } =
-    useScene();
+  const {
+    assets,
+    sceneBackground,
+    selectAsset,
+    plateSize,
+    plateColor,
+    viewportType,
+  } = useScene();
   const isPerspective = viewportType === "Perspective";
 
   return (

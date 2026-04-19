@@ -24,13 +24,19 @@ function computeCamera(entries: GenerationHistoryEntry[]): {
     return { position: [15, -15, 12], target: [0, 0, 0] };
   }
 
-  let minX = Infinity, maxX = -Infinity;
-  let minY = Infinity, maxY = -Infinity;
-  let minZ = Infinity, maxZ = -Infinity;
+  let minX = Infinity,
+    maxX = -Infinity;
+  let minY = Infinity,
+    maxY = -Infinity;
+  let minZ = Infinity,
+    maxZ = -Infinity;
   for (const b of entries) {
-    minX = Math.min(minX, b.x);        maxX = Math.max(maxX, b.x + b.studsX);
-    minY = Math.min(minY, b.y - b.studsY); maxY = Math.max(maxY, b.y);
-    minZ = Math.min(minZ, b.z);        maxZ = Math.max(maxZ, b.z + 1);
+    minX = Math.min(minX, b.x);
+    maxX = Math.max(maxX, b.x + b.studsX);
+    minY = Math.min(minY, b.y - b.studsY);
+    maxY = Math.max(maxY, b.y);
+    minZ = Math.min(minZ, b.z);
+    maxZ = Math.max(maxZ, b.z + 1);
   }
 
   const cx = (minX + maxX) / 2;
@@ -181,23 +187,37 @@ export default function GenerationReplay({
             <button
               type="button"
               onClick={togglePlay}
-              aria-label={
-                atEnd ? "Restart" : isPlaying ? "Pause" : "Play"
-              }
+              aria-label={atEnd ? "Restart" : isPlaying ? "Pause" : "Play"}
               className="w-7 h-7 flex items-center justify-center rounded-full bg-zinc-700 text-white hover:bg-zinc-600 transition-colors shrink-0"
             >
               {atEnd ? (
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
                   <rect x="4" y="5" width="3" height="14" rx="1" />
                   <path d="M19 5v14l-10-7z" />
                 </svg>
               ) : isPlaying ? (
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                <svg
+                  width="10"
+                  height="10"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
                   <rect x="6" y="5" width="4" height="14" rx="1" />
                   <rect x="14" y="5" width="4" height="14" rx="1" />
                 </svg>
               ) : (
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                <svg
+                  width="10"
+                  height="10"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
                   <path d="M7 5v14l12-7z" />
                 </svg>
               )}
@@ -235,7 +255,9 @@ export default function GenerationReplay({
           </div>
 
           <div className="flex items-center justify-between text-[10px] text-zinc-400 dark:text-zinc-500">
-            <span>Step {step + 1} of {generationHistory.length}</span>
+            <span>
+              Step {step + 1} of {generationHistory.length}
+            </span>
             <div className="flex items-center gap-3">
               {canPrefixEdit && onPrefixEdit && (
                 <Button

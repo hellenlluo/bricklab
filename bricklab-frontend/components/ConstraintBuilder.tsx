@@ -117,10 +117,14 @@ function ConstraintBoxMesh({
     <group
       name={`cbox-${box.id}`}
       position={[cx, cy, cz]}
-      onClick={isSelected ? undefined : (e) => {
-        e.stopPropagation();
-        onSelect();
-      }}
+      onClick={
+        isSelected
+          ? undefined
+          : (e) => {
+              e.stopPropagation();
+              onSelect();
+            }
+      }
     >
       <mesh raycast={isSelected ? noRaycast : undefined}>
         <boxGeometry args={[box.sizeX, box.sizeY, box.sizeZ]} />
@@ -137,9 +141,7 @@ function ConstraintBoxMesh({
       </mesh>
       <lineSegments>
         <edgesGeometry
-          args={[
-            new THREE.BoxGeometry(box.sizeX, box.sizeY, box.sizeZ),
-          ]}
+          args={[new THREE.BoxGeometry(box.sizeX, box.sizeY, box.sizeZ)]}
         />
         <lineBasicMaterial
           color={CONSTRAINT_EDGE_COLOR}
@@ -222,9 +224,18 @@ function BuilderControls({
       Math.max(-(WORLD_DIM - sizeY / 2), Math.min(-sizeY / 2, pos.y)),
       Math.max(sizeZ / 2, Math.min(WORLD_DIM - sizeZ / 2, pos.z)),
     );
-    const newX = Math.max(0, Math.min(WORLD_DIM - sizeX, Math.round(pos.x - sizeX / 2)));
-    const newY = Math.max(0, Math.min(WORLD_DIM - sizeY, Math.round(-pos.y - sizeY / 2)));
-    const newZ = Math.max(0, Math.min(WORLD_DIM - sizeZ, Math.round(pos.z - sizeZ / 2)));
+    const newX = Math.max(
+      0,
+      Math.min(WORLD_DIM - sizeX, Math.round(pos.x - sizeX / 2)),
+    );
+    const newY = Math.max(
+      0,
+      Math.min(WORLD_DIM - sizeY, Math.round(-pos.y - sizeY / 2)),
+    );
+    const newZ = Math.max(
+      0,
+      Math.min(WORLD_DIM - sizeZ, Math.round(pos.z - sizeZ / 2)),
+    );
     if (newX !== box.posX || newY !== box.posY || newZ !== box.posZ) {
       onBoxMove(box.id, newX, newY, newZ);
     }
@@ -341,11 +352,25 @@ export default function ConstraintBuilder({
     const sx = clampDim(newSizeX);
     const sy = clampDim(newSizeY);
     const sz = clampDim(newSizeZ);
-    const px = Math.round(Math.max(0, Math.min(WORLD_DIM - sx, (WORLD_DIM - sx) / 2)));
-    const py = Math.round(Math.max(0, Math.min(WORLD_DIM - sy, (WORLD_DIM - sy) / 2)));
-    const pz = Math.round(Math.max(0, Math.min(WORLD_DIM - sz, (WORLD_DIM - sz) / 2)));
+    const px = Math.round(
+      Math.max(0, Math.min(WORLD_DIM - sx, (WORLD_DIM - sx) / 2)),
+    );
+    const py = Math.round(
+      Math.max(0, Math.min(WORLD_DIM - sy, (WORLD_DIM - sy) / 2)),
+    );
+    const pz = Math.round(
+      Math.max(0, Math.min(WORLD_DIM - sz, (WORLD_DIM - sz) / 2)),
+    );
     const id = `box-${Date.now()}`;
-    const newBox: ConstraintBox = { id, sizeX: sx, sizeY: sy, sizeZ: sz, posX: px, posY: py, posZ: pz };
+    const newBox: ConstraintBox = {
+      id,
+      sizeX: sx,
+      sizeY: sy,
+      sizeZ: sz,
+      posX: px,
+      posY: py,
+      posZ: pz,
+    };
     setBoxes((prev) => [...prev, newBox]);
     setSelectedBoxId(id);
   }
@@ -431,7 +456,9 @@ export default function ConstraintBuilder({
                 min={1}
                 max={WORLD_DIM}
                 value={newSizeX}
-                onChange={(e) => setNewSizeX(clampDim(parseInt(e.target.value) || 1))}
+                onChange={(e) =>
+                  setNewSizeX(clampDim(parseInt(e.target.value) || 1))
+                }
                 className="w-14 text-center"
               />
             </div>
@@ -444,7 +471,9 @@ export default function ConstraintBuilder({
                 min={1}
                 max={WORLD_DIM}
                 value={newSizeY}
-                onChange={(e) => setNewSizeY(clampDim(parseInt(e.target.value) || 1))}
+                onChange={(e) =>
+                  setNewSizeY(clampDim(parseInt(e.target.value) || 1))
+                }
                 className="w-14 text-center"
               />
             </div>
@@ -457,7 +486,9 @@ export default function ConstraintBuilder({
                 min={1}
                 max={WORLD_DIM}
                 value={newSizeZ}
-                onChange={(e) => setNewSizeZ(clampDim(parseInt(e.target.value) || 1))}
+                onChange={(e) =>
+                  setNewSizeZ(clampDim(parseInt(e.target.value) || 1))
+                }
                 className="w-14 text-center"
               />
             </div>
@@ -487,28 +518,53 @@ export default function ConstraintBuilder({
                   <>
                     <div className="flex gap-1 items-center">
                       <Input
-                        type="number" min={1} max={WORLD_DIM}
+                        type="number"
+                        min={1}
+                        max={WORLD_DIM}
                         value={selectedBox.sizeX}
-                        onChange={(e) => handleBoxSizeChange(selectedBox.id, "x", e.target.value)}
+                        onChange={(e) =>
+                          handleBoxSizeChange(
+                            selectedBox.id,
+                            "x",
+                            e.target.value,
+                          )
+                        }
                         className="w-12 text-center"
                       />
                       <span className="text-xs text-zinc-400">×</span>
                       <Input
-                        type="number" min={1} max={WORLD_DIM}
+                        type="number"
+                        min={1}
+                        max={WORLD_DIM}
                         value={selectedBox.sizeY}
-                        onChange={(e) => handleBoxSizeChange(selectedBox.id, "y", e.target.value)}
+                        onChange={(e) =>
+                          handleBoxSizeChange(
+                            selectedBox.id,
+                            "y",
+                            e.target.value,
+                          )
+                        }
                         className="w-12 text-center"
                       />
                       <span className="text-xs text-zinc-400">×</span>
                       <Input
-                        type="number" min={1} max={WORLD_DIM}
+                        type="number"
+                        min={1}
+                        max={WORLD_DIM}
                         value={selectedBox.sizeZ}
-                        onChange={(e) => handleBoxSizeChange(selectedBox.id, "z", e.target.value)}
+                        onChange={(e) =>
+                          handleBoxSizeChange(
+                            selectedBox.id,
+                            "z",
+                            e.target.value,
+                          )
+                        }
                         className="w-12 text-center"
                       />
                     </div>
                     <span className="text-[9px] text-zinc-400 dark:text-zinc-500">
-                      ({selectedBox.posX}, {selectedBox.posY}, {selectedBox.posZ})
+                      ({selectedBox.posX}, {selectedBox.posY},{" "}
+                      {selectedBox.posZ})
                     </span>
                     <button
                       onClick={() => handleRemoveBox(selectedBox.id)}

@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  Suspense,
-  useMemo,
-  useEffect,
-  useCallback,
-  useRef,
-} from "react";
+import { Suspense, useMemo, useEffect, useCallback, useRef } from "react";
 import * as THREE from "three";
 import { Canvas, useThree } from "@react-three/fiber";
 import {
@@ -289,7 +283,10 @@ function PlacedAssets({ assets }: { assets: SceneAsset[] }) {
     groups,
   } = useScene();
 
-  const clipboardRef = useRef<{ assets: SceneAsset[]; groups: BrickGroup[] } | null>(null);
+  const clipboardRef = useRef<{
+    assets: SceneAsset[];
+    groups: BrickGroup[];
+  } | null>(null);
   const placed = assets.filter((a) => a.visible && a.position);
 
   // Tracks which group we are currently "inside" (Figma-style drill-down).
@@ -417,10 +414,7 @@ function PlacedAssets({ assets }: { assets: SceneAsset[] }) {
       if ((e.metaKey || e.ctrlKey) && e.key === "v") {
         e.preventDefault();
         if (!clipboardRef.current) return;
-        pasteAssets(
-          clipboardRef.current.assets,
-          clipboardRef.current.groups,
-        );
+        pasteAssets(clipboardRef.current.assets, clipboardRef.current.groups);
         return;
       }
       // Delete / Backspace — delete selected assets
@@ -431,7 +425,15 @@ function PlacedAssets({ assets }: { assets: SceneAsset[] }) {
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [groupSelected, undo, removeSelectedAssets, pasteAssets, assets, selectedAssetIds, groups]);
+  }, [
+    groupSelected,
+    undo,
+    removeSelectedAssets,
+    pasteAssets,
+    assets,
+    selectedAssetIds,
+    groups,
+  ]);
 
   return (
     <>
@@ -654,12 +656,7 @@ function SceneControls() {
     // stay accurate and the gizmo cannot drift below the plate.
     selectionPivot.position.copy(lastPivotPositionRef.current).add(delta);
     lastPivotPositionRef.current.copy(selectionPivot.position);
-  }, [
-    hasTransformSelection,
-    scene,
-    selectedAssets,
-    selectionPivot,
-  ]);
+  }, [hasTransformSelection, scene, selectedAssets, selectionPivot]);
 
   const handleMouseUp = useCallback(() => {
     if (!hasTransformSelection) return;

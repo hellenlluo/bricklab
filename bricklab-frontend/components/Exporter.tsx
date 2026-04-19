@@ -273,12 +273,7 @@ export default function Exporter({ onClose }: ExporterProps) {
     document.addEventListener("mousedown", handleOutside);
     return () => document.removeEventListener("mousedown", handleOutside);
   }, [sceneDropdownOpen]);
-  const presetCount = selectedScene.assets.filter(
-    (a) => a.type === "preset-brick",
-  ).length;
-  const modelCount = selectedScene.assets.filter(
-    (a) => a.type !== "preset-brick",
-  ).length;
+  const totalBrickCount = selectedScene.assets.length;
 
   async function handleExport() {
     const name = exportName.trim() || "Untitled Scene";
@@ -435,22 +430,12 @@ export default function Exporter({ onClose }: ExporterProps) {
           </span>
           <div className="flex justify-between text-xs">
             <span className="text-zinc-500 dark:text-zinc-400">
-              Preset bricks
+              Total bricks
             </span>
             <span className="text-zinc-900 dark:text-zinc-100 tabular-nums">
-              {presetCount}
+              {totalBrickCount}
             </span>
           </div>
-          {modelCount > 0 && (
-            <div className="flex justify-between text-xs">
-              <span className="text-zinc-500 dark:text-zinc-400">
-                3D models
-              </span>
-              <span className="text-zinc-900 dark:text-zinc-100 tabular-nums">
-                {modelCount}
-              </span>
-            </div>
-          )}
           <div className="flex justify-between text-xs">
             <span className="text-zinc-500 dark:text-zinc-400">Format</span>
             <span className="text-zinc-900 dark:text-zinc-100">GLB + JSON</span>

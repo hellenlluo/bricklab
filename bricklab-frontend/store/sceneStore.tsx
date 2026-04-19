@@ -174,7 +174,10 @@ interface SceneStore {
     newHistory: GenerationHistoryEntry[],
     newOffset?: GenerationOffset,
   ) => void;
-  pasteAssets: (clipboardAssets: SceneAsset[], clipboardGroups: BrickGroup[]) => void;
+  pasteAssets: (
+    clipboardAssets: SceneAsset[],
+    clipboardGroups: BrickGroup[],
+  ) => void;
   undo: () => void;
   captureUndoSnapshot: () => void;
   selectedAssetId: string | null;

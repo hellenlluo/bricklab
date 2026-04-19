@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Environment } from "@react-three/drei";
 import ParametricBrick from "@/components/ParametricBrick";
@@ -11,6 +11,10 @@ const PREVIEW_FOV = 35;
 const PREVIEW_PADDING = 1.35;
 const CURRENT_STEP_COLOR = "#96d35f";
 const OTHER_BRICK_COLOR = "#74a7fe";
+
+const BASE_STEPS_PER_SECOND = 6;
+const SPEED_OPTIONS = [0.5, 1, 2, 4] as const;
+type Speed = (typeof SPEED_OPTIONS)[number];
 
 function computeCamera(entries: GenerationHistoryEntry[]): {
   position: [number, number, number];
@@ -96,12 +100,42 @@ export default function GenerationReplay({
   onClose,
 }: GenerationReplayProps) {
   const [step, setStep] = useState(generationHistory.length - 1);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [speed, setSpeed] = useState<Speed>(1);
   const maxStep = generationHistory.length - 1;
+  const atEnd = step >= maxStep;
 
   const { position: cameraPosition } = useMemo(
     () => computeCamera(generationHistory),
     [generationHistory],
   );
+
+  useEffect(() => {
+    if (!isPlaying) return;
+    if (step >= maxStep) return;
+    const delay = 1000 / (BASE_STEPS_PER_SECOND * speed);
+    const id = window.setTimeout(() => {
+      const nextStep = Math.min(step + 1, maxStep);
+      setStep(nextStep);
+      if (nextStep >= maxStep) {
+        setIsPlaying(false);
+      }
+    }, delay);
+    return () => window.clearTimeout(id);
+  }, [isPlaying, step, maxStep, speed]);
+
+  function togglePlay() {
+    if (atEnd) {
+      setStep(0);
+      setIsPlaying(true);
+    } else {
+      setIsPlaying((p) => !p);
+    }
+  }
+
+  function handleSliderPointerDown() {
+    setIsPlaying(false);
+  }
 
   return (
     <div
@@ -143,14 +177,63 @@ export default function GenerationReplay({
 
         {/* Playback controls */}
         <div className="px-5 py-4 border-t border-zinc-200 dark:border-zinc-800 flex flex-col gap-2">
-          <input
-            type="range"
-            min={0}
-            max={maxStep}
-            value={step}
-            onChange={(e) => setStep(Number(e.target.value))}
-            className="w-full accent-zinc-700 dark:accent-zinc-400 cursor-pointer"
-          />
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={togglePlay}
+              aria-label={
+                atEnd ? "Restart" : isPlaying ? "Pause" : "Play"
+              }
+              className="w-7 h-7 flex items-center justify-center rounded-full bg-zinc-700 text-white hover:bg-zinc-600 transition-colors shrink-0"
+            >
+              {atEnd ? (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <rect x="4" y="5" width="3" height="14" rx="1" />
+                  <path d="M19 5v14l-10-7z" />
+                </svg>
+              ) : isPlaying ? (
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="6" y="5" width="4" height="14" rx="1" />
+                  <rect x="14" y="5" width="4" height="14" rx="1" />
+                </svg>
+              ) : (
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M7 5v14l12-7z" />
+                </svg>
+              )}
+            </button>
+
+            <input
+              type="range"
+              min={0}
+              max={maxStep}
+              value={step}
+              onPointerDown={handleSliderPointerDown}
+              onChange={(e) => setStep(Number(e.target.value))}
+              className="flex-1 accent-zinc-700 dark:accent-zinc-400 cursor-pointer"
+            />
+
+            <div
+              className="flex items-center gap-0.5 rounded-md border border-zinc-200 dark:border-zinc-700 p-0.5 shrink-0"
+              data-no-deselect
+            >
+              {SPEED_OPTIONS.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setSpeed(s)}
+                  className={`px-1.5 py-0.5 text-[10px] rounded leading-none transition-colors ${
+                    speed === s
+                      ? "bg-zinc-700 text-white"
+                      : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+                  }`}
+                >
+                  {s}×
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="flex items-center justify-between text-[10px] text-zinc-400 dark:text-zinc-500">
             <span>Step {step + 1} of {generationHistory.length}</span>
             <div className="flex items-center gap-3">

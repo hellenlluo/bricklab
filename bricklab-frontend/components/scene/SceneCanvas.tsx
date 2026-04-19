@@ -6,7 +6,6 @@ import {
   useEffect,
   useCallback,
   useRef,
-  useState,
 } from "react";
 import * as THREE from "three";
 import { Canvas, useThree } from "@react-three/fiber";
@@ -528,7 +527,6 @@ function clampToBrickGPTWorld(
 
 function SceneControls() {
   const {
-    selectedAssetId,
     selectedAssetIds,
     updateAsset,
     captureUndoSnapshot,
@@ -543,8 +541,6 @@ function SceneControls() {
   const orbRef = useRef<OrbitControlsImpl>(null);
   const selectionPivot = useMemo(() => new THREE.Group(), []);
   const lastPivotPositionRef = useRef(new THREE.Vector3());
-  const [selectedTransformObject, setSelectedTransformObject] =
-    useState<THREE.Object3D>();
 
   useEffect(() => {
     const orb = orbRef.current;
@@ -605,43 +601,12 @@ function SceneControls() {
     [assets, selectedAssetIds],
   );
   const isMultiSelection = selectedAssets.length > 1;
-  const selectedAsset = assets.find((a) => a.id === selectedAssetId);
+  const hasTransformSelection = selectedAssets.length > 0;
+  const shouldShowTransformControls =
+    hasTransformSelection && !!selectionPivot.parent;
 
   useEffect(() => {
-    let frameId = 0;
-
-    const resolveTransformObject = () => {
-      if (isMultiSelection) {
-        setSelectedTransformObject(
-          selectionPivot.parent ? selectionPivot : undefined,
-        );
-        return;
-      }
-
-      if (
-        !selectedAssetId ||
-        !selectedAsset?.visible ||
-        selectedAsset?.selectable === false
-      ) {
-        setSelectedTransformObject(undefined);
-        return;
-      }
-
-      const selectedObject = scene.getObjectByName(selectedAssetId);
-      setSelectedTransformObject(
-        selectedObject?.parent ? selectedObject : undefined,
-      );
-    };
-
-    setSelectedTransformObject(undefined);
-    frameId = window.requestAnimationFrame(resolveTransformObject);
-
-    return () => window.cancelAnimationFrame(frameId);
-  }, [isMultiSelection, scene, selectedAssetId, selectedAsset, selectionPivot]);
-
-  useEffect(() => {
-    if (!isMultiSelection) return;
-    if (selectedAssets.length === 0) return;
+    if (!hasTransformSelection) return;
     const totalWeight = selectedAssets.reduce(
       (sum, asset) => sum + getAssetWeight(asset),
       0,
@@ -657,184 +622,116 @@ function SceneControls() {
     center.divideScalar(totalWeight || 1);
     selectionPivot.position.copy(center);
     lastPivotPositionRef.current.copy(center);
-  }, [isMultiSelection, selectedAssets, selectionPivot]);
+  }, [hasTransformSelection, selectedAssets, selectionPivot]);
 
   const handleChange = useCallback(() => {
-    if (isMultiSelection) {
-      const delta = selectionPivot.position
-        .clone()
-        .sub(lastPivotPositionRef.current);
-      if (delta.lengthSq() === 0) return;
+    if (!hasTransformSelection) return;
 
-      // Compute the minimum world-space bottom (obj.position.z - cz) across all
-      // selected objects, then clamp delta.z so no brick goes below the plate (z=0).
-      let minBottom = Infinity;
-      selectedAssets.forEach((asset) => {
-        const obj = scene.getObjectByName(asset.id);
-        if (!obj) return;
-        const { cz } = getAssetOffsets(asset);
-        minBottom = Math.min(minBottom, obj.position.z - cz);
-      });
-      if (isFinite(minBottom)) {
-        delta.z = Math.max(delta.z, -minBottom);
-      }
+    const delta = selectionPivot.position
+      .clone()
+      .sub(lastPivotPositionRef.current);
+    if (delta.lengthSq() === 0) return;
 
-      selectedAssetIds.forEach((id) => {
-        const obj = scene.getObjectByName(id);
-        if (obj) obj.position.add(delta);
-      });
-
-      // Write the clamped pivot position back so that subsequent delta calculations
-      // stay accurate and the gizmo cannot drift below the plate.
-      selectionPivot.position.copy(lastPivotPositionRef.current).add(delta);
-      lastPivotPositionRef.current.copy(selectionPivot.position);
-      return;
+    // Compute the minimum world-space bottom (obj.position.z - cz) across all
+    // selected objects, then clamp delta.z so no brick goes below the plate (z=0).
+    let minBottom = Infinity;
+    selectedAssets.forEach((asset) => {
+      const obj = scene.getObjectByName(asset.id);
+      if (!obj) return;
+      const { cz } = getAssetOffsets(asset);
+      minBottom = Math.min(minBottom, obj.position.z - cz);
+    });
+    if (isFinite(minBottom)) {
+      delta.z = Math.max(delta.z, -minBottom);
     }
 
-    const obj = selectedAssetId ? scene.getObjectByName(selectedAssetId) : null;
-    if (!obj) return;
-    const asset = assets.find((a) => a.id === selectedAssetId);
-    const { cx, cy, cz } = asset
-      ? getAssetOffsets(asset)
-      : { cx: 0, cy: 0, cz: 0 };
-    let sx = Math.round(obj.position.x - cx);
-    let sy = Math.round(obj.position.y + cy);
-    let sz = Math.max(0, Math.round(obj.position.z - cz));
-    const peActive =
-      prefixEdit.phase === "editing_prefix" || prefixEdit.phase === "error";
-    if (
-      peActive &&
-      prefixEdit.generationOffset &&
-      asset?.groupId === prefixEdit.groupId &&
-      asset?.preset
-    ) {
-      [sx, sy, sz] = clampToBrickGPTWorld(
-        sx,
-        sy,
-        sz,
-        asset.preset.studsX,
-        asset.preset.studsY,
-        prefixEdit.generationOffset,
-      );
-    }
-    obj.position.x = sx + cx;
-    obj.position.y = sy - cy;
-    obj.position.z = sz + cz;
+    selectedAssets.forEach((asset) => {
+      const obj = scene.getObjectByName(asset.id);
+      if (obj) obj.position.add(delta);
+    });
+
+    // Write the clamped pivot position back so that subsequent delta calculations
+    // stay accurate and the gizmo cannot drift below the plate.
+    selectionPivot.position.copy(lastPivotPositionRef.current).add(delta);
+    lastPivotPositionRef.current.copy(selectionPivot.position);
   }, [
-    assets,
-    isMultiSelection,
+    hasTransformSelection,
     scene,
-    selectedAssetId,
-    selectedAssetIds,
     selectedAssets,
     selectionPivot,
-    prefixEdit,
   ]);
 
   const handleMouseUp = useCallback(() => {
+    if (!hasTransformSelection) return;
+
     const peOffset = prefixEdit.generationOffset;
     const peGroupId = prefixEdit.groupId;
     const peActive =
       prefixEdit.phase === "editing_prefix" || prefixEdit.phase === "error";
 
-    if (isMultiSelection) {
-      const candidates = selectedAssets
-        .map((asset) => {
-          const obj = scene.getObjectByName(asset.id);
-          if (!obj) return null;
-          const { cx, cy, cz } = getAssetOffsets(asset);
-          return {
-            id: asset.id,
-            asset,
-            x: Math.round(obj.position.x - cx),
-            y: Math.round(obj.position.y + cy),
-            z: Math.round(obj.position.z - cz),
-            prevPosition: (asset.position ?? [0, 0, 0]) as [
-              number,
-              number,
-              number,
-            ],
-          };
-        })
-        .filter((c): c is NonNullable<typeof c> => c !== null);
+    const candidates = selectedAssets
+      .map((asset) => {
+        const obj = scene.getObjectByName(asset.id);
+        if (!obj) return null;
+        const { cx, cy, cz } = getAssetOffsets(asset);
+        return {
+          id: asset.id,
+          asset,
+          x: Math.round(obj.position.x - cx),
+          y: Math.round(obj.position.y + cy),
+          z: Math.round(obj.position.z - cz),
+          prevPosition: (asset.position ?? [0, 0, 0]) as [
+            number,
+            number,
+            number,
+          ],
+        };
+      })
+      .filter((c): c is NonNullable<typeof c> => c !== null);
 
-      const minZ = candidates.reduce((m, c) => Math.min(m, c.z), Infinity);
-      const zShift = minZ < 0 ? -minZ : 0;
+    const minZ = candidates.reduce((m, c) => Math.min(m, c.z), Infinity);
+    const zShift = minZ < 0 ? -minZ : 0;
 
-      const movedAssets = candidates
-        .map(({ id, asset, x, y, z, prevPosition }) => {
-          let fx = x,
-            fy = y,
-            fz = z + zShift;
-          if (
-            peActive &&
-            peOffset &&
-            asset.groupId === peGroupId &&
-            asset.preset
-          ) {
-            [fx, fy, fz] = clampToBrickGPTWorld(
-              fx,
-              fy,
-              fz,
-              asset.preset.studsX,
-              asset.preset.studsY,
-              peOffset,
-            );
-          }
-          if (
-            prevPosition[0] === fx &&
-            prevPosition[1] === fy &&
-            prevPosition[2] === fz
-          )
-            return null;
-          return { id, position: [fx, fy, fz] as [number, number, number] };
-        })
-        .filter(
-          (a): a is { id: string; position: [number, number, number] } =>
-            a !== null,
-        );
-
-      if (movedAssets.length === 0) return;
-      captureUndoSnapshot();
-      movedAssets.forEach(({ id, position }) => updateAsset(id, { position }));
-      return;
-    }
-
-    const obj = selectedAssetId ? scene.getObjectByName(selectedAssetId) : null;
-    if (!obj || !selectedAssetId) return;
-    const asset = assets.find((a) => a.id === selectedAssetId);
-    const { cx, cy, cz } = asset
-      ? getAssetOffsets(asset)
-      : { cx: 0, cy: 0, cz: 0 };
-    let x = Math.round(obj.position.x - cx);
-    let y = Math.round(obj.position.y + cy);
-    let z = Math.max(0, Math.round(obj.position.z - cz));
-    if (peActive && peOffset && asset?.groupId === peGroupId && asset?.preset) {
-      [x, y, z] = clampToBrickGPTWorld(
-        x,
-        y,
-        z,
-        asset.preset.studsX,
-        asset.preset.studsY,
-        peOffset,
+    const movedAssets = candidates
+      .map(({ id, asset, x, y, z, prevPosition }) => {
+        let fx = x,
+          fy = y,
+          fz = z + zShift;
+        if (
+          peActive &&
+          peOffset &&
+          asset.groupId === peGroupId &&
+          asset.preset
+        ) {
+          [fx, fy, fz] = clampToBrickGPTWorld(
+            fx,
+            fy,
+            fz,
+            asset.preset.studsX,
+            asset.preset.studsY,
+            peOffset,
+          );
+        }
+        if (
+          prevPosition[0] === fx &&
+          prevPosition[1] === fy &&
+          prevPosition[2] === fz
+        )
+          return null;
+        return { id, position: [fx, fy, fz] as [number, number, number] };
+      })
+      .filter(
+        (a): a is { id: string; position: [number, number, number] } =>
+          a !== null,
       );
-    }
-    const prevPosition = asset?.position ?? [0, 0, 0];
-    if (
-      prevPosition[0] === x &&
-      prevPosition[1] === y &&
-      prevPosition[2] === z
-    ) {
-      return;
-    }
+
+    if (movedAssets.length === 0) return;
     captureUndoSnapshot();
-    updateAsset(selectedAssetId, { position: [x, y, z] });
+    movedAssets.forEach(({ id, position }) => updateAsset(id, { position }));
   }, [
-    assets,
     captureUndoSnapshot,
-    isMultiSelection,
+    hasTransformSelection,
     scene,
-    selectedAssetId,
     selectedAssets,
     updateAsset,
     prefixEdit,
@@ -844,12 +741,10 @@ function SceneControls() {
 
   return (
     <>
-      {isMultiSelection && (
-        <primitive object={selectionPivot} visible={false} />
-      )}
-      {selectedTransformObject && (
+      <primitive object={selectionPivot} visible={false} />
+      {shouldShowTransformControls && (
         <TransformControls
-          object={selectedTransformObject}
+          object={selectionPivot}
           size={0.5}
           onChange={handleChange}
           onMouseUp={handleMouseUp}

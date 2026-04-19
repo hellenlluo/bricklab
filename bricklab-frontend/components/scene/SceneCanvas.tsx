@@ -1,6 +1,13 @@
 "use client";
 
-import { Suspense, useMemo, useEffect, useCallback, useRef } from "react";
+import {
+  Suspense,
+  useMemo,
+  useEffect,
+  useCallback,
+  useRef,
+  useState,
+} from "react";
 import * as THREE from "three";
 import { Canvas, useThree } from "@react-three/fiber";
 import {
@@ -10,7 +17,7 @@ import {
   TransformControls,
 } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
-import { useScene, type SceneAsset } from "@/store/sceneStore";
+import { useScene, type SceneAsset, type BrickGroup } from "@/store/sceneStore";
 import { usePrefixEdit } from "@/store/usePrefixEdit";
 import type { GenerationOffset } from "@/lib/prefixEditing";
 import Baseplate from "./Baseplate";
@@ -278,9 +285,12 @@ function PlacedAssets({ assets }: { assets: SceneAsset[] }) {
     selectGroup,
     groupSelected,
     removeSelectedAssets,
+    pasteAssets,
     undo,
     groups,
   } = useScene();
+
+  const clipboardRef = useRef<{ assets: SceneAsset[]; groups: BrickGroup[] } | null>(null);
   const placed = assets.filter((a) => a.visible && a.position);
 
   // Tracks which group we are currently "inside" (Figma-style drill-down).
@@ -373,6 +383,47 @@ function PlacedAssets({ assets }: { assets: SceneAsset[] }) {
         undo();
         return;
       }
+      // ⌘C / Ctrl+C — copy selected
+      if ((e.metaKey || e.ctrlKey) && e.key === "c") {
+        if (selectedAssetIds.length === 0) return;
+        e.preventDefault();
+        const copiedAssets = assets.filter((a) =>
+          selectedAssetIds.includes(a.id),
+        );
+        // Collect all groups referenced by selected assets, plus parent groups
+        const groupIdSet = new Set<string>();
+        copiedAssets.forEach((a) => {
+          if (a.groupId) groupIdSet.add(a.groupId);
+        });
+        // Walk up the group hierarchy to include parent groups
+        let changed = true;
+        while (changed) {
+          changed = false;
+          groups.forEach((g) => {
+            if (
+              groupIdSet.has(g.id) &&
+              g.parentGroupId &&
+              !groupIdSet.has(g.parentGroupId)
+            ) {
+              groupIdSet.add(g.parentGroupId);
+              changed = true;
+            }
+          });
+        }
+        const copiedGroups = groups.filter((g) => groupIdSet.has(g.id));
+        clipboardRef.current = { assets: copiedAssets, groups: copiedGroups };
+        return;
+      }
+      // ⌘V / Ctrl+V — paste copied assets at their original positions
+      if ((e.metaKey || e.ctrlKey) && e.key === "v") {
+        e.preventDefault();
+        if (!clipboardRef.current) return;
+        pasteAssets(
+          clipboardRef.current.assets,
+          clipboardRef.current.groups,
+        );
+        return;
+      }
       // Delete / Backspace — delete selected assets
       if (e.key === "Delete" || e.key === "Backspace") {
         e.preventDefault();
@@ -381,7 +432,7 @@ function PlacedAssets({ assets }: { assets: SceneAsset[] }) {
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [groupSelected, undo, removeSelectedAssets]);
+  }, [groupSelected, undo, removeSelectedAssets, pasteAssets, assets, selectedAssetIds, groups]);
 
   return (
     <>
@@ -492,6 +543,8 @@ function SceneControls() {
   const orbRef = useRef<OrbitControlsImpl>(null);
   const selectionPivot = useMemo(() => new THREE.Group(), []);
   const lastPivotPositionRef = useRef(new THREE.Vector3());
+  const [selectedTransformObject, setSelectedTransformObject] =
+    useState<THREE.Object3D>();
 
   useEffect(() => {
     const orb = orbRef.current;
@@ -553,17 +606,38 @@ function SceneControls() {
   );
   const isMultiSelection = selectedAssets.length > 1;
   const selectedAsset = assets.find((a) => a.id === selectedAssetId);
-  const rawObj =
-    selectedAsset?.visible &&
-    selectedAsset?.selectable !== false &&
-    selectedAssetId
-      ? scene.getObjectByName(selectedAssetId)
-      : null;
-  const selectedObject = isMultiSelection
-    ? selectionPivot
-    : rawObj?.parent
-      ? rawObj
-      : undefined;
+
+  useEffect(() => {
+    let frameId = 0;
+
+    const resolveTransformObject = () => {
+      if (isMultiSelection) {
+        setSelectedTransformObject(
+          selectionPivot.parent ? selectionPivot : undefined,
+        );
+        return;
+      }
+
+      if (
+        !selectedAssetId ||
+        !selectedAsset?.visible ||
+        selectedAsset?.selectable === false
+      ) {
+        setSelectedTransformObject(undefined);
+        return;
+      }
+
+      const selectedObject = scene.getObjectByName(selectedAssetId);
+      setSelectedTransformObject(
+        selectedObject?.parent ? selectedObject : undefined,
+      );
+    };
+
+    setSelectedTransformObject(undefined);
+    frameId = window.requestAnimationFrame(resolveTransformObject);
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [isMultiSelection, scene, selectedAssetId, selectedAsset, selectionPivot]);
 
   useEffect(() => {
     if (!isMultiSelection) return;
@@ -773,9 +847,9 @@ function SceneControls() {
       {isMultiSelection && (
         <primitive object={selectionPivot} visible={false} />
       )}
-      {selectedObject && (
+      {selectedTransformObject && (
         <TransformControls
-          object={selectedObject}
+          object={selectedTransformObject}
           size={0.5}
           onChange={handleChange}
           onMouseUp={handleMouseUp}

@@ -120,6 +120,17 @@ function inferGroupCategory(
     : undefined;
 }
 
+function getNextPastedName(name: string, usedNames: Set<string>): string {
+  let suffix = 2;
+  let nextName = `${name} ${suffix}`;
+  while (usedNames.has(nextName)) {
+    suffix += 1;
+    nextName = `${name} ${suffix}`;
+  }
+  usedNames.add(nextName);
+  return nextName;
+}
+
 interface SceneStore {
   // Multi-scene management
   scenes: SceneData[];
@@ -158,6 +169,7 @@ interface SceneStore {
     newHistory: GenerationHistoryEntry[],
     newOffset?: GenerationOffset,
   ) => void;
+  pasteAssets: (clipboardAssets: SceneAsset[], clipboardGroups: BrickGroup[]) => void;
   undo: () => void;
   captureUndoSnapshot: () => void;
   selectedAssetId: string | null;
@@ -225,6 +237,52 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
   function pushUndo() {
     const snapshot = activeScene;
     undoStackRef.current = [...undoStackRef.current.slice(-19), snapshot];
+  }
+
+  function pasteAssets(
+    clipboardAssets: SceneAsset[],
+    clipboardGroups: BrickGroup[],
+  ) {
+    if (clipboardAssets.length === 0) return;
+    pushUndo();
+    const ts = Date.now();
+
+    updateActiveScene((s) => {
+      const usedAssetNames = new Set(s.assets.map((asset) => asset.name));
+      const usedGroupNames = new Set(s.groups.map((group) => group.name));
+
+      // Map old group IDs → new group IDs
+      const groupIdMap = new Map<string, string>();
+      clipboardGroups.forEach((g, i) => {
+        groupIdMap.set(g.id, `group-paste-${ts}-${i}`);
+      });
+
+      const newGroups: BrickGroup[] = clipboardGroups.map((g, i) => ({
+        ...g,
+        id: `group-paste-${ts}-${i}`,
+        name: getNextPastedName(g.name, usedGroupNames),
+        parentGroupId: g.parentGroupId
+          ? groupIdMap.get(g.parentGroupId)
+          : undefined,
+      }));
+
+      const newAssets: SceneAsset[] = clipboardAssets.map((a, i) => ({
+        ...a,
+        id: `paste-${ts}-${i}`,
+        name: getNextPastedName(a.name, usedAssetNames),
+        groupId: a.groupId ? groupIdMap.get(a.groupId) : undefined,
+      }));
+
+      const newAssetIds = newAssets.map((a) => a.id);
+
+      return {
+        ...s,
+        assets: [...s.assets, ...newAssets],
+        groups: [...s.groups, ...newGroups],
+        selectedAssetId: newAssetIds[newAssetIds.length - 1] ?? null,
+        selectedAssetIds: newAssetIds,
+      };
+    });
   }
 
   function undo() {
@@ -812,6 +870,7 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
         moveAssetToGroup,
         revertGroupToStep,
         replaceGroupGeneration,
+        pasteAssets,
         undo,
         captureUndoSnapshot,
         selectedAssetId,

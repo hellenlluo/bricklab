@@ -80,6 +80,11 @@ export interface SceneData {
 
 const DEFAULT_SCENE_ID = "scene-default";
 
+function normalizePlateSize(size: number): number {
+  const rounded = Math.max(2, Math.round(size));
+  return rounded % 2 === 0 ? rounded : rounded + 1;
+}
+
 function createDefaultScene(id: string, name: string): SceneData {
   return {
     id,
@@ -367,10 +372,11 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
   // ── Per-scene helpers ──────────────────────────────────────────────────────
 
   function updatePlateSize(size: number) {
+    const normalizedSize = normalizePlateSize(size);
     updateActiveScene((s) => ({
       ...s,
-      plateSize: size,
-      maxCameraDistance: Math.max(size, 50) * 2,
+      plateSize: normalizedSize,
+      maxCameraDistance: Math.max(normalizedSize, 50) * 2,
     }));
   }
 

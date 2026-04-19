@@ -183,6 +183,18 @@ export default function Docs() {
           </div>
 
           <div>
+            <SectionHeader>Coordinate System &amp; Grid</SectionHeader>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+              Brick positions use the top-left corner of the brick 
+              when viewed from the positive Z axis. Group positions use the
+              top-left corner of the selected group bounding box from that same
+              top-down view. Baseplate sizes are restricted to even numbers so brick placements stay
+              aligned to the stud grid and do not shift onto half-stud offsets
+              after a size change.
+            </p>
+          </div>
+
+          <div>
             <SectionHeader>Properties &amp; Scene Settings</SectionHeader>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
               Select a brick (or group of bricks) to reveal its properties on

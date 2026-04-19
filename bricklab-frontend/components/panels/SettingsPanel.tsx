@@ -4,6 +4,11 @@ import { useState, useEffect } from "react";
 import { useScene } from "@/store/sceneStore";
 import Input from "@/components/ui/Input";
 
+function normalizePlateSize(size: number): number {
+  const rounded = Math.max(2, Math.round(size));
+  return rounded % 2 === 0 ? rounded : rounded + 1;
+}
+
 export default function SettingsPanel() {
   const {
     sceneBackground,
@@ -23,6 +28,10 @@ export default function SettingsPanel() {
   const [maxDistanceDraft, setMaxDistanceDraft] = useState(
     String(maxCameraDistance),
   );
+
+  useEffect(() => {
+    setPlateSizeDraft(String(plateSize));
+  }, [plateSize]);
 
   useEffect(() => {
     setMaxDistanceDraft(String(maxCameraDistance));
@@ -94,14 +103,16 @@ export default function SettingsPanel() {
         </span>
         <Input
           type="number"
-          min={1}
+          min={2}
+          step={2}
           value={plateSizeDraft}
           onChange={(e) => setPlateSizeDraft(e.target.value)}
           onBlur={() => {
             const n = parseInt(plateSizeDraft, 10);
             if (!isNaN(n) && n > 0) {
-              setPlateSize(n);
-              setPlateSizeDraft(String(n));
+              const normalized = normalizePlateSize(n);
+              setPlateSize(normalized);
+              setPlateSizeDraft(String(normalized));
             } else {
               setPlateSizeDraft(String(plateSize));
             }

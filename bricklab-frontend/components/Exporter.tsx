@@ -10,25 +10,16 @@ import type { SceneData } from "@/store/sceneStore";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 
-// ── Brick geometry constants (mirrors ParametricBrick.tsx) ──────────────────
 const STUD_SPACING = 1;
 const BODY_HEIGHT = 1;
 const STUD_RADIUS = 0.25;
 const STUD_HEIGHT = 0.175;
 
-// ── Baseplate geometry constants (mirrors Baseplate.tsx) ────────────────────
 const PLATE_THICKNESS = 0.5;
 const PLATE_STUD_RADIUS = 0.25;
 const PLATE_STUD_HEIGHT = 0.175;
 const PLATE_STUD_SPACING = 1;
 
-// ── Three.js scene builders ─────────────────────────────────────────────────
-
-/**
- * Build a single merged BufferGeometry for all studs of a brick or baseplate.
- * CylinderGeometry is Y-aligned by default; we bake a PI/2 X-rotation into
- * each clone so studs stand along Z (the app's up axis) before merging.
- */
 function mergedStudsGeo(
   positions: Array<[number, number, number]>,
   radius: number,
@@ -65,7 +56,6 @@ function buildBrickGroup(
     metalness,
   });
 
-  // Body — bake position into geometry so it can be merged with studs
   const bodyGeo = new THREE.BoxGeometry(
     studsX * STUD_SPACING,
     studsY * STUD_SPACING,
@@ -79,7 +69,6 @@ function buildBrickGroup(
     ),
   );
 
-  // Studs
   const studPositions: Array<[number, number, number]> = [];
   for (let ix = 0; ix < studsX; ix++) {
     for (let iy = 0; iy < studsY; iy++) {
@@ -92,7 +81,6 @@ function buildBrickGroup(
   }
   const studsGeo = mergedStudsGeo(studPositions, STUD_RADIUS, STUD_HEIGHT, 12);
 
-  // Single mesh: body + all studs merged
   const mesh = new THREE.Mesh(mergeGeometries([bodyGeo, studsGeo]), mat);
   mesh.name = name;
   group.add(mesh);
@@ -111,13 +99,11 @@ function buildBaseplateGroup(
     color: new THREE.Color(plateColor),
   });
 
-  // Slab — bake position into geometry so it can be merged with studs
   const slabGeo = new THREE.BoxGeometry(plateSize, plateSize, PLATE_THICKNESS);
   slabGeo.applyMatrix4(
     new THREE.Matrix4().makeTranslation(0, 0, -PLATE_THICKNESS / 2),
   );
 
-  // Studs
   const studCount = Math.round(plateSize / PLATE_STUD_SPACING);
   const start = -(plateSize / 2) + PLATE_STUD_SPACING / 2;
   const studPositions: Array<[number, number, number]> = [];
@@ -151,9 +137,6 @@ function buildThreeScene(
 ): THREE.Scene {
   const exportScene = new THREE.Scene();
 
-  // BrickLab uses Z-up internally. glTF/Blender/Rhino default to Y-up.
-  // Wrapping everything in a root rotated −90° around X maps BrickLab's Z to
-  // the importers' Y so the scene stands upright with no manual correction.
   const root = new THREE.Group();
   root.name = sceneData.name;
   root.rotation.x = -Math.PI / 2;
@@ -184,14 +167,10 @@ function buildThreeScene(
       }
       root.add(brickGroup);
     }
-    // Non-preset (GLTF model) assets are recorded in metadata only;
-    // their source GLBs would need to be fetched separately.
   }
 
   return exportScene;
 }
-
-// ── Metadata builder ────────────────────────────────────────────────────────
 
 function buildMetadata(
   sceneData: SceneData,
@@ -353,6 +332,37 @@ export default function Exporter({ onClose }: ExporterProps) {
       </div>
 
       <div className="p-4 flex flex-col gap-4">
+        {/* Export name */}
+        <div className="flex flex-col gap-1.5">
+          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            Export name
+          </span>
+          <Input
+            value={exportName}
+            onChange={(e) => setExportName(e.target.value)}
+            placeholder="Untitled Scene"
+            className="w-full"
+          />
+        </div>
+
+        {/* Options */}
+        <div className="flex flex-col gap-2">
+          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            Options
+          </span>
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={includeBasePlate}
+              onChange={(e) => setIncludeBasePlate(e.target.checked)}
+              className="w-3.5 h-3.5 rounded border-zinc-300 dark:border-zinc-600 accent-zinc-700 dark:accent-zinc-300"
+            />
+            <span className="text-xs text-zinc-600 dark:text-zinc-400">
+              Include base plate
+            </span>
+          </label>
+        </div>
+
         {/* Scene selection */}
         <div className="flex flex-col gap-1.5">
           <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
@@ -383,7 +393,7 @@ export default function Exporter({ onClose }: ExporterProps) {
               <span className="text-zinc-400 dark:text-zinc-500">Scene:</span>
               <span className="truncate">{selectedScene.name}</span>
               <span className="ml-auto text-zinc-400 dark:text-zinc-500 shrink-0">
-                {selectedScene.assets.length} object
+                {selectedScene.assets.length} asset
                 {selectedScene.assets.length !== 1 ? "s" : ""}
               </span>
             </button>
@@ -416,37 +426,6 @@ export default function Exporter({ onClose }: ExporterProps) {
               </div>
             )}
           </div>
-        </div>
-
-        {/* Export name */}
-        <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-            Export name
-          </span>
-          <Input
-            value={exportName}
-            onChange={(e) => setExportName(e.target.value)}
-            placeholder="Untitled Scene"
-            className="w-full"
-          />
-        </div>
-
-        {/* Options */}
-        <div className="flex flex-col gap-2">
-          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-            Options
-          </span>
-          <label className="flex items-center gap-2 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={includeBasePlate}
-              onChange={(e) => setIncludeBasePlate(e.target.checked)}
-              className="w-3.5 h-3.5 rounded border-zinc-300 dark:border-zinc-600 accent-zinc-700 dark:accent-zinc-300"
-            />
-            <span className="text-xs text-zinc-600 dark:text-zinc-400">
-              Include base plate
-            </span>
-          </label>
         </div>
 
         {/* Summary */}

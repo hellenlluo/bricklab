@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from "react";
+
 function SectionHeader({ children }: { children: React.ReactNode }) {
   return (
     <h3 className="text-xs font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 mb-2">
@@ -17,7 +19,7 @@ function ShortcutRow({
 }) {
   return (
     <div className="flex items-center justify-between py-1.5 border-b border-zinc-100 dark:border-zinc-800 last:border-0">
-      <div>
+      <div className="min-w-0">
         <span className="text-xs text-zinc-700 dark:text-zinc-300">
           {action}
         </span>
@@ -27,7 +29,7 @@ function ShortcutRow({
           </span>
         )}
       </div>
-      <div className="flex items-center gap-1 ml-4 flex-shrink-0">
+      <div className="flex items-center gap-1 ml-3 flex-shrink-0">
         {keys.map((k, i) => (
           <span key={i} className="flex items-center gap-1">
             <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-600 rounded text-zinc-700 dark:text-zinc-300 leading-tight">
@@ -43,9 +45,36 @@ function ShortcutRow({
   );
 }
 
+function ShortcutColumn({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return <div className="flex-1 min-w-0">{children}</div>;
+}
+
 export default function Docs() {
+  const shortcutsRef = useRef<HTMLDivElement>(null);
+  const [contentHeight, setContentHeight] = useState<number | null>(null);
+
+  useEffect(() => {
+    const shortcutsElement = shortcutsRef.current;
+    if (!shortcutsElement) return;
+
+    const updateContentHeight = () => {
+      setContentHeight(shortcutsElement.offsetHeight + 24);
+    };
+
+    updateContentHeight();
+
+    const resizeObserver = new ResizeObserver(updateContentHeight);
+    resizeObserver.observe(shortcutsElement);
+
+    return () => resizeObserver.disconnect();
+  }, []);
+
   return (
-    <div className="flex flex-col h-[60vh]">
+    <div className="flex flex-col">
       {/* Header */}
       <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800">
         <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
@@ -54,31 +83,55 @@ export default function Docs() {
       </div>
 
       {/* Content */}
-      <div className="overflow-y-auto px-4 py-3 flex-1">
-        {/* Shortcuts — main section */}
-        <SectionHeader>Keyboard &amp; mouse shortcuts</SectionHeader>
+      <div
+        className="overflow-y-auto px-4 py-3"
+        style={contentHeight ? { height: `${contentHeight}px` } : undefined}
+      >
+        <div ref={shortcutsRef}>
+          <SectionHeader>Keyboard &amp; mouse shortcuts</SectionHeader>
 
-        <ShortcutRow keys={["⌘ / Ctrl", "G"]} action="Group selected bricks" />
+          <div className="grid grid-cols-2 gap-x-5 gap-y-0">
+            {/* Left column — camera & selection */}
+            <ShortcutColumn>
+              <ShortcutRow keys={["Left drag"]} action="Orbit camera" />
+              <ShortcutRow keys={["Right drag"]} action="Pan camera" />
+              <ShortcutRow keys={["Scroll"]} action="Zoom in / out" />
+              <ShortcutRow keys={["Click"]} action="Select brick" />
+              <ShortcutRow
+                keys={["Shift", "Click"]}
+                action="Multi-select / add to selection"
+              />
+              <ShortcutRow
+                keys={["Double-click"]}
+                action="Drill into group"
+                note="Repeat to reach nested bricks"
+              />
+              <ShortcutRow keys={["Click empty"]} action="Deselect all" />
+            </ShortcutColumn>
 
-        <ShortcutRow keys={["Left drag"]} action="Orbit camera" />
-        <ShortcutRow keys={["Right drag"]} action="Pan camera" />
-        <ShortcutRow keys={["Scroll"]} action="Zoom in / out" />
-
-        <ShortcutRow keys={["Click"]} action="Select brick" />
-        <ShortcutRow keys={["Shift", "Click"]} action="Add to selection" />
-        <ShortcutRow
-          keys={["Double-click"]}
-          action="Drill into group"
-          note="Continue double-clicking to reach individual bricks inside nested groups"
-        />
-        <ShortcutRow keys={["Click empty"]} action="Deselect all" />
-
-        <ShortcutRow keys={["Enter"]} action="Confirm rename / input" />
-        <ShortcutRow keys={["Escape"]} action="Cancel rename / input" />
-        <ShortcutRow keys={["Double-click name"]} action="Rename" />
+            {/* Right column — actions & editing */}
+            <ShortcutColumn>
+              <ShortcutRow keys={["⌘ / Ctrl", "G"]} action="Group selected" />
+              <ShortcutRow keys={["⌘ / Ctrl", "Z"]} action="Undo" />
+              <ShortcutRow keys={["Del / ⌫"]} action="Remove selected" />
+              <ShortcutRow keys={["Enter"]} action="Confirm input" />
+              <ShortcutRow keys={["Escape"]} action="Cancel input" />
+              <ShortcutRow keys={["Dbl-click name"]} action="Rename" />
+            </ShortcutColumn>
+          </div>
+        </div>
 
         {/* Feature notes */}
-        <div className="flex flex-col gap-4 mt-4">
+        <div className="flex flex-col gap-4 mt-5">
+          <div>
+            <SectionHeader>Generator</SectionHeader>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+              Create bricks from text prompts or images. Use the Text-to-3D tab
+              to describe what you want or use the Image-to-3D tab to upload a
+              reference. Optionally attach constraints to guide the output shape.
+            </p>
+          </div>
+
           <div>
             <SectionHeader>Library</SectionHeader>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
@@ -97,21 +150,45 @@ export default function Docs() {
           </div>
 
           <div>
-            <SectionHeader>Groups</SectionHeader>
+            <SectionHeader>Exporter</SectionHeader>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-              Select multiple bricks and press ⌘G / Ctrl+G to group them. Groups
-              appear as collapsible nodes in the Assets panel. Hover a group row
+              Export the current scene or individual bricks. Choose a format and
+              download the result.
+            </p>
+          </div>
+
+          <div>
+            <SectionHeader>Scenes</SectionHeader>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+              Manage multiple scenes from the left sidebar. Click a scene to
+              switch to it, double-click the name to rename, or click ✕ to
+              delete.
+            </p>
+          </div>
+
+          <div>
+            <SectionHeader>Assets &amp; Groups</SectionHeader>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+              The Assets panel lists every brick and group in the active scene.
+              Select multiple bricks and press ⌘G / Ctrl+G to group them.
+              Drag an asset onto a group to move it inside. Hover a group row
               and click ✕ to ungroup.
+            </p>
+          </div>
+
+          <div>
+            <SectionHeader>Constraints</SectionHeader>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+              Define bounding-box constraints that guide the Generator. Open the
+              Constraints panel in the left sidebar to create, select, or delete
+              constraint boxes.
             </p>
           </div>
 
           <div>
             <SectionHeader>Properties &amp; Scene Settings</SectionHeader>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-              Select a brick to reveal its properties on the right sidebar. When
-              nothing is selected the panel shows scene-wide settings. Brick
-              coordinates refer to the top-left corner of the brick as seen from
-              the positive Z axis.
+              Select a brick (or group of bricks) to reveal its properties on the right sidebar. The panel shows scene-wide settings when nothing is selected.
             </p>
           </div>
         </div>

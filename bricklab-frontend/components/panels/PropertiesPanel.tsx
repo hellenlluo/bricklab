@@ -91,20 +91,27 @@ function isGroupUnmoved(group: BrickGroup, members: SceneAsset[]): boolean {
 function NumberValue({
   value,
   onChange,
+  min,
 }: {
   value: number;
   onChange: (v: number) => void;
+  min?: number;
 }) {
   const [draft, setDraft] = useState(String(value));
   return (
     <Input
       type="number"
+      min={min}
       value={draft}
       onChange={(e) => setDraft(e.target.value)}
       onBlur={() => {
         const n = parseFloat(draft);
-        if (!isNaN(n)) onChange(Math.round(n));
-        else setDraft(String(value));
+        if (!isNaN(n)) {
+          const rounded = Math.round(n);
+          const clamped = min !== undefined ? Math.max(min, rounded) : rounded;
+          onChange(clamped);
+          if (clamped !== rounded) setDraft(String(clamped));
+        } else setDraft(String(value));
       }}
       onKeyDown={(e) => {
         if (e.key === "Enter") (e.target as HTMLInputElement).blur();
@@ -416,6 +423,7 @@ export default function PropertiesPanel() {
                     key={groupMinPos[i]}
                     value={groupMinPos[i]}
                     onChange={(v) => updateGroupPosition(i, v)}
+                    min={i === 2 ? 0 : undefined}
                   />
                 </div>
               ))}
@@ -562,6 +570,7 @@ export default function PropertiesPanel() {
                     key={multiMinPos[i]}
                     value={multiMinPos[i]}
                     onChange={(v) => updateMultiPosition(i, v)}
+                    min={i === 2 ? 0 : undefined}
                   />
                 </div>
               ))}
@@ -807,6 +816,7 @@ export default function PropertiesPanel() {
                     next[i] = v;
                     updateAsset(singleAsset.id, { position: next });
                   }}
+                  min={i === 2 ? 0 : undefined}
                 />
               </div>
             ))}

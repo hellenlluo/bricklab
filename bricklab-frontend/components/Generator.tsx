@@ -748,6 +748,7 @@ export default function Generator({ onClose }: GeneratorProps) {
         generationHistory,
         prompt,
         genOffset,
+        selectedBoxes,
       );
     }
 

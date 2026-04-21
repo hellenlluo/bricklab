@@ -40,6 +40,7 @@ export interface BrickGroup {
   generationHistory?: GenerationHistoryEntry[];
   originalPrompt?: string;
   generationOffset?: GenerationOffset;
+  originalConstraints?: ConstraintBox[];
 }
 
 export interface CustomBrickDefinition {
@@ -153,6 +154,7 @@ interface SceneStore {
     generationHistory?: GenerationHistoryEntry[],
     originalPrompt?: string,
     generationOffset?: GenerationOffset,
+    originalConstraints?: ConstraintBox[],
   ) => void;
   removeAsset: (id: string) => void;
   removeSelectedAssets: () => void;
@@ -394,6 +396,7 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
     generationHistory?: GenerationHistoryEntry[],
     originalPrompt?: string,
     genOffset?: GenerationOffset,
+    originalConstraints?: ConstraintBox[],
   ) {
     pushUndo();
     const groupId = `group-${Date.now()}`;
@@ -404,6 +407,7 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
       generationHistory,
       originalPrompt,
       generationOffset: genOffset,
+      originalConstraints,
     };
     updateActiveScene((s) => ({
       ...s,

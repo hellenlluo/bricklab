@@ -8,7 +8,7 @@ import React, {
   useRef,
 } from "react";
 import { useScene } from "@/store/sceneStore";
-import type { GenerationHistoryEntry, SceneAsset } from "@/store/sceneStore";
+import type { GenerationHistoryEntry, SceneAsset, ConstraintBox } from "@/store/sceneStore";
 import type {
   PrefixEditPhase,
   GenerationOffset,
@@ -50,6 +50,7 @@ interface PrefixEditState {
   originalAssets: SceneAsset[];
   originalPrompt: string;
   generationOffset: GenerationOffset;
+  originalConstraints: ConstraintBox[];
   errorMessage: string | null;
 }
 
@@ -61,6 +62,7 @@ const INITIAL_STATE: PrefixEditState = {
   originalAssets: [],
   originalPrompt: "",
   generationOffset: { minX: 0, minNegY: 0, minZ: 0 },
+  originalConstraints: [],
   errorMessage: null,
 };
 
@@ -81,7 +83,6 @@ export function PrefixEditProvider({
     revertGroupToStep,
     replaceGroupGeneration,
     defaultBrickColor,
-    constraints,
   } = useScene();
 
   const [state, setState] = useState<PrefixEditState>(INITIAL_STATE);
@@ -111,6 +112,9 @@ export function PrefixEditProvider({
         originalAssets: savedAssets,
         originalPrompt: group.originalPrompt,
         generationOffset: { ...group.generationOffset },
+        originalConstraints: group.originalConstraints
+          ? group.originalConstraints.map((b) => ({ ...b }))
+          : [],
         errorMessage: null,
       });
 
@@ -169,16 +173,14 @@ export function PrefixEditProvider({
     const controller = new AbortController();
     abortRef.current = controller;
 
-    const constraintPayload = constraints.flatMap((c) =>
-      c.boxes.map((box) => ({
-        pos_x: box.posX,
-        pos_y: box.posY,
-        pos_z: box.posZ,
-        size_x: box.sizeX,
-        size_y: box.sizeY,
-        size_z: box.sizeZ,
-      })),
-    );
+    const constraintPayload = state.originalConstraints.map((box) => ({
+      pos_x: box.posX,
+      pos_y: box.posY,
+      pos_z: box.posZ,
+      size_x: box.sizeX,
+      size_y: box.sizeY,
+      size_z: box.sizeZ,
+    }));
 
     try {
       const res = await fetch(`${API_URL}/generate/regenerate-from-prefix`, {
@@ -230,7 +232,7 @@ export function PrefixEditProvider({
         errorMessage: e instanceof Error ? e.message : "Regeneration failed",
       }));
     }
-  }, [state, assets, constraints, defaultBrickColor, replaceGroupGeneration]);
+  }, [state, assets, defaultBrickColor, replaceGroupGeneration]);
 
   const value: PrefixEditValue = {
     phase: state.phase,

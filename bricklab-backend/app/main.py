@@ -4,11 +4,11 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
-import uvicorn
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+import uvicorn  # noqa: E402
+from fastapi import FastAPI  # noqa: E402
+from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 
-from app.routers import generate, image3d, session, metrics
+from app.routers import generate, image3d, session, metrics  # noqa: E402
 
 app = FastAPI(title="BrickLab API", version="0.1.0")
 

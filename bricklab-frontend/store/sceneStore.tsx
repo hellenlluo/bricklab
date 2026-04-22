@@ -255,6 +255,7 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
   ) {
     if (clipboardAssets.length === 0) return;
     pushUndo();
+    // eslint-disable-next-line react-hooks/purity
     const ts = Date.now();
 
     updateActiveScene((s) => {

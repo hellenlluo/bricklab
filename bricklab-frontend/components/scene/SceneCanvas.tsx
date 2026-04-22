@@ -602,7 +602,6 @@ function SceneControls() {
       ),
     [assets, selectedAssetIds],
   );
-  const isMultiSelection = selectedAssets.length > 1;
   const hasTransformSelection = selectedAssets.length > 0;
   const shouldShowTransformControls =
     hasTransformSelection && !!selectionPivot.parent;

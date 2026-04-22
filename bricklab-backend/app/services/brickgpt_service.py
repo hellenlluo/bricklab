@@ -17,8 +17,8 @@ BRICKGPT_SRC = Path(__file__).resolve().parents[2] / "external" / "BrickGPT" / "
 if str(BRICKGPT_SRC) not in sys.path:
     sys.path.insert(0, str(BRICKGPT_SRC))
 
-from brickgpt.data import Brick, BrickStructure
-from brickgpt.models import BrickGPT, BrickGPTConfig
+from brickgpt.data import Brick, BrickStructure  # noqa: E402
+from brickgpt.models import BrickGPT, BrickGPTConfig  # noqa: E402
 
 _model: BrickGPT | None = None
 _model_lock = threading.Lock()

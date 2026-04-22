@@ -1,4 +1,4 @@
-import type { SceneAsset } from "@/store/sceneStore";
+import type { GenerationHistoryEntry, SceneAsset } from "@/store/sceneStore";
 
 // ---------------------------------------------------------------------------
 // Types

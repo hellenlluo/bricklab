@@ -36,7 +36,7 @@ BrickGPT uses Gurobi for physics-based stability analysis; without it, a simpler
 
 ## Setup
 
-> The `BrickGPT` and `TripoSR` source trees under `bricklab-backend/external/` are vendored directly into this repo — no submodules to initialize.
+> The `BrickGPT` and `TripoSR` source trees under `bricklab-backend/external/` are vendored directly into this repo (no submodules to initialize).
 
 ### 1. Clone
 

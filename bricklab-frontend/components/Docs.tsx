@@ -103,12 +103,19 @@ export default function Docs() {
                 note="Repeat to reach nested bricks"
               />
               <ShortcutRow keys={["Click empty"]} action="Deselect all" />
+              <ShortcutRow
+                keys={["Alt", "Click"]}
+                action="Mark background point"
+                note="Image-to-3D segmentation only"
+              />
             </ShortcutColumn>
 
             {/* Right column — actions & editing */}
             <ShortcutColumn>
               <ShortcutRow keys={["⌘ / Ctrl", "G"]} action="Group selected" />
               <ShortcutRow keys={["⌘ / Ctrl", "Z"]} action="Undo" />
+              <ShortcutRow keys={["⌘ / Ctrl", "C"]} action="Copy selected" />
+              <ShortcutRow keys={["⌘ / Ctrl", "V"]} action="Paste copied assets" />
               <ShortcutRow keys={["Del / ⌫"]} action="Remove selected" />
               <ShortcutRow keys={["Enter"]} action="Confirm input" />
               <ShortcutRow keys={["Escape"]} action="Cancel input" />

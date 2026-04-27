@@ -312,6 +312,12 @@ def reconstruct(
             scene_codes = model([prepped], device=device_str)
             mesh = model.extract_mesh(scene_codes, has_vertex_color=True, resolution=256)[0]
 
+    # TripoSR's world space is Y-up, so y=0 is the bottom of the object.
+    # The frontend negates Y (-v.y) to match the text-to-3D convention where
+    # y=0 is the top.  Reflecting the mesh across Y here means voxel y=0 will
+    # correspond to the top of the object, keeping the frontend logic uniform.
+    mesh.apply_transform(np.diag([1.0, -1.0, 1.0, 1.0]))
+
     ply_id = str(uuid.uuid4())
     ply_path = _TMP_DIR / f"{ply_id}.ply"
     mesh.export(str(ply_path))

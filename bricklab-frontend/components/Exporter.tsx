@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import * as THREE from "three";
 import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter.js";
+import { OBJExporter } from "three/examples/jsm/exporters/OBJExporter.js";
+import { STLExporter } from "three/examples/jsm/exporters/STLExporter.js";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import JSZip from "jszip";
 import { useScene } from "@/store/sceneStore";
@@ -241,6 +243,48 @@ function buildMetadata(
   };
 }
 
+// ── Format options ────────────────────────────────────────────────────────────
+
+type ExportFormat = "glb-zip" | "gltf-zip" | "obj-zip" | "stl" | "json";
+
+const FORMAT_OPTIONS: {
+  id: ExportFormat;
+  label: string;
+  ext: string;
+  description: string;
+}[] = [
+  {
+    id: "glb-zip",
+    label: "GLB",
+    ext: ".glb + .json → .zip",
+    description: "Binary glTF 2.0",
+  },
+  {
+    id: "gltf-zip",
+    label: "GLTF",
+    ext: ".gltf + .json → .zip",
+    description: "Text glTF 2.0",
+  },
+  {
+    id: "obj-zip",
+    label: "OBJ",
+    ext: ".obj + .json → .zip",
+    description: "Wavefront OBJ",
+  },
+  {
+    id: "stl",
+    label: "STL",
+    ext: ".stl",
+    description: "Binary STL (ideal for 3D printing)",
+  },
+  {
+    id: "json",
+    label: "JSON",
+    ext: ".json",
+    description: "Metadata only (no geometry)",
+  },
+];
+
 // ── Component ────────────────────────────────────────────────────────────────
 
 interface ExporterProps {
@@ -254,6 +298,7 @@ export default function Exporter({ onClose }: ExporterProps) {
   const sceneDropdownRef = useRef<HTMLDivElement>(null);
   const [exportName, setExportName] = useState("Untitled Scene");
   const [includeBasePlate, setIncludeBasePlate] = useState(true);
+  const [exportFormat, setExportFormat] = useState<ExportFormat>("glb-zip");
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -275,40 +320,79 @@ export default function Exporter({ onClose }: ExporterProps) {
   }, [sceneDropdownOpen]);
   const totalBrickCount = selectedScene.assets.length;
 
+  function triggerDownload(blob: Blob, filename: string) {
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
   async function handleExport() {
     const name = exportName.trim() || "Untitled Scene";
     setIsExporting(true);
     setError(null);
 
     try {
-      const threeScene = buildThreeScene(selectedScene, includeBasePlate);
       const metadata = buildMetadata(selectedScene, name, includeBasePlate);
 
-      const exporter = new GLTFExporter();
-      const glbBuffer = await new Promise<ArrayBuffer>((resolve, reject) => {
-        exporter.parse(
-          threeScene,
-          (result) => {
-            if (result instanceof ArrayBuffer) resolve(result);
-            else reject(new Error("Expected binary GLB output"));
-          },
-          (err) => reject(err),
-          { binary: true },
-        );
-      });
+      if (exportFormat === "json") {
+        const blob = new Blob([JSON.stringify(metadata, null, 2)], {
+          type: "application/json",
+        });
+        triggerDownload(blob, `${name}.metadata.json`);
+        onClose?.();
+        return;
+      }
+
+      const threeScene = buildThreeScene(selectedScene, includeBasePlate);
+
+      if (exportFormat === "stl") {
+        const stlExporter = new STLExporter();
+        const stlString = stlExporter.parse(threeScene, { binary: false });
+        const blob = new Blob([stlString], { type: "model/stl" });
+        triggerDownload(blob, `${name}.stl`);
+        onClose?.();
+        return;
+      }
+
+      if (exportFormat === "obj-zip") {
+        const objExporter = new OBJExporter();
+        const objString = objExporter.parse(threeScene);
+        const zip = new JSZip();
+        zip.file(`${name}.obj`, objString);
+        zip.file(`${name}.metadata.json`, JSON.stringify(metadata, null, 2));
+        const zipBlob = await zip.generateAsync({ type: "blob" });
+        triggerDownload(zipBlob, `${name}.zip`);
+        onClose?.();
+        return;
+      }
+
+      // GLB or GLTF
+      const isBinary = exportFormat === "glb-zip";
+      const gltfExporter = new GLTFExporter();
+      const gltfResult = await new Promise<ArrayBuffer | object>(
+        (resolve, reject) => {
+          gltfExporter.parse(
+            threeScene,
+            (result) => resolve(result),
+            (err) => reject(err),
+            { binary: isBinary },
+          );
+        },
+      );
 
       const zip = new JSZip();
-      zip.file(`${name}.glb`, glbBuffer);
+      if (isBinary) {
+        zip.file(`${name}.glb`, gltfResult as ArrayBuffer);
+      } else {
+        zip.file(`${name}.gltf`, JSON.stringify(gltfResult, null, 2));
+      }
       zip.file(`${name}.metadata.json`, JSON.stringify(metadata, null, 2));
 
       const zipBlob = await zip.generateAsync({ type: "blob" });
-      const url = URL.createObjectURL(zipBlob);
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = `${name}.zip`;
-      anchor.click();
-      URL.revokeObjectURL(url);
-
+      triggerDownload(zipBlob, `${name}.zip`);
       onClose?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Export failed");
@@ -338,6 +422,33 @@ export default function Exporter({ onClose }: ExporterProps) {
             placeholder="Untitled Scene"
             className="w-full"
           />
+        </div>
+
+        {/* Format */}
+        <div className="flex flex-col gap-2">
+          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            Format
+          </span>
+          <div className="flex flex-wrap gap-1.5">
+            {FORMAT_OPTIONS.map((fmt) => (
+              <button
+                key={fmt.id}
+                type="button"
+                onClick={() => setExportFormat(fmt.id)}
+                title={fmt.description}
+                className={`px-2.5 py-1 rounded text-[10px] font-medium border transition-colors ${
+                  exportFormat === fmt.id
+                    ? "bg-zinc-700 text-white border-zinc-700 hover:bg-zinc-600"
+                    : "bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500"
+                }`}
+              >
+                {fmt.label}
+              </button>
+            ))}
+          </div>
+          <p className="text-[10px] text-zinc-400 dark:text-zinc-500 leading-tight">
+            {FORMAT_OPTIONS.find((f) => f.id === exportFormat)?.description}
+          </p>
         </div>
 
         {/* Options */}
@@ -438,7 +549,9 @@ export default function Exporter({ onClose }: ExporterProps) {
           </div>
           <div className="flex justify-between text-xs">
             <span className="text-zinc-500 dark:text-zinc-400">Format</span>
-            <span className="text-zinc-900 dark:text-zinc-100">GLB + JSON</span>
+            <span className="text-zinc-900 dark:text-zinc-100">
+              {FORMAT_OPTIONS.find((f) => f.id === exportFormat)?.ext}
+            </span>
           </div>
         </div>
 
@@ -452,7 +565,9 @@ export default function Exporter({ onClose }: ExporterProps) {
           disabled={isExporting || !exportName.trim()}
           className="w-full py-2 text-xs justify-center"
         >
-          {isExporting ? "Exporting…" : "Export as ZIP"}
+          {isExporting
+            ? "Exporting…"
+            : `Export as ${FORMAT_OPTIONS.find((f) => f.id === exportFormat)?.label}`}
         </Button>
       </div>
     </div>

@@ -24,8 +24,7 @@ import {
   type VoxelData,
   type ClickPoint,
 } from "@/lib/image3dApi";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+import { generateTextBricks } from "@/lib/text3dApi";
 
 type Tab = "text-to-3d" | "image-to-3d";
 
@@ -669,25 +668,11 @@ export default function Generator({ onClose }: GeneratorProps) {
     );
 
     try {
-      const res = await fetch(`${API_URL}/generate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt,
-          constraints: constraintPayload,
-        }),
-        signal: controller.signal,
-      });
-      if (!res.ok) {
-        const body = await res.text();
-        throw new Error(body || `Server error ${res.status}`);
-      }
-      const data: {
-        bricks: BrickData[];
-        total_bricks: number;
-        partial: boolean;
-        warning: string | null;
-      } = await res.json();
+      const data = await generateTextBricks(
+        prompt,
+        constraintPayload,
+        controller.signal,
+      );
       setBricks(data.bricks);
       if (data.warning) setGenerationWarning(data.warning);
     } catch (e: unknown) {

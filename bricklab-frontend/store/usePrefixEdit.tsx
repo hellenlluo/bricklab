@@ -20,8 +20,7 @@ import {
   backendBricksToScene,
   computeGenerationOffset,
 } from "@/lib/prefixEditing";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+import { regenerateTextBricksFromPrefix } from "@/lib/text3dApi";
 
 // ---------------------------------------------------------------------------
 // Public interface
@@ -183,29 +182,12 @@ export function PrefixEditProvider({
     }));
 
     try {
-      const res = await fetch(`${API_URL}/generate/regenerate-from-prefix`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt: state.originalPrompt,
-          prefix_bricks: orderedBricks,
-          constraints: constraintPayload,
-        }),
-        signal: controller.signal,
-      });
-
-      if (!res.ok) {
-        const body = await res.text();
-        throw new Error(body || `Server error ${res.status}`);
-      }
-
-      const data: {
-        bricks: BackendBrick[];
-        total_bricks: number;
-        prefix_count: number;
-        partial: boolean;
-        warning: string | null;
-      } = await res.json();
+      const data = await regenerateTextBricksFromPrefix(
+        state.originalPrompt,
+        orderedBricks,
+        constraintPayload,
+        controller.signal,
+      );
 
       const newOffset = computeGenerationOffset(data.bricks);
       const { assets: newSceneAssets, history: newHistory } =

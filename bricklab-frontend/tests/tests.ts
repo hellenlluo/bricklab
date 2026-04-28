@@ -24,6 +24,10 @@ import {
   reconstruct,
   revoxelize,
 } from "../lib/image3dApi";
+import {
+  generateTextBricks,
+  regenerateTextBricksFromPrefix,
+} from "../lib/text3dApi";
 import type { SceneAsset } from "../store/sceneStore";
 
 function makeBrick(x: number, y: number, z: number, h = 1, w = 1): BackendBrick {
@@ -264,6 +268,89 @@ describe("image3dApi", () => {
     vi.mocked(fetch).mockResolvedValue(new Response("", { status: 500 }));
 
     await expect(revoxelize("ply-1", 0.05)).rejects.toThrow("Server error 500");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// API client behavior for text-to-3D flow
+// ---------------------------------------------------------------------------
+
+describe("text3dApi", () => {
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn());
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it("generateTextBricks posts prompt and constraints to the generate endpoint", async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          bricks: [{ h: 1, w: 2, x: 0, y: 0, z: 0 }],
+          total_bricks: 1,
+          partial: false,
+          warning: null,
+        }),
+        { status: 200 },
+      ),
+    );
+
+    const result = await generateTextBricks("small tower", [
+      { pos_x: 1, pos_y: 2, pos_z: 0, size_x: 3, size_y: 4, size_z: 5 },
+    ]);
+
+    expect(result.total_bricks).toBe(1);
+    const [url, init] = vi.mocked(fetch).mock.calls[0];
+    expect(url).toBe("http://localhost:8000/generate");
+    expect(init?.method).toBe("POST");
+    expect(init?.headers).toEqual({ "Content-Type": "application/json" });
+    expect(JSON.parse(String(init?.body))).toEqual({
+      prompt: "small tower",
+      constraints: [
+        { pos_x: 1, pos_y: 2, pos_z: 0, size_x: 3, size_y: 4, size_z: 5 },
+      ],
+    });
+  });
+
+  it("regenerateTextBricksFromPrefix posts prompt, prefix bricks, and constraints", async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          bricks: [
+            { h: 1, w: 2, x: 0, y: 0, z: 0 },
+            { h: 2, w: 2, x: 1, y: 0, z: 0 },
+          ],
+          total_bricks: 2,
+          prefix_count: 1,
+          partial: false,
+          warning: null,
+        }),
+        { status: 200 },
+      ),
+    );
+
+    const prefixBricks = [makeBrick(0, 0, 0, 1, 2)];
+    const result = await regenerateTextBricksFromPrefix("extend wall", prefixBricks, []);
+
+    expect(result.prefix_count).toBe(1);
+    const [url, init] = vi.mocked(fetch).mock.calls[0];
+    expect(url).toBe("http://localhost:8000/generate/regenerate-from-prefix");
+    expect(init?.method).toBe("POST");
+    expect(init?.headers).toEqual({ "Content-Type": "application/json" });
+    expect(JSON.parse(String(init?.body))).toEqual({
+      prompt: "extend wall",
+      prefix_bricks: [{ h: 1, w: 2, x: 0, y: 0, z: 0 }],
+      constraints: [],
+    });
+  });
+
+  it("throws server response text for failed generation requests", async () => {
+    vi.mocked(fetch).mockResolvedValue(new Response("bad prompt", { status: 400 }));
+
+    await expect(generateTextBricks("bad prompt", [])).rejects.toThrow("bad prompt");
   });
 });
 

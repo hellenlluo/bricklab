@@ -673,6 +673,10 @@ function SceneControls() {
         return {
           id: asset.id,
           asset,
+          obj,
+          cx,
+          cy,
+          cz,
           x: Math.round(obj.position.x - cx),
           y: Math.round(obj.position.y + cy),
           z: Math.round(obj.position.z - cz),
@@ -689,7 +693,7 @@ function SceneControls() {
     const zShift = minZ < 0 ? -minZ : 0;
 
     const movedAssets = candidates
-      .map(({ id, asset, x, y, z, prevPosition }) => {
+      .map(({ id, asset, obj, cx, cy, cz, x, y, z, prevPosition }) => {
         let fx = x,
           fy = y,
           fz = z + zShift;
@@ -708,6 +712,11 @@ function SceneControls() {
             peOffset,
           );
         }
+        // Always write the snapped integer position back to the 3D object so
+        // that a slow drag that stays within the same grid cell still visually
+        // snaps. Without this, obj.position keeps a fractional offset because
+        // no state change is triggered when the grid cell hasn't changed.
+        obj.position.set(fx + cx, fy - cy, fz + cz);
         if (
           prevPosition[0] === fx &&
           prevPosition[1] === fy &&
@@ -816,6 +825,12 @@ export default function SceneCanvas() {
           intensity={1.2}
           castShadow
           shadow-mapSize={[2048, 2048]}
+          shadow-camera-left={-plateSize}
+          shadow-camera-right={plateSize}
+          shadow-camera-top={plateSize}
+          shadow-camera-bottom={-plateSize}
+          shadow-camera-near={1}
+          shadow-camera-far={200}
         />
         <Baseplate size={plateSize} color={plateColor} />
         <Environment preset="city" />

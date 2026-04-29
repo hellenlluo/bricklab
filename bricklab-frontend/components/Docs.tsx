@@ -49,6 +49,14 @@ function ShortcutColumn({ children }: { children: React.ReactNode }) {
   return <div className="flex-1 min-w-0">{children}</div>;
 }
 
+function SubSectionHeader({ children }: { children: React.ReactNode }) {
+  return (
+    <h4 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 mt-3 mb-1">
+      {children}
+    </h4>
+  );
+}
+
 export default function Docs() {
   const shortcutsRef = useRef<HTMLDivElement>(null);
   const [contentHeight, setContentHeight] = useState<number | null>(null);
@@ -115,7 +123,10 @@ export default function Docs() {
               <ShortcutRow keys={["⌘ / Ctrl", "G"]} action="Group selected" />
               <ShortcutRow keys={["⌘ / Ctrl", "Z"]} action="Undo" />
               <ShortcutRow keys={["⌘ / Ctrl", "C"]} action="Copy selected" />
-              <ShortcutRow keys={["⌘ / Ctrl", "V"]} action="Paste copied assets" />
+              <ShortcutRow
+                keys={["⌘ / Ctrl", "V"]}
+                action="Paste copied assets"
+              />
               <ShortcutRow keys={["Del / ⌫"]} action="Remove selected" />
               <ShortcutRow keys={["Enter"]} action="Confirm input" />
               <ShortcutRow keys={["Escape"]} action="Cancel input" />
@@ -128,11 +139,29 @@ export default function Docs() {
         <div className="flex flex-col gap-4 mt-5">
           <div>
             <SectionHeader>Generator</SectionHeader>
+
+            <SubSectionHeader>Text-to-3D</SubSectionHeader>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-              Create bricks from text prompts or images. Use the Text-to-3D tab
-              to describe what you want or use the Image-to-3D tab to upload a
-              reference. Optionally attach constraints to guide the output
-              shape.
+              Describe a structure in natural language. Attach constraint boxes
+              to mark regions where no bricks should be placed.
+            </p>
+
+            <SubSectionHeader>
+              Regenerating from a partial structure
+            </SubSectionHeader>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+              Open <em>Generation Replay</em> from the Properties panel, revert
+              to any intermediate step, and click <em>Edit from here</em>. Edit
+              the prefix bricks, then click <em>Regenerate</em>. Only available
+              if the group has not been moved. Edits must stay within the
+              original 20×20×20 grid.
+            </p>
+
+            <SubSectionHeader>Image-to-3D</SubSectionHeader>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+              Upload a photo and click on the object to segment it. Click{" "}
+              <em>Reconstruct 3D</em>, then adjust the density slider before
+              clicking <em>Add to Scene</em>.
             </p>
           </div>
 
@@ -157,7 +186,7 @@ export default function Docs() {
             <SectionHeader>Exporter</SectionHeader>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
               Export the current scene or individual bricks. Choose a format and
-              download the result.
+              click <em>Download</em>.
             </p>
           </div>
 
@@ -165,8 +194,8 @@ export default function Docs() {
             <SectionHeader>Scenes</SectionHeader>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
               Manage multiple scenes from the left sidebar. Click a scene to
-              switch to it, double-click the name to rename, or click ✕ to
-              delete.
+              switch to it, double-click the name to rename, or click <em>✕</em>{" "}
+              to delete.
             </p>
           </div>
 
@@ -176,16 +205,16 @@ export default function Docs() {
               The Assets panel lists every brick and group in the active scene.
               Select multiple bricks and press ⌘G / Ctrl+G to group them. Drag
               an asset onto a group to move it inside. Hover a group row and
-              click ✕ to ungroup.
+              click <em>✕</em> to ungroup.
             </p>
           </div>
 
           <div>
             <SectionHeader>Constraints</SectionHeader>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-              Define bounding-box constraints that guide the Generator. Open the
-              Constraints panel in the left sidebar to create, select, or delete
-              constraint boxes.
+              Define bounding-box constraints that limit where the text-to-3D
+              generator may place bricks. Open the <em>Constraints</em> panel in
+              the left sidebar to create, select, or delete constraints.
             </p>
           </div>
 

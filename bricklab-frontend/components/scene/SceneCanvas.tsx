@@ -798,6 +798,41 @@ function PrefixEditWorldBox() {
   return <BrickGPTWorldBox offset={generationOffset} />;
 }
 
+function ShadowLight({ plateSize }: { plateSize: number }) {
+  const ref = useRef<THREE.DirectionalLight>(null);
+
+  // Frustum half-extent — covers the full plate plus padding for tall stacks.
+  const half = plateSize * 0.75;
+  // Push the light far enough out that the depth range covers the whole plate
+  // for any baseplate size, then refit the depth bounds to match.
+  const lightDist = Math.max(40, plateSize * 1.2);
+  const farPlane = lightDist * 2.5;
+
+  useEffect(() => {
+    const light = ref.current;
+    if (!light) return;
+    const cam = light.shadow.camera as THREE.OrthographicCamera;
+    cam.left = -half;
+    cam.right = half;
+    cam.top = half;
+    cam.bottom = -half;
+    cam.near = 1;
+    cam.far = farPlane;
+    cam.updateProjectionMatrix();
+    light.shadow.needsUpdate = true;
+  }, [half, farPlane]);
+
+  return (
+    <directionalLight
+      ref={ref}
+      position={[lightDist * 0.55, -lightDist * 0.3, lightDist * 0.85]}
+      intensity={1.2}
+      castShadow
+      shadow-mapSize={[2048, 2048]}
+    />
+  );
+}
+
 export default function SceneCanvas() {
   const {
     assets,
@@ -820,18 +855,7 @@ export default function SceneCanvas() {
         <color attach="background" args={[sceneBackground]} />
         <ZUpCamera />
         <ambientLight intensity={0.35} />
-        <directionalLight
-          position={[10, -5, 15]}
-          intensity={1.2}
-          castShadow
-          shadow-mapSize={[2048, 2048]}
-          shadow-camera-left={-plateSize}
-          shadow-camera-right={plateSize}
-          shadow-camera-top={plateSize}
-          shadow-camera-bottom={-plateSize}
-          shadow-camera-near={1}
-          shadow-camera-far={200}
-        />
+        <ShadowLight plateSize={plateSize} />
         <Baseplate size={plateSize} color={plateColor} />
         <Environment preset="city" />
         <SceneControls />

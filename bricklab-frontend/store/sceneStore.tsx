@@ -185,6 +185,7 @@ interface SceneStore {
   selectedAssetId: string | null;
   selectedAssetIds: string[];
   selectAsset: (id: string | null) => void;
+  selectAssets: (ids: string[]) => void;
   peekAsset: (id: string) => void;
   selectGroup: (groupId: string) => void;
   toggleGroupSelection: (groupId: string) => void;
@@ -827,6 +828,14 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
     }));
   }
 
+  function selectAssets(ids: string[]) {
+    updateActiveScene((s) => ({
+      ...s,
+      selectedAssetId: ids[ids.length - 1] ?? null,
+      selectedAssetIds: ids,
+    }));
+  }
+
   // Show an asset's properties without highlighting it or showing the gizmo.
   // Used for non-selectable assets clicked from the Assets Panel.
   function peekAsset(id: string) {
@@ -890,6 +899,7 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
         selectedAssetId,
         selectedAssetIds,
         selectAsset,
+        selectAssets,
         peekAsset,
         selectGroup,
         toggleGroupSelection,

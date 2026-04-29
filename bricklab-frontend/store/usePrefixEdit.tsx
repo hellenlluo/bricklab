@@ -4,21 +4,23 @@ import React, {
   createContext,
   useContext,
   useState,
+  useMemo,
   useCallback,
   useRef,
 } from "react";
 import { useScene } from "@/store/sceneStore";
-import type { GenerationHistoryEntry, SceneAsset, ConstraintBox } from "@/store/sceneStore";
 import type {
-  PrefixEditPhase,
-  GenerationOffset,
-  BackendBrick,
-} from "@/lib/prefixEditing";
+  GenerationHistoryEntry,
+  SceneAsset,
+  ConstraintBox,
+} from "@/store/sceneStore";
+import type { PrefixEditPhase, GenerationOffset } from "@/lib/prefixEditing";
 import {
   normalizeEditableBricks,
   derivePrefixOrder,
   backendBricksToScene,
   computeGenerationOffset,
+  detectCollidingBrickIds,
 } from "@/lib/prefixEditing";
 import { regenerateTextBricksFromPrefix } from "@/lib/text3dApi";
 
@@ -32,6 +34,7 @@ export interface PrefixEditValue {
   revertedStepIndex: number;
   errorMessage: string | null;
   generationOffset: GenerationOffset | null;
+  collidingIds: Set<string>;
   startPrefixEdit: (groupId: string, stepK: number) => void;
   cancelEdit: () => void;
   regenerateFromPrefix: () => Promise<void>;
@@ -86,6 +89,13 @@ export function PrefixEditProvider({
 
   const [state, setState] = useState<PrefixEditState>(INITIAL_STATE);
   const abortRef = useRef<AbortController | null>(null);
+
+  const collidingIds = useMemo(() => {
+    if (state.phase !== "editing_prefix" || !state.groupId)
+      return new Set<string>();
+    const groupAssets = assets.filter((a) => a.groupId === state.groupId);
+    return detectCollidingBrickIds(groupAssets);
+  }, [state.phase, state.groupId, assets]);
 
   const startPrefixEdit = useCallback(
     (groupId: string, stepK: number) => {
@@ -222,6 +232,7 @@ export function PrefixEditProvider({
     revertedStepIndex: state.revertedStepIndex,
     errorMessage: state.errorMessage,
     generationOffset: state.phase !== "idle" ? state.generationOffset : null,
+    collidingIds,
     startPrefixEdit,
     cancelEdit,
     regenerateFromPrefix,

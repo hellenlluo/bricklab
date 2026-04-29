@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   useScene,
   type AssetCategory,
@@ -208,6 +208,13 @@ export default function PropertiesPanel() {
     prefixEdit.groupId !== null &&
     selectedGroup?.id === prefixEdit.groupId;
 
+  const collidingIds = prefixEdit.collidingIds;
+  const collidingAssets = useMemo(
+    () => assets.filter((a) => collidingIds.has(a.id)),
+    [assets, collidingIds],
+  );
+  const hasCollisions = collidingIds.size > 0;
+
   const editBanner = isEditingThisGroup ? (
     prefixEdit.phase === "regenerating" ? (
       <div data-no-deselect className="mt-3 px-2.5">
@@ -221,14 +228,35 @@ export default function PropertiesPanel() {
         className="mx-2.5 mt-3 min-w-0 p-2 rounded-md border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30"
       >
         {prefixEdit.phase === "editing_prefix" && (
-          <div className="flex min-w-0 flex-col gap-1">
+          <div className="flex min-w-0 flex-col gap-1.5">
             <span className="text-left text-[10px] leading-tight font-semibold text-[#74a7fe]">
               Paused at step {prefixEdit.revertedStepIndex + 1}
             </span>
+
+            {hasCollisions && (
+              <div className="rounded-md border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/30 p-1.5 flex flex-col gap-1">
+                <span className="text-[10px] font-semibold text-red-700 dark:text-red-400">
+                  {collidingIds.size} brick{collidingIds.size !== 1 ? "s" : ""}{" "}
+                  overlapping. Fix before regenerating.
+                </span>
+                <ul className="flex flex-col gap-0.5 max-h-28 overflow-y-auto">
+                  {collidingAssets.map((a) => (
+                    <li
+                      key={a.id}
+                      className="px-1.5 py-0.5 text-[10px] text-red-700 dark:text-red-400 truncate"
+                    >
+                      {a.name}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             <div className="grid w-full min-w-0 grid-cols-2 gap-1.5">
               <button
                 onClick={prefixEdit.regenerateFromPrefix}
-                className="min-w-0 px-2 py-1 rounded text-center text-white text-[10px] transition-colors bg-[#74a7fe] hover:bg-[#5a93f0]"
+                disabled={hasCollisions}
+                className="min-w-0 px-2 py-1 rounded text-center text-white text-[10px] transition-colors bg-[#74a7fe] hover:bg-[#5a93f0] disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Regenerate
               </button>

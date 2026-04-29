@@ -1,10 +1,16 @@
 /**
- * Frontend service layer for text-to-3D brick generation.
+ * Frontend service layer for the text-to-3D pipeline.
+ *
+ * Flow: generateTextBricks → (user edits) → regenerateTextBricksFromPrefix.
  */
 
 import type { BackendBrick } from "./prefixEditing";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
 export interface BackendConstraint {
   pos_x: number;
@@ -26,6 +32,10 @@ export interface RegenerateFromPrefixResponse extends GenerateBricksResponse {
   prefix_count: number;
 }
 
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
 async function assertOk(res: Response): Promise<void> {
   if (!res.ok) {
     const body = await res.text();
@@ -33,6 +43,11 @@ async function assertOk(res: Response): Promise<void> {
   }
 }
 
+// ---------------------------------------------------------------------------
+// API calls
+// ---------------------------------------------------------------------------
+
+/** Generate a brick structure from a natural-language prompt and optional constraint volumes. */
 export async function generateTextBricks(
   prompt: string,
   constraints: BackendConstraint[],
@@ -48,6 +63,7 @@ export async function generateTextBricks(
   return res.json();
 }
 
+/** Continue generation from an edited brick prefix, appending new bricks after the user's changes. */
 export async function regenerateTextBricksFromPrefix(
   prompt: string,
   prefixBricks: BackendBrick[],

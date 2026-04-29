@@ -2,9 +2,10 @@
 Comprehensive backend tests for BrickLab's core behaviors.
 
 Covers:
-  - Image-to-3D preprocessing, error handling, and voxelization output
-  - Constraint intersection logic and constrained generation behavior
-  - Router validation and response-schema guarantees for image and text flows
+  - Image-to-3D preprocessing
+  - Text-to-3D generation service
+  - Router validation
+  - Voxelization output
 
 Run with:
   cd bricklab-backend

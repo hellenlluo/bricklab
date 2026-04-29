@@ -248,10 +248,15 @@ def generate_from_prefix(
                 if model.max_regenerations == 0 or model._is_stable(structure):
                     break
 
-                # Roll back to last stable point, but never below the prefix
-                rollback = model._remove_all_bricks_after_first_unstable_brick(
-                    structure,
-                )
+                # Roll back to last stable point, but never below the prefix.
+                # If the prefix contains colliding bricks, connectivity scoring
+                # raises ValueError — accept the current output as-is.
+                try:
+                    rollback = model._remove_all_bricks_after_first_unstable_brick(
+                        structure,
+                    )
+                except ValueError:
+                    break
                 if len(rollback) < prefix_count:
                     rollback = BrickStructure(list(prefix_objs))
                 starting = rollback

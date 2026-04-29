@@ -4,7 +4,9 @@
  * Covers:
  * - generation/prefix-edit coordinate transforms and validation
  * - image-to-3D API request formatting and error handling
+ * - text-to-3D API request formatting and error handling
  * - input validation logic used by scene settings panels
+ * - plate-size normalization behavior
  *
  * Run with: npx vitest run tests/tests.ts
  */
@@ -30,7 +32,13 @@ import {
 } from "../lib/text3dApi";
 import type { SceneAsset } from "../store/sceneStore";
 
-function makeBrick(x: number, y: number, z: number, h = 1, w = 1): BackendBrick {
+function makeBrick(
+  x: number,
+  y: number,
+  z: number,
+  h = 1,
+  w = 1,
+): BackendBrick {
   return { h, w, x, y, z };
 }
 
@@ -74,7 +82,9 @@ describe("computeGenerationOffset", () => {
       minNegY: 3,
       minZ: 2,
     });
-    expect(computeGenerationOffset([makeBrick(4, -1, 4), makeBrick(4, -1, 4)])).toEqual({
+    expect(
+      computeGenerationOffset([makeBrick(4, -1, 4), makeBrick(4, -1, 4)]),
+    ).toEqual({
       minX: 4,
       minNegY: 1,
       minZ: 4,
@@ -129,7 +139,11 @@ describe("derivePrefixOrder", () => {
   const offset = { minX: 0, minNegY: 0, minZ: 0 };
 
   it("preserves original order while omitting deleted bricks", () => {
-    const orig = [makeAsset("a", 1, 1), makeAsset("b", 2, 2), makeAsset("c", 1, 2)];
+    const orig = [
+      makeAsset("a", 1, 1),
+      makeAsset("b", 2, 2),
+      makeAsset("c", 1, 2),
+    ];
     const edited = [makeAsset("a", 1, 1), makeAsset("c", 1, 2)];
     const result = derivePrefixOrder(orig, edited, offset);
     expect(result).toHaveLength(2);
@@ -230,7 +244,9 @@ describe("image3dApi", () => {
 
   it("reconstruct sends query params for image id, seed, and voxel size", async () => {
     vi.mocked(fetch).mockResolvedValue(
-      new Response(JSON.stringify({ ply_id: "ply-1", voxels: [] }), { status: 200 }),
+      new Response(JSON.stringify({ ply_id: "ply-1", voxels: [] }), {
+        status: 200,
+      }),
     );
 
     await reconstruct("img-7", 99, 0.075);
@@ -259,7 +275,9 @@ describe("image3dApi", () => {
   });
 
   it("throws server response text for failed requests", async () => {
-    vi.mocked(fetch).mockResolvedValue(new Response("mask missing", { status: 404 }));
+    vi.mocked(fetch).mockResolvedValue(
+      new Response("mask missing", { status: 404 }),
+    );
 
     await expect(reconstruct("missing")).rejects.toThrow("mask missing");
   });
@@ -333,7 +351,11 @@ describe("text3dApi", () => {
     );
 
     const prefixBricks = [makeBrick(0, 0, 0, 1, 2)];
-    const result = await regenerateTextBricksFromPrefix("extend wall", prefixBricks, []);
+    const result = await regenerateTextBricksFromPrefix(
+      "extend wall",
+      prefixBricks,
+      [],
+    );
 
     expect(result.prefix_count).toBe(1);
     const [url, init] = vi.mocked(fetch).mock.calls[0];
@@ -348,9 +370,13 @@ describe("text3dApi", () => {
   });
 
   it("throws server response text for failed generation requests", async () => {
-    vi.mocked(fetch).mockResolvedValue(new Response("bad prompt", { status: 400 }));
+    vi.mocked(fetch).mockResolvedValue(
+      new Response("bad prompt", { status: 400 }),
+    );
 
-    await expect(generateTextBricks("bad prompt", [])).rejects.toThrow("bad prompt");
+    await expect(generateTextBricks("bad prompt", [])).rejects.toThrow(
+      "bad prompt",
+    );
   });
 });
 

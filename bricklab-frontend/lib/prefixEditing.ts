@@ -157,6 +157,38 @@ export function derivePrefixOrder(
 }
 
 /**
+ * Returns the IDs of every preset brick that spatially overlaps at least one
+ * other brick in the given asset list.
+ *
+ * Scene-space AABB for a brick at [px, py, pz] with studsX/studsY:
+ *   x ∈ [px, px + studsX)
+ *   y ∈ [py - studsY, py)   (bricks extend in the -Y direction in scene space)
+ *   z ∈ [pz, pz + 1)
+ */
+export function detectCollidingBrickIds(assets: SceneAsset[]): Set<string> {
+  const bricks = assets.filter((a) => a.preset && a.position);
+  const colliding = new Set<string>();
+  for (let i = 0; i < bricks.length; i++) {
+    for (let j = i + 1; j < bricks.length; j++) {
+      const a = bricks[i];
+      const b = bricks[j];
+      const [ax, ay, az] = a.position!;
+      const [bx, by, bz] = b.position!;
+      const as_ = a.preset!;
+      const bs = b.preset!;
+      const xOverlap = ax < bx + bs.studsX && bx < ax + as_.studsX;
+      const yOverlap = by - bs.studsY < ay && ay - as_.studsY < by;
+      const zOverlap = az < bz + 1 && bz < az + 1;
+      if (xOverlap && yOverlap && zOverlap) {
+        colliding.add(a.id);
+        colliding.add(b.id);
+      }
+    }
+  }
+  return colliding;
+}
+
+/**
  * Convert backend bricks into scene assets and history entries for
  * integrating a regeneration result back into the scene store.
  */

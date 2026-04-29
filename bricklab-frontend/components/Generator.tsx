@@ -629,6 +629,8 @@ export default function Generator({ onClose }: GeneratorProps) {
 
   function handleImgReset() {
     imgAbortRef.current?.abort();
+    imgAbortRef.current = null;
+    if (imgFileInputRef.current) imgFileInputRef.current.value = "";
     setImgFile(null);
     setImgPreviewUrl(null);
     setImgImageId(null);

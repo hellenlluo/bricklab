@@ -105,12 +105,12 @@ The following projects are copied directly into `bricklab-backend/external/`. Th
 
 ### Model weights (downloaded at runtime)
 
-| Model                                                                                       | License                                                                                                            |
-| ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| [meta-llama/Llama-3.2-1B-Instruct](https://huggingface.co/meta-llama/Llama-3.2-1B-Instruct) | [Llama 3.2 Community License](https://www.llama.com/llama3_2/license/) — gated; Meta acceptable-use policy applies |
-| [AvaLovelace/BrickGPT](https://huggingface.co/AvaLovelace/BrickGPT) (LoRA)                  | MIT                                                                                                                |
-| [stabilityai/TripoSR](https://huggingface.co/stabilityai/TripoSR)                           | MIT                                                                                                                |
-| [Segment Anything (ViT-H)](https://github.com/facebookresearch/segment-anything)            | Apache 2.0                                                                                                         |
+| Model                                                                                       | License                                                                                                           |
+| ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| [meta-llama/Llama-3.2-1B-Instruct](https://huggingface.co/meta-llama/Llama-3.2-1B-Instruct) | [Llama 3.2 Community License](https://www.llama.com/llama3_2/license/): gated; Meta acceptable-use policy applies |
+| [AvaLovelace/BrickGPT](https://huggingface.co/AvaLovelace/BrickGPT) (LoRA)                  | MIT                                                                                                               |
+| [stabilityai/TripoSR](https://huggingface.co/stabilityai/TripoSR)                           | MIT                                                                                                               |
+| [Segment Anything (ViT-H)](https://github.com/facebookresearch/segment-anything)            | Apache 2.0                                                                                                        |
 
 ### Training data
 

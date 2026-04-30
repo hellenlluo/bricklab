@@ -30,19 +30,20 @@ This subdirectory contains the code for the official BrickGPT Gradio demo.
 - **Gurobi:** Running stability analysis requires a [Gurobi licence](https://www.gurobi.com/downloads/) to use Gurobi.
   Academics may request a free licence from the Gurobi
   website [here](https://www.gurobi.com/academia/academic-program-and-licenses/). Place the Gurobi licence file in your
-  *home directory* or
+  _home directory_ or
   another [recommended location](https://support.gurobi.com/hc/en-us/articles/360013417211-Where-do-I-place-the-Gurobi-license-file-gurobi-lic).
 - **ImportLDraw:** Rendering brick visualizations requires ImportLDraw, provided as a Git submodule. Follow these instructions to install ImportLDraw:
-    - Download [Git LFS](https://git-lfs.com), then run `git lfs install`.
-    - Install Git submodules with `git submodule update --init`.
-    - Download the [LDraw parts library](https://library.ldraw.org/library/updates/complete.zip) and
-      extract it in your *home directory*:
-      `(cd ~ && wget https://library.ldraw.org/library/updates/complete.zip && unzip complete.zip)`.
-        - If you wish to put the LDraw parts library in a different directory, set the environment variable
-          `LDRAW_LIBRARY_PATH` to the path of the `ldraw` directory: `export LDRAW_LIBRARY_PATH=path/to/ldraw`.
-    - Download
-      this [background exr file](https://drive.google.com/file/d/1Yux0sEqWVpXGMT9Z5J094ISfvxhH-_5K/view?usp=share_link)
-      and place it in the `ImportLDraw/loadldraw` subdirectory.
+  - Download [Git LFS](https://git-lfs.com), then run `git lfs install`.
+  - Install Git submodules with `git submodule update --init`.
+  - Download the [LDraw parts library](https://library.ldraw.org/library/updates/complete.zip) and
+    extract it in your _home directory_:
+    `(cd ~ && wget https://library.ldraw.org/library/updates/complete.zip && unzip complete.zip)`.
+    - If you wish to put the LDraw parts library in a different directory, set the environment variable
+      `LDRAW_LIBRARY_PATH` to the path of the `ldraw` directory: `export LDRAW_LIBRARY_PATH=path/to/ldraw`.
+  - Download
+    this [background exr file](https://drive.google.com/file/d/1Yux0sEqWVpXGMT9Z5J094ISfvxhH-_5K/view?usp=share_link)
+    and place it in the `ImportLDraw/loadldraw` subdirectory.
+
 ## Usage
 
 Install the Python project manager [uv](https://docs.astral.sh/uv). Then run the demo with:

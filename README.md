@@ -2,10 +2,10 @@
 
 A browser-based 3D brick scene editor with AI-powered generation.
 
-| Layer | Stack | Port |
-|---|---|---|
+| Layer    | Stack                                  | Port |
+| -------- | -------------------------------------- | ---- |
 | Frontend | Next.js 16 + React 19 + Three.js (R3F) | 3000 |
-| Backend | FastAPI + Uvicorn (Python ≥ 3.10) | 8000 |
+| Backend  | FastAPI + Uvicorn (Python ≥ 3.10)      | 8000 |
 
 ---
 
@@ -15,7 +15,7 @@ A browser-based 3D brick scene editor with AI-powered generation.
 - **Python** ≥ 3.10
 - **uv**: [install](https://docs.astral.sh/uv/getting-started/installation/)
 - **Hugging Face token**: BrickGPT is fine-tuned from the gated [meta-llama/Llama-3.2-1B-Instruct](https://huggingface.co/meta-llama/Llama-3.2-1B-Instruct) model. [Request access](https://huggingface.co/meta-llama/Llama-3.2-1B-Instruct), then generate a [user access token](https://huggingface.co/docs/hub/en/security-tokens).
-- **Gurobi license** *(optional)*: used for physics-based stability analysis; a connectivity-based fallback is used without it. Free academic licenses at [gurobi.com/academia](https://www.gurobi.com/academia/academic-program-and-licenses/). Place `gurobi.lic` in your home directory.
+- **Gurobi license** _(optional)_: used for physics-based stability analysis; a connectivity-based fallback is used without it. Free academic licenses at [gurobi.com/academia](https://www.gurobi.com/academia/academic-program-and-licenses/). Place `gurobi.lic` in your home directory.
 
 ---
 
@@ -98,19 +98,19 @@ Open `http://localhost:3000`.
 
 The following projects are copied directly into `bricklab-backend/external/`. Their license texts must be retained in any redistribution.
 
-| Project | License | Path |
-|---|---|---|
-| **BrickGPT** — Pun et al., *ICCV 2025* | MIT | `bricklab-backend/external/BrickGPT/LICENSE` |
-| **TripoSR** — Tochilkin et al., 2024 | MIT | `bricklab-backend/external/TripoSR/LICENSE` |
+| Project                               | License | Path                                         |
+| ------------------------------------- | ------- | -------------------------------------------- |
+| **BrickGPT**: Pun et al., _ICCV 2025_ | MIT     | `bricklab-backend/external/BrickGPT/LICENSE` |
+| **TripoSR**: Tochilkin et al., 2024   | MIT     | `bricklab-backend/external/TripoSR/LICENSE`  |
 
 ### Model weights (downloaded at runtime)
 
-| Model | License |
-|---|---|
+| Model                                                                                       | License                                                                                                            |
+| ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | [meta-llama/Llama-3.2-1B-Instruct](https://huggingface.co/meta-llama/Llama-3.2-1B-Instruct) | [Llama 3.2 Community License](https://www.llama.com/llama3_2/license/) — gated; Meta acceptable-use policy applies |
-| [AvaLovelace/BrickGPT](https://huggingface.co/AvaLovelace/BrickGPT) (LoRA) | MIT |
-| [stabilityai/TripoSR](https://huggingface.co/stabilityai/TripoSR) | MIT |
-| [Segment Anything (ViT-H)](https://github.com/facebookresearch/segment-anything) | Apache 2.0 |
+| [AvaLovelace/BrickGPT](https://huggingface.co/AvaLovelace/BrickGPT) (LoRA)                  | MIT                                                                                                                |
+| [stabilityai/TripoSR](https://huggingface.co/stabilityai/TripoSR)                           | MIT                                                                                                                |
+| [Segment Anything (ViT-H)](https://github.com/facebookresearch/segment-anything)            | Apache 2.0                                                                                                         |
 
 ### Training data
 

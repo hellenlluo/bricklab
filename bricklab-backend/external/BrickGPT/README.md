@@ -1,10 +1,10 @@
 # BrickGPT
 
-***Generating Physically Stable and Buildable Brick Structures from Text***  
+**_Generating Physically Stable and Buildable Brick Structures from Text_**  
 **ICCV 2025 (Best Paper, Marr Prize)**  
-[Ava Pun*](https://avapun.com/),
-[Kangle Deng*](https://dunbar12138.github.io/),
-[Ruixuan Liu*](https://waynekyrie.github.io/),
+[Ava Pun\*](https://avapun.com/),
+[Kangle Deng\*](https://dunbar12138.github.io/),
+[Ruixuan Liu\*](https://waynekyrie.github.io/),
 [Deva Ramanan](https://www.cs.cmu.edu/~deva/),
 [Changliu Liu](https://www.ri.cmu.edu/ri-faculty/changliu-liu/),
 [Jun-Yan Zhu](https://www.cs.cmu.edu/~junyanz/)  
@@ -44,10 +44,10 @@ Examples of textured and colored brick models:
 - **Gurobi (optional but recommended):** Running stability analysis requires
   a [Gurobi license](https://www.gurobi.com/downloads/) to use Gurobi. Academics may request a free license from the
   [Gurobi website](https://www.gurobi.com/academia/academic-program-and-licenses/); after obtaining the license,
-  place it in your *home directory* or
+  place it in your _home directory_ or
   another [recommended location](https://support.gurobi.com/hc/en-us/articles/360013417211-Where-do-I-place-the-Gurobi-license-file-gurobi-lic).
-    - If you do not have access to Gurobi, you can run the code with the option `--use_gurobi False` to use a simpler
-      but less accurate connectivity-based method instead of physics-based stability analysis.
+  - If you do not have access to Gurobi, you can run the code with the option `--use_gurobi False` to use a simpler
+    but less accurate connectivity-based method instead of physics-based stability analysis.
 
 ### Installing as a standalone project
 
@@ -55,17 +55,17 @@ This repo uses the Python project manager [uv](https://docs.astral.sh/uv/). To i
 project, first install all prerequisites. Then,
 
 1. Clone the repo: `git clone https://github.com/AvaLovelace1/BrickGPT.git && cd BrickGPT`.
-2. *(Optional, required for running the `infer` script and texturing)* Follow these instructions to install ImportLDraw,
+2. _(Optional, required for running the `infer` script and texturing)_ Follow these instructions to install ImportLDraw,
    required for rendering brick structure visualizations:
-    - Install the ImportLDraw submodule with `git submodule update --init`.
-    - Download
-      this [background exr file](https://drive.google.com/file/d/1Yux0sEqWVpXGMT9Z5J094ISfvxhH-_5K/view?usp=share_link)
-      and place it in the `ImportLDraw/loadldraw` subdirectory.
-    - Download the [LDraw parts library](https://library.ldraw.org/library/updates/complete.zip) and
-      extract it in your *home directory*:
-      `(cd ~ && wget https://library.ldraw.org/library/updates/complete.zip && unzip complete.zip)`.
-        - If you wish to put the LDraw parts library in a different directory, set the environment variable
-          `LDRAW_LIBRARY_PATH` to the path of the `ldraw` directory: `export LDRAW_LIBRARY_PATH=path/to/ldraw`.
+   - Install the ImportLDraw submodule with `git submodule update --init`.
+   - Download
+     this [background exr file](https://drive.google.com/file/d/1Yux0sEqWVpXGMT9Z5J094ISfvxhH-_5K/view?usp=share_link)
+     and place it in the `ImportLDraw/loadldraw` subdirectory.
+   - Download the [LDraw parts library](https://library.ldraw.org/library/updates/complete.zip) and
+     extract it in your _home directory_:
+     `(cd ~ && wget https://library.ldraw.org/library/updates/complete.zip && unzip complete.zip)`.
+     - If you wish to put the LDraw parts library in a different directory, set the environment variable
+       `LDRAW_LIBRARY_PATH` to the path of the `ldraw` directory: `export LDRAW_LIBRARY_PATH=path/to/ldraw`.
 3. Finally, [install uv](https://docs.astral.sh/uv/getting-started/installation/), and run `uv sync` to create a Python
    virtual environment with all dependencies installed. Python dependencies are defined in `pyproject.toml`.
 
@@ -175,12 +175,12 @@ Then, follow these instructions:
 1. Prepare the brick structure dataset for fine-tuning with
    `uv run prepare_finetuning_dataset --input_path AvaLovelace/StableText2Brick --output_path [FINETUNING_DATASET_PATH]`.
    This converts the dataset into the instructional format required for fine-tuning LLaMA.
-    - If you wish to run fine-tuning with your own brick structure dataset, replace `AvaLovelace/StableText2Brick` with
-      the path to
-      your dataset. This dataset should have the fields "captions" and "bricks". The "bricks" field should contain a
-      brick
-      structure in the text format described in the paper, and the "captions" field should contain a list of one or more
-      descriptions of the brick structure.
+   - If you wish to run fine-tuning with your own brick structure dataset, replace `AvaLovelace/StableText2Brick` with
+     the path to
+     your dataset. This dataset should have the fields "captions" and "bricks". The "bricks" field should contain a
+     brick
+     structure in the text format described in the paper, and the "captions" field should contain a list of one or more
+     descriptions of the brick structure.
 2. Download the pretrained [Llama-3.2-1B-Instruct model](https://huggingface.co/meta-llama/Llama-3.2-1B-Instruct) to
    some directory `[PRETRAINED_DIR]`.
    **IMPORTANT:** Replace the `config.json`, `special_tokens_map.json`, and `tokenizer_config.json` files with the ones
@@ -224,5 +224,5 @@ This work is partly supported by the Packard Foundation, Cisco Research Grant, a
 also in part supported by the Manufacturing Futures Institute, Carnegie Mellon University, through a grant from the
 Richard King Mellon Foundation. KD is supported by the Microsoft Research PhD Fellowship.
 
-Our codebase is built upon several amazing repos:  Hugging
+Our codebase is built upon several amazing repos: Hugging
 Face [TRL](https://huggingface.co/docs/trl/index), [Accelerate](https://huggingface.co/docs/accelerate/index), [ImportLDraw](https://github.com/TobyLobster/ImportLDraw).

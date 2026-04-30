@@ -27,11 +27,11 @@ The `[INPUT_MESH_FILE]` can be any mesh format (`.obj`, `.glb`, etc.).
 The `[OUTPUT_BRICK_FILE]` should end in `.json`, `.txt`, or `.ldr` to specify one of the following three output formats:
 
 - **JSON.** The output JSON is a list of bricks. Each brick has the following keys:
-    - `brick_id`: A number indicating the brick type. See `brick_library.json` for a list of brick types.
-    - `x`, `y`, `z`: The coordinates of the brick in 3D space.
-    - `ori`: 0 or 1, indicating the orientation of the brick.
+  - `brick_id`: A number indicating the brick type. See `brick_library.json` for a list of brick types.
+  - `x`, `y`, `z`: The coordinates of the brick in 3D space.
+  - `ori`: 0 or 1, indicating the orientation of the brick.
 - **Text.** The output text file is a list of bricks, one per line, with the following format: `hxw (x,y,z)`, where `h` is
-  the length of the brick along the *x*-axis, `w` is the length of the brick along the *y*-axis, and `(x,y,z)` are the
+  the length of the brick along the _x_-axis, `w` is the length of the brick along the _y_-axis, and `(x,y,z)` are the
   coordinates of the brick in 3D space.
 - **LDraw.** The output LDraw file can be used directly with LDraw-compatible software to visualize the brick structure.
 

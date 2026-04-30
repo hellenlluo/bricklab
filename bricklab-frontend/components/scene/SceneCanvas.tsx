@@ -543,10 +543,16 @@ function SceneControls() {
   const orbRef = useRef<OrbitControlsImpl>(null);
   const selectionPivot = useMemo(() => new THREE.Group(), []);
   const lastPivotPositionRef = useRef(new THREE.Vector3());
+  const prevViewportTypeRef = useRef(viewportType);
 
   useEffect(() => {
     const orb = orbRef.current;
     if (!orb) return;
+    if (prevViewportTypeRef.current === viewportType && orb.object === camera) {
+      prevViewportTypeRef.current = viewportType;
+      return;
+    }
+    prevViewportTypeRef.current = viewportType;
     const d = Math.max(plateSize, 30) * 1.8;
     const iso = d / Math.sqrt(3);
     type V3 = [number, number, number];

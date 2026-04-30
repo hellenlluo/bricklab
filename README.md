@@ -120,23 +120,23 @@ The [AvaLovelace/StableText2Brick](https://huggingface.co/datasets/AvaLovelace/S
 
 ```bibtex
 @inproceedings{pun2025brickgpt,
-  title     = {Generating Physically Stable and Buildable Brick Structures from Text},
-  author    = {Pun, Ava and Deng, Kangle and Liu, Ruixuan and Ramanan, Deva and Liu, Changliu and Zhu, Jun-Yan},
-  booktitle = {ICCV},
-  year      = {2025}
+    title     = {Generating Physically Stable and Buildable Brick Structures from Text},
+    author    = {Pun, Ava and Deng, Kangle and Liu, Ruixuan and Ramanan, Deva and Liu, Changliu and Zhu, Jun-Yan},
+    booktitle = {ICCV},
+    year      = {2025}
 }
 
-@article{tochilkin2024triposr,
-  title   = {TripoSR: Fast 3D Object Reconstruction from a Single Image},
-  author  = {Tochilkin, Dmitry and Pankratz, David and Liu, Zexiang and Huang, Zixuan and Letts, Adam and Li, Yangguang and Liang, Ding and Laforte, Christian and Jampani, Varun and Cao, Yan-Pei},
-  journal = {arXiv:2403.02151},
-  year    = {2024}
+@article{TripoSR2024,
+  title={TripoSR: Fast 3D Object Reconstruction from a Single Image},
+  author={Tochilkin, Dmitry and Pankratz, David and Liu, Zexiang and Huang, Zixuan and and Letts, Adam and Li, Yangguang and Liang, Ding and Laforte, Christian and Jampani, Varun and Cao, Yan-Pei},
+  journal={arXiv preprint arXiv:2403.02151},
+  year={2024}
 }
 
 @article{kirillov2023segany,
-  title   = {Segment Anything},
-  author  = {Kirillov, Alexander and Mintun, Eric and Ravi, Nikhila and Mao, Hanzi and Rolland, Chloe and Gustafson, Laura and Xiao, Tete and Whitehead, Spencer and Berg, Alexander C. and Lo, Wan-Yen and Doll{\'a}r, Piotr and Girshick, Ross},
-  journal = {arXiv:2304.02643},
-  year    = {2023}
+  title={Segment Anything},
+  author={Kirillov, Alexander and Mintun, Eric and Ravi, Nikhila and Mao, Hanzi and Rolland, Chloe and Gustafson, Laura and Xiao, Tete and Whitehead, Spencer and Berg, Alexander C. and Lo, Wan-Yen and Doll{\'a}r, Piotr and Girshick, Ross},
+  journal={arXiv:2304.02643},
+  year={2023}
 }
 ```

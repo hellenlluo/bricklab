@@ -219,15 +219,15 @@ export default function Docs() {
           <div>
             <SectionHeader>Coordinate System &amp; Grid</SectionHeader>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-              All brick positions are measured from the brick's top-left corner
+              All brick positions are measured from the brick&apos;s top-left corner
               when the scene is viewed from directly above (looking down the
               positive Z axis). Group positions similarly reference the top-left
-              corner of the group's bounding box in that same top-down
+              corner of the group&apos;s bounding box in that same top-down
               projection. Baseplate sizes are restricted to even numbers to keep
               every brick snapped to a whole-stud grid position — odd values
               would cause the grid to shift by half a stud whenever the
               baseplate is resized. The XYZ axes indicator shown in the
-              viewport's corner updates as you orbit, making it easy to stay
+              viewport&apos;s corner updates as you orbit, making it easy to stay
               oriented when inspecting the model from unusual angles.
             </p>
           </div>
@@ -236,7 +236,7 @@ export default function Docs() {
             <SectionHeader>Properties &amp; Scene Settings</SectionHeader>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
               Selecting one or more bricks (or a group) fills the right sidebar
-              with that element's editable properties: X / Y / Z position,
+              with that element&apos;s editable properties: X / Y / Z position,
               width, height, color, and layer order. When multiple bricks with
               differing values are selected, the field shows a placeholder and
               any value you type is applied uniformly to all of them. With

@@ -49,14 +49,6 @@ function ShortcutColumn({ children }: { children: React.ReactNode }) {
   return <div className="flex-1 min-w-0">{children}</div>;
 }
 
-function SubSectionHeader({ children }: { children: React.ReactNode }) {
-  return (
-    <h4 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 mt-3 mb-1">
-      {children}
-    </h4>
-  );
-}
-
 export default function Docs() {
   const shortcutsRef = useRef<HTMLDivElement>(null);
   const [contentHeight, setContentHeight] = useState<number | null>(null);
@@ -80,7 +72,7 @@ export default function Docs() {
   return (
     <div className="flex flex-col">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800">
+      <div className="px-3 py-3 border-b border-zinc-200 dark:border-zinc-800">
         <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
           Docs
         </span>
@@ -88,7 +80,7 @@ export default function Docs() {
 
       {/* Content */}
       <div
-        className="overflow-y-auto px-4 py-3"
+        className="overflow-y-auto px-3 py-3"
         style={contentHeight ? { height: `${contentHeight}px` } : undefined}
       >
         <div ref={shortcutsRef}>
@@ -137,34 +129,6 @@ export default function Docs() {
 
         {/* Feature notes */}
         <div className="flex flex-col gap-4 mt-5">
-          <div>
-            <SectionHeader>Generator</SectionHeader>
-
-            <SubSectionHeader>Text-to-3D</SubSectionHeader>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-              Describe a structure in natural language. Attach constraint boxes
-              to mark regions where no bricks should be placed.
-            </p>
-
-            <SubSectionHeader>
-              Regenerating from a partial structure
-            </SubSectionHeader>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-              Open <em>Generation Replay</em> from the Properties panel, revert
-              to any intermediate step, and click <em>Edit from here</em>. Edit
-              the prefix bricks, then click <em>Regenerate</em>. Only available
-              if the group has not been moved. Edits must stay within the
-              original 20×20×20 grid.
-            </p>
-
-            <SubSectionHeader>Image-to-3D</SubSectionHeader>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-              Upload a photo and click on the object to segment it. Click{" "}
-              <em>Reconstruct 3D</em>, then adjust the density slider before
-              clicking <em>Add to Scene</em>.
-            </p>
-          </div>
-
           <div>
             <SectionHeader>Library</SectionHeader>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">

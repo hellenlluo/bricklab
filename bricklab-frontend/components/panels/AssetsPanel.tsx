@@ -490,7 +490,7 @@ export default function AssetsPanel() {
       {expanded && (
         <ul className="pb-2" onClick={() => selectAsset(null)}>
           {topLevelGroups.length === 0 && ungroupedAssets.length === 0 && (
-            <li className="px-4 py-2 text-xs text-zinc-400 dark:text-zinc-500 italic">
+            <li className="px-3 py-2 text-xs text-zinc-400 dark:text-zinc-500 italic">
               {search ? "No matches" : "No assets in scene"}
             </li>
           )}

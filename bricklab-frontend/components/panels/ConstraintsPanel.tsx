@@ -45,12 +45,12 @@ export default function ConstraintsPanel() {
         </div>
 
         {/* Constraint list */}
-        <ul className="flex flex-col gap-0.5 px-2 pb-2">
+        <ul className="flex flex-col gap-0.5 pb-2">
           {constraints.map((c) => (
             <li key={c.id}>
               <div
                 onClick={() => handleEdit(c)}
-                className="flex items-center gap-1.5 px-2 py-1.5 rounded-md cursor-default group transition-colors text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                className="flex items-center gap-1.5 mx-3 px-2 py-1.5 rounded-md cursor-default group transition-colors text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
               >
                 <span className="flex-1 min-w-0 text-xs truncate">
                   {c.name}

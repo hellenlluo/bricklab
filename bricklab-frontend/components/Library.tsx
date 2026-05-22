@@ -158,14 +158,14 @@ export default function Library({ onClose }: LibraryProps) {
   return (
     <div className="flex flex-col h-[60vh]">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800">
+      <div className="px-3 py-3 border-b border-zinc-200 dark:border-zinc-800">
         <span className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
           Library
         </span>
       </div>
 
       {/* Tab toggle */}
-      <div className="flex gap-[1vw] px-[1vw] pt-2 pb-0">
+      <div className="flex gap-3 px-3 pt-2 pb-0">
         <button className={tabClass("preset")} onClick={() => setTab("preset")}>
           Preset
         </button>
@@ -177,8 +177,8 @@ export default function Library({ onClose }: LibraryProps) {
       {/* Content area */}
       <div className="flex-1 min-h-0">
         {tab === "preset" && (
-          <div className="h-full p-[1vw]">
-            <div className="grid grid-cols-4 grid-rows-2 gap-[1vw] h-full">
+          <div className="h-full p-3">
+            <div className="grid grid-cols-4 grid-rows-2 gap-4 h-full">
               {BRICK_LIBRARY.map((brick) => (
                 <BrickCard
                   key={brick.id}
@@ -192,7 +192,7 @@ export default function Library({ onClose }: LibraryProps) {
         )}
 
         {tab === "custom" && (
-          <div className="h-full overflow-y-auto p-[1vw]">
+          <div className="h-full overflow-y-auto p-3">
             {/* Define new custom brick */}
             <div className="flex items-end gap-1.5 mb-3">
               <div className="flex flex-col gap-0.5">
@@ -234,7 +234,7 @@ export default function Library({ onClose }: LibraryProps) {
             )}
 
             {customBricks.length > 0 && (
-              <div className="grid grid-cols-4 gap-[1vw] [grid-auto-rows:calc((60vh_-_85px_-_3vw)_/_2)]">
+              <div className="grid grid-cols-4 gap-4 [grid-auto-rows:calc((60vh_-_85px_-_40px)_/_2)]">
                 {customBricks.map((brick) => (
                   <BrickCard
                     key={brick.id}

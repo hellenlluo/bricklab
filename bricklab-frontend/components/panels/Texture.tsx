@@ -8,7 +8,7 @@ interface SliderRowProps {
 
 function SliderRow({ label, value, onChange }: SliderRowProps) {
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-1">
       <div className="flex items-center justify-between">
         <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
           {label}
@@ -44,7 +44,7 @@ export default function Texture({
   onMetalnessChange,
 }: TextureProps) {
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-2">
       <SliderRow
         label="Roughness"
         value={roughness ?? 0.88}

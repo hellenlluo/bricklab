@@ -38,6 +38,7 @@ interface BrickData {
 
 interface GeneratorProps {
   onClose: () => void;
+  onGeneratingChange?: (generating: boolean) => void;
 }
 
 const PREVIEW_FOV = 35;
@@ -262,12 +263,19 @@ function BrickPreviewScene({
   );
 }
 
-export default function Generator({ onClose }: GeneratorProps) {
+export default function Generator({
+  onClose,
+  onGeneratingChange,
+}: GeneratorProps) {
   const { addAssetsAsGroup, assets, defaultBrickColor, constraints } =
     useScene();
   const [tab, setTab] = useState<Tab>("text-to-3d");
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+
+  useEffect(() => {
+    onGeneratingChange?.(isGenerating);
+  }, [isGenerating, onGeneratingChange]);
   const [bricks, setBricks] = useState<BrickData[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [generationWarning, setGenerationWarning] = useState<string | null>(
@@ -414,13 +422,6 @@ export default function Generator({ onClose }: GeneratorProps) {
       ),
     ).length;
   }, [bricks, selectedBoxes]);
-
-  const tabClass = (t: Tab) =>
-    `flex-1 py-1.5 text-sm font-normal transition-colors rounded-md ${
-      tab === t
-        ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50"
-        : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-zinc-50 dark:hover:bg-zinc-800"
-    }`;
 
   // ── Image-to-3D handlers ──────────────────────────────────────────────
 
@@ -750,300 +751,413 @@ export default function Generator({ onClose }: GeneratorProps) {
   );
 
   return (
-    <div className="flex flex-col h-[85vh]">
+    <div className="flex flex-col h-[82.5vh]">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800">
-        <span className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+      <div className="px-3 py-3 border-b border-zinc-200 dark:border-zinc-800">
+        <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
           Generator
         </span>
       </div>
 
-      {/* Tab toggle */}
-      <div className="flex gap-[1vw] px-[1vw] pt-2 pb-0">
-        <button
-          className={tabClass("text-to-3d")}
-          onClick={() => setTab("text-to-3d")}
-        >
-          Text-to-3D
-        </button>
-        <button
-          className={tabClass("image-to-3d")}
-          onClick={() => setTab("image-to-3d")}
-        >
-          Image-to-3D
-        </button>
-      </div>
+      {/* Body: single two-column layout, divider runs header-to-bottom */}
+      <div className="flex flex-col md:flex-row flex-1 min-h-0">
+        {/* ── LEFT: tabs + controls + actions ─────────────────────────── */}
+        <div className="flex flex-col md:w-[28%] shrink-0 border-b border-zinc-200 dark:border-zinc-800 md:border-b-0 md:border-r">
+          {/* Tab toggle */}
+          <ul className="flex flex-col px-3 py-2 border-b border-zinc-200 dark:border-zinc-800">
+            {(["text-to-3d", "image-to-3d"] as Tab[]).map((t) => (
+              <li key={t}>
+                <button
+                  onClick={() => setTab(t)}
+                  className={`w-full flex items-center px-2 py-1.5 rounded-md text-xs text-left transition-colors ${
+                    tab === t
+                      ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
+                      : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                  }`}
+                >
+                  {t === "text-to-3d" ? "Text-to-3D" : "Image-to-3D"}
+                </button>
+              </li>
+            ))}
+          </ul>
 
-      {/* Content area */}
-      <div className="flex-1 min-h-0">
-        {tab === "text-to-3d" && (
-          <div className="flex flex-col h-full p-[1vw] gap-[1vw]">
-            {/* Prompt + constraints + Generate (single compact row height) */}
-            <div className="flex items-center gap-2 min-w-0">
-              <Input
-                type="text"
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleGenerate()}
-                placeholder="Describe a 3D brick structure..."
-                className="min-w-0 flex-1 h-7 py-0 text-[10px] leading-none"
-                disabled={isGenerating}
-              />
-              {constraints.length > 0 && (
-                <>
-                  <div
-                    ref={constraintDropdownRef}
-                    className="relative inline-flex flex-shrink-0"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => setConstraintDropdownOpen((o) => !o)}
-                      className={`flex h-7 items-center gap-1.5 px-2 border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-[10px] leading-none text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors ${
-                        constraintDropdownOpen
-                          ? "rounded-t-md rounded-b-none border-b-0"
-                          : "rounded-md"
-                      }`}
-                    >
-                      <span
-                        className="inline-block shrink-0 text-zinc-900 dark:text-zinc-100 transition-transform duration-200"
-                        style={{
-                          fontSize: "0.45rem",
-                          transform: constraintDropdownOpen
-                            ? "rotate(90deg)"
-                            : "rotate(0deg)",
-                          lineHeight: 1,
-                        }}
+          {/* Tab-specific controls (scrollable) */}
+          <div className="flex flex-col flex-1 gap-3 px-3 py-3 overflow-y-auto min-h-0">
+            {tab === "text-to-3d" && (
+              <>
+                {/* Prompt */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-xs font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+                    Prompt
+                  </span>
+                  <Input
+                    type="text"
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleGenerate()}
+                    placeholder="Describe a 3D brick structure..."
+                    className="w-full !h-7 !py-0 !text-[10px] !leading-none"
+                    disabled={isGenerating}
+                  />
+                </div>
+
+                {/* Instructions */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-xs font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+                    How to use
+                  </span>
+                  <ol className="flex flex-col gap-1.5">
+                    {[
+                      'Describe the desired structure, e.g. "a 10-stud arch" or "a small house with a sloped roof".',
+                      "Add layout constraints in the Constraints Builder (toolbar) to bound the generation area.",
+                      "Use the Constraints selector below to attach saved constraints before generating.",
+                      "Orbit and inspect the preview on the right, then click Add to Scene when satisfied.",
+                    ].map((item, i) => (
+                      <li
+                        key={i}
+                        className="flex gap-1.5 text-[10px] leading-snug text-zinc-500 dark:text-zinc-400"
                       >
-                        ▶
-                      </span>
-                      <span className="text-zinc-400 dark:text-zinc-500">
-                        Constraints:
-                      </span>
-                      <span>
-                        {selectedConstraintIds.length === 0
-                          ? "None"
-                          : `${selectedConstraintIds.length} selected`}
-                      </span>
-                    </button>
-                    {constraintDropdownOpen && (
-                      <div className="absolute top-full left-0 w-full bg-white dark:bg-zinc-900 border border-t-0 border-zinc-200 dark:border-zinc-800 rounded-b-xl z-50 overflow-hidden">
-                        <ul className="py-1">
-                          {constraints.map((c) => {
-                            const checked = selectedConstraintIds.includes(
-                              c.id,
-                            );
-                            return (
-                              <li key={c.id}>
-                                <label className="flex cursor-pointer items-center gap-2 px-3 py-1 text-[10px] leading-none hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
-                                  <input
-                                    type="checkbox"
-                                    checked={checked}
-                                    onChange={() =>
-                                      setSelectedConstraintIds((prev) =>
-                                        checked
-                                          ? prev.filter((id) => id !== c.id)
-                                          : [...prev, c.id],
-                                      )
-                                    }
-                                    className="h-3 w-3 accent-zinc-700 dark:accent-zinc-400 cursor-pointer shrink-0"
-                                  />
-                                  <span className="truncate text-zinc-700 dark:text-zinc-200">
-                                    {c.name}
-                                  </span>
-                                </label>
-                              </li>
-                            );
-                          })}
-                        </ul>
+                        <span className="shrink-0 font-medium text-zinc-400 dark:text-zinc-500">
+                          {i + 1}.
+                        </span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+
+                {/* Constraint selector */}
+                {constraints.length > 0 && (
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-xs font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+                      Constraints
+                    </span>
+                    <div className="flex flex-col gap-2">
+                      <div ref={constraintDropdownRef} className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setConstraintDropdownOpen((o) => !o)}
+                          className={`flex w-full h-7 items-center gap-1.5 px-2 border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-[10px] leading-none text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors ${
+                            constraintDropdownOpen
+                              ? "rounded-t-md rounded-b-none border-b-0"
+                              : "rounded-md"
+                          }`}
+                        >
+                          <span
+                            className="inline-block shrink-0 text-zinc-900 dark:text-zinc-100 transition-transform duration-200"
+                            style={{
+                              fontSize: "0.45rem",
+                              transform: constraintDropdownOpen
+                                ? "rotate(90deg)"
+                                : "rotate(0deg)",
+                              lineHeight: 1,
+                            }}
+                          >
+                            ▶
+                          </span>
+                          <span className="text-zinc-400 dark:text-zinc-500">
+                            Select:
+                          </span>
+                          <span>
+                            {selectedConstraintIds.length === 0
+                              ? "None"
+                              : `${selectedConstraintIds.length} selected`}
+                          </span>
+                        </button>
+                        {constraintDropdownOpen && (
+                          <div className="absolute top-full left-0 w-full bg-white dark:bg-zinc-900 border border-t-0 border-zinc-200 dark:border-zinc-800 rounded-b-xl z-50 overflow-hidden">
+                            <ul className="py-1">
+                              {constraints.map((c) => {
+                                const checked = selectedConstraintIds.includes(
+                                  c.id,
+                                );
+                                return (
+                                  <li key={c.id}>
+                                    <label className="flex cursor-pointer items-center gap-2 px-3 py-1.5 text-[10px] leading-none hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
+                                      <input
+                                        type="checkbox"
+                                        checked={checked}
+                                        onChange={() =>
+                                          setSelectedConstraintIds((prev) =>
+                                            checked
+                                              ? prev.filter((id) => id !== c.id)
+                                              : [...prev, c.id],
+                                          )
+                                        }
+                                        className="h-3 w-3 accent-zinc-700 dark:accent-zinc-400 cursor-pointer shrink-0"
+                                      />
+                                      <span className="truncate text-zinc-700 dark:text-zinc-200">
+                                        {c.name}
+                                      </span>
+                                    </label>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                      {selectedConstraintIds.length > 0 && (
+                        <label className="flex cursor-pointer select-none items-center gap-1.5 text-[10px] leading-none text-zinc-600 dark:text-zinc-400">
+                          <input
+                            type="checkbox"
+                            checked={showConstraints}
+                            onChange={(e) =>
+                              setShowConstraints(e.target.checked)
+                            }
+                            className="h-3 w-3 accent-zinc-700 dark:accent-zinc-400 cursor-pointer shrink-0"
+                          />
+                          <span>Show in preview</span>
+                        </label>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {tab === "image-to-3d" && (
+              <>
+                {/* Hidden file input */}
+                <input
+                  ref={imgFileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageSelect}
+                  disabled={imgLoading && imgStage !== "segment"}
+                />
+
+                {/* Upload / file name */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-xs font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+                    Image
+                  </span>
+                  <Button
+                    type="button"
+                    onClick={() => imgFileInputRef.current?.click()}
+                    disabled={imgLoading && imgStage !== "segment"}
+                    className="w-full h-7 flex items-center justify-center"
+                  >
+                    {imgFile ? "Change Image" : "Upload Image"}
+                  </Button>
+                  {imgFile && (
+                    <span className="text-[10px] text-zinc-500 dark:text-zinc-400 truncate">
+                      {imgFile.name}
+                    </span>
+                  )}
+                </div>
+
+                {/* Instructions */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-xs font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+                    How to use
+                  </span>
+                  <ol className="flex flex-col gap-1.5">
+                    {[
+                      "Upload a photo containing the object you want to convert.",
+                      "Click on the object to add selection points. Alt-click or right-click to mark background.",
+                      "Click Reconstruct 3D once the mask looks right.",
+                      "Adjust brick density with the slider, then click Add to Scene.",
+                    ].map((item, i) => (
+                      <li
+                        key={i}
+                        className="flex gap-1.5 text-[10px] leading-snug text-zinc-500 dark:text-zinc-400"
+                      >
+                        <span className="shrink-0 font-medium text-zinc-400 dark:text-zinc-500">
+                          {i + 1}.
+                        </span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+
+                {/* Segment stage controls */}
+                {imgStage === "segment" && (
+                  <div className="flex flex-col gap-2">
+                    <span className="text-xs font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+                      Selection
+                    </span>
+                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400 leading-snug">
+                      Click on the object to select it. Alt+click or right-click
+                      to deselect regions.
+                    </p>
+                    {imgPoints.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          onClick={handleUndoPoint}
+                          disabled={imgLoading}
+                          className={TOOLBAR_BUTTON_CLASS}
+                        >
+                          Undo
+                        </Button>
+                        <Button
+                          onClick={handleClearPoints}
+                          disabled={imgLoading}
+                          className={TOOLBAR_BUTTON_CLASS}
+                        >
+                          Clear
+                        </Button>
+                        <Button
+                          onClick={handleReconstruct}
+                          disabled={imgLoading}
+                          className={TOOLBAR_BUTTON_CLASS}
+                        >
+                          Reconstruct 3D
+                        </Button>
                       </div>
                     )}
                   </div>
+                )}
 
-                  {selectedConstraintIds.length > 0 && (
-                    <label className="flex h-7 cursor-pointer select-none items-center gap-1.5 shrink-0 text-[10px] leading-none text-zinc-600 dark:text-zinc-400">
-                      <input
-                        type="checkbox"
-                        checked={showConstraints}
-                        onChange={(e) => setShowConstraints(e.target.checked)}
-                        className="h-3 w-3 accent-zinc-700 dark:accent-zinc-400 cursor-pointer shrink-0"
-                      />
-                      <span className="whitespace-nowrap">Show in preview</span>
-                    </label>
-                  )}
-                </>
-              )}
-              <Button
-                onClick={handleGenerate}
-                disabled={!prompt.trim() || isGenerating}
-                className={TOOLBAR_BUTTON_CLASS}
-              >
-                Generate
-              </Button>
-            </div>
-
-            {/* Viewport */}
-            <div className="relative flex-1 min-h-0 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden">
-              {isGenerating && (
-                <span className="text-xs text-zinc-400 dark:text-zinc-500 animate-pulse">
-                  Generating…
-                </span>
-              )}
-              {!isGenerating && error && (
-                <span className="text-xs text-red-500 dark:text-red-400 px-4 text-center">
-                  {error}
-                </span>
-              )}
-              {!isGenerating && !error && !hasResult && (
-                <span className="text-xs text-zinc-400 dark:text-zinc-500">
-                  Preview
-                </span>
-              )}
-              {!isGenerating && hasResult && (
-                <Canvas
-                  camera={{
-                    position: cameraPosition,
-                    fov: 35,
-                    up: [0, 0, 1],
-                  }}
-                  gl={{ antialias: true }}
-                  style={{ position: "absolute", inset: 0 }}
-                >
-                  <color attach="background" args={["#f4f4f5"]} />
-                  <BrickPreviewScene
-                    bricks={bricks}
-                    constraintBoxes={showConstraints ? selectedBoxes : []}
-                  />
-                </Canvas>
-              )}
-            </div>
-
-            {/* Partial-generation / resampling notice */}
-            {generationWarning && (
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                {generationWarning}
-              </p>
+                {/* Voxel-adjust controls */}
+                {imgStage === "voxel-adjust" && (
+                  <div className="flex flex-col gap-2">
+                    {imgPlyId && (
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+                            Brick density
+                          </span>
+                          <span className="text-[10px] text-zinc-400 dark:text-zinc-500 tabular-nums">
+                            {imgVoxels.length} bricks
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min={5}
+                          max={100}
+                          step={1}
+                          value={imgDensity}
+                          onChange={(e) =>
+                            handleDensityChange(parseInt(e.target.value))
+                          }
+                          className="w-full h-1 accent-zinc-700 dark:accent-zinc-400 cursor-pointer"
+                          disabled={imgLoading}
+                        />
+                      </div>
+                    )}
+                    <Button
+                      onClick={handleImgReset}
+                      className="w-full h-7 flex items-center justify-center"
+                    >
+                      Start Over
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
-
-            {/* Intersection violation check */}
-            {hasResult && intersectionCount > 0 && (
-              <div className="px-2 py-1 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-                <span className="text-xs text-red-600 dark:text-red-400">
-                  {intersectionCount} brick(s) intersect constraint volumes in
-                  the output. Try regenerating or adjusting constraints.
-                </span>
-              </div>
-            )}
-
-            {/* Cancel / Add to Scene */}
-            <div className="flex gap-2 justify-end">
-              <Button onClick={handleCancel} className={TOOLBAR_BUTTON_CLASS}>
-                Cancel
-              </Button>
-              <Button
-                onClick={handleAddToScene}
-                disabled={!hasResult}
-                className={TOOLBAR_BUTTON_CLASS}
-              >
-                Add to Scene
-              </Button>
-            </div>
           </div>
-        )}
 
-        {tab === "image-to-3d" && (
-          <div className="flex flex-col h-full p-[1vw] gap-[1vw]">
-            {/* ── Toolbar ─────────────────────────────────────── */}
-            <div className="flex items-center gap-2 min-w-0">
-              <input
-                ref={imgFileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleImageSelect}
-                disabled={imgLoading && imgStage !== "segment"}
-              />
-              <Button
-                type="button"
-                onClick={() => imgFileInputRef.current?.click()}
-                disabled={imgLoading && imgStage !== "segment"}
-                className={TOOLBAR_BUTTON_CLASS}
-              >
-                {imgFile ? "Change Image" : "Upload Image"}
-              </Button>
-              {imgFile && (
-                <span className="text-[10px] text-zinc-500 dark:text-zinc-400 truncate min-w-0">
-                  {imgFile.name}
-                </span>
-              )}
-              <div className="flex-1" />
-              {imgStage === "segment" && imgPoints.length > 0 && (
-                <>
-                  <Button
-                    onClick={handleUndoPoint}
-                    disabled={imgLoading}
-                    className={TOOLBAR_BUTTON_CLASS}
-                  >
-                    Undo
-                  </Button>
-                  <Button
-                    onClick={handleClearPoints}
-                    disabled={imgLoading}
-                    className={TOOLBAR_BUTTON_CLASS}
-                  >
-                    Clear
-                  </Button>
-                  <Button
-                    onClick={handleReconstruct}
-                    disabled={imgLoading}
-                    className={TOOLBAR_BUTTON_CLASS}
-                  >
-                    Reconstruct 3D
-                  </Button>
-                </>
-              )}
-              {imgStage === "voxel-adjust" && (
+          {/* Action buttons (pinned to bottom of left column) */}
+          <div className="flex flex-col gap-2 px-3 py-3 border-t border-zinc-200 dark:border-zinc-800">
+            {tab === "text-to-3d" && (
+              <>
                 <Button
-                  onClick={handleImgReset}
-                  className={TOOLBAR_BUTTON_CLASS}
+                  onClick={handleGenerate}
+                  disabled={!prompt.trim() || isGenerating}
+                  className="w-full h-7 flex items-center justify-center"
                 >
-                  Start Over
+                  {isGenerating ? "Generating…" : "Generate"}
                 </Button>
-              )}
-            </div>
-
-            {/* ── Segment hint ────────────────────────────────── */}
-            {imgStage === "segment" && (
-              <p className="text-[10px] text-zinc-400 dark:text-zinc-500 leading-tight">
-                Click on the object to select it. Alt+click or right-click to
-                deselect regions.
-              </p>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleCancel}
+                    className="flex-1 h-7 flex items-center justify-center"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleAddToScene}
+                    disabled={!hasResult}
+                    className="flex-1 h-7 flex items-center justify-center"
+                  >
+                    Add to Scene
+                  </Button>
+                </div>
+              </>
             )}
-
-            {/* ── Voxel density slider ────────────────────────── */}
-            {imgStage === "voxel-adjust" && imgPlyId && (
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
-                  Brick density
-                </span>
-                <input
-                  type="range"
-                  min={5}
-                  max={100}
-                  step={1}
-                  value={imgDensity}
-                  onChange={(e) =>
-                    handleDensityChange(parseInt(e.target.value))
-                  }
-                  className="flex-1 h-1 accent-zinc-700 dark:accent-zinc-400 cursor-pointer"
-                  disabled={imgLoading}
-                />
-                <span className="text-[10px] text-zinc-400 dark:text-zinc-500 tabular-nums w-14 text-right">
-                  {imgVoxels.length} bricks
-                </span>
+            {tab === "image-to-3d" && (
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleCancel}
+                  className="flex-1 h-7 flex items-center justify-center"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleImgAddToScene}
+                  disabled={imgVoxels.length === 0}
+                  className="flex-1 h-7 flex items-center justify-center"
+                >
+                  Add to Scene
+                </Button>
               </div>
             )}
+          </div>
+        </div>
 
-            {/* ── Viewport ────────────────────────────────────── */}
+        {/* ── RIGHT: preview ───────────────────────────────────────────── */}
+        <div className="flex flex-col flex-1 min-h-0 p-3 gap-4">
+          {tab === "text-to-3d" && (
+            <>
+              {/* Viewport */}
+              <div className="relative flex-1 min-h-0 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden">
+                {isGenerating && (
+                  <span className="text-xs text-zinc-400 dark:text-zinc-500 animate-pulse">
+                    Generating…
+                  </span>
+                )}
+                {!isGenerating && error && (
+                  <span className="text-xs text-red-500 dark:text-red-400 px-3 text-center">
+                    {error}
+                  </span>
+                )}
+                {!isGenerating && !error && !hasResult && (
+                  <span className="text-xs text-zinc-400 dark:text-zinc-500">
+                    Preview
+                  </span>
+                )}
+                {!isGenerating && hasResult && (
+                  <Canvas
+                    camera={{
+                      position: cameraPosition,
+                      fov: 35,
+                      up: [0, 0, 1],
+                    }}
+                    gl={{ antialias: true }}
+                    style={{ position: "absolute", inset: 0 }}
+                  >
+                    <color attach="background" args={["#f4f4f5"]} />
+                    <BrickPreviewScene
+                      bricks={bricks}
+                      constraintBoxes={showConstraints ? selectedBoxes : []}
+                    />
+                  </Canvas>
+                )}
+              </div>
+
+              {/* Partial-generation / resampling notice */}
+              {generationWarning && (
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                  {generationWarning}
+                </p>
+              )}
+
+              {/* Intersection violation check */}
+              {hasResult && intersectionCount > 0 && (
+                <div className="px-2 py-1 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                  <span className="text-xs text-red-600 dark:text-red-400">
+                    {intersectionCount} brick(s) intersect constraint volumes in
+                    the output. Try regenerating or adjusting constraints.
+                  </span>
+                </div>
+              )}
+            </>
+          )}
+
+          {tab === "image-to-3d" && (
             <div className="relative flex-1 min-h-0 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden">
               {/* Loading overlay */}
               {imgLoading && (
@@ -1064,7 +1178,7 @@ export default function Generator({ onClose }: GeneratorProps) {
 
               {/* Error */}
               {!imgLoading && imgError && (
-                <span className="text-xs text-red-500 dark:text-red-400 px-4 text-center">
+                <span className="text-xs text-red-500 dark:text-red-400 px-3 text-center">
                   {imgError}
                 </span>
               )}
@@ -1127,7 +1241,6 @@ export default function Generator({ onClose }: GeneratorProps) {
                       className="pointer-events-none object-contain"
                     />
                   )}
-                  {/* Point indicators via SVG overlay */}
                   {imgNaturalSize && imgPoints.length > 0 && (
                     <svg
                       className="absolute inset-0 w-full h-full pointer-events-none"
@@ -1195,22 +1308,8 @@ export default function Generator({ onClose }: GeneratorProps) {
                 </Canvas>
               )}
             </div>
-
-            {/* Cancel / Add to Scene */}
-            <div className="flex gap-2 justify-end">
-              <Button onClick={handleCancel} className={TOOLBAR_BUTTON_CLASS}>
-                Cancel
-              </Button>
-              <Button
-                onClick={handleImgAddToScene}
-                disabled={imgVoxels.length === 0}
-                className={TOOLBAR_BUTTON_CLASS}
-              >
-                Add to Scene
-              </Button>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

@@ -428,14 +428,14 @@ export default function ConstraintBuilder({
       >
         <div className="flex flex-col h-[70vh]">
           {/* Header */}
-          <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800">
+          <div className="px-3 py-3 border-b border-zinc-200 dark:border-zinc-800">
             <span className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
               {existing ? "Edit Constraint" : "New Constraint"}
             </span>
           </div>
 
           {/* Name + Add Box controls */}
-          <div className="flex gap-2 px-[1vw] pt-3 pb-0 items-end">
+          <div className="flex gap-2 px-3 pt-3 pb-0 items-end">
             <div className="flex flex-col gap-1 flex-1">
               <label className="text-[10px] text-zinc-500 dark:text-zinc-400">
                 Name
@@ -498,7 +498,7 @@ export default function ConstraintBuilder({
           </div>
 
           {/* 3D Viewport */}
-          <div className="relative flex-1 min-h-0 m-[1vw] rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
+          <div className="relative flex-1 min-h-0 m-4 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
             {/* Box selector + details overlay */}
             {boxes.length > 0 && (
               <div className="absolute top-2 left-2 z-10 flex gap-2 items-center h-9 px-2.5 rounded-md bg-white/90 dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-700 backdrop-blur-sm">
@@ -599,7 +599,7 @@ export default function ConstraintBuilder({
           </div>
 
           {/* Actions */}
-          <div className="flex gap-2 justify-end px-[1vw] pb-[1vw]">
+          <div className="flex gap-2 justify-end px-3 pb-3">
             <Button onClick={onClose}>Cancel</Button>
             <Button onClick={handleSave} disabled={boxes.length === 0}>
               Save

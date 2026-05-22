@@ -404,13 +404,13 @@ export default function Exporter({ onClose }: ExporterProps) {
   return (
     <div className="flex flex-col">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800">
+      <div className="px-3 py-3 border-b border-zinc-200 dark:border-zinc-800">
         <span className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
           Exporter
         </span>
       </div>
 
-      <div className="p-4 flex flex-col gap-4">
+      <div className="p-3 flex flex-col gap-4">
         {/* Export name */}
         <div className="flex flex-col gap-1.5">
           <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
@@ -514,7 +514,7 @@ export default function Exporter({ onClose }: ExporterProps) {
                           setSelectedSceneId(scene.id);
                           setSceneDropdownOpen(false);
                         }}
-                        className={`flex w-full cursor-pointer items-center justify-between gap-2 px-3 py-1 text-[10px] leading-none hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
+                        className={`flex w-full cursor-pointer items-center justify-between gap-2 px-3 py-1.5 text-[10px] leading-none hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
                           scene.id === selectedSceneId
                             ? "text-zinc-900 dark:text-zinc-100"
                             : "text-zinc-700 dark:text-zinc-200"

@@ -217,7 +217,7 @@ export default function PropertiesPanel() {
 
   const editBanner = isEditingThisGroup ? (
     prefixEdit.phase === "regenerating" ? (
-      <div data-no-deselect className="mt-3 px-2.5">
+      <div data-no-deselect className="mt-3 px-3">
         <div className="w-full py-1 rounded-md text-center text-[10px] font-medium text-[#74a7fe] border border-[#74a7fe] bg-[#74a7fe]/10 animate-pulse transition-colors">
           Regenerating from prefix…
         </div>
@@ -225,7 +225,7 @@ export default function PropertiesPanel() {
     ) : (
       <div
         data-no-deselect
-        className="mx-2.5 mt-3 min-w-0 p-2 rounded-md border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30"
+        className="mx-3 mt-3 min-w-0 p-2 rounded-md border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30"
       >
         {prefixEdit.phase === "editing_prefix" && (
           <div className="flex min-w-0 flex-col gap-1.5">
@@ -302,7 +302,7 @@ export default function PropertiesPanel() {
   if (!asset && !selectedGroup) {
     return (
       <div data-no-deselect>
-        <div className="px-2.5 py-3 text-xs text-zinc-400 dark:text-zinc-500 italic">
+        <div className="px-3 py-3 text-xs text-zinc-400 dark:text-zinc-500 italic">
           Select an asset to view its properties.
         </div>
       </div>
@@ -369,7 +369,7 @@ export default function PropertiesPanel() {
     return (
       <div data-no-deselect>
         {editBanner}
-        <div className="px-2.5 py-2 flex flex-col gap-3">
+        <div className="px-3 py-2 flex flex-col gap-3">
           <Field label="Group Name">
             <TextValue
               key={selectedGroup.name}
@@ -520,12 +520,14 @@ export default function PropertiesPanel() {
             onMetalnessChange={(v) => updateAllAssets({ materialMetalness: v })}
           />
 
-          <button
-            onClick={() => removeGroup(selectedGroup.id)}
-            className="w-full mt-2 py-1 rounded-md text-[10px] font-medium text-red-500 border border-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors"
-          >
-            Delete Group
-          </button>
+          <div className="-mx-3 px-3 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+            <button
+              onClick={() => removeGroup(selectedGroup.id)}
+              className="w-full py-1 rounded-md text-[10px] font-medium text-red-500 border border-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors"
+            >
+              Delete Group
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -579,7 +581,7 @@ export default function PropertiesPanel() {
 
     return (
       <div data-no-deselect>
-        <div className="px-2.5 py-2 flex flex-col gap-3">
+        <div className="px-3 py-2 flex flex-col gap-3">
           <span className="text-xs font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
             {multiAssets.length} Selected
           </span>
@@ -717,12 +719,14 @@ export default function PropertiesPanel() {
             ))}
           </div>
 
-          <button
-            onClick={() => removeSelectedAssets()}
-            className="w-full mt-2 py-1 rounded-md text-[10px] font-medium text-red-500 border border-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors"
-          >
-            Delete All Selected
-          </button>
+          <div className="-mx-3 px-3 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+            <button
+              onClick={() => removeSelectedAssets()}
+              className="w-full py-1 rounded-md text-[10px] font-medium text-red-500 border border-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors"
+            >
+              Delete All Selected
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -735,7 +739,7 @@ export default function PropertiesPanel() {
 
   return (
     <div data-no-deselect>
-      <div className="px-2.5 py-2 flex flex-col gap-3">
+      <div className="px-3 py-2 flex flex-col gap-3">
         <Field label="Name">
           <TextValue
             key={singleAsset.name}
@@ -937,26 +941,29 @@ export default function PropertiesPanel() {
           }
         />
 
-        {singleAsset.type === "preset-brick" &&
-          singleAsset.preset &&
-          (singleAsset.preset.studsX > 1 || singleAsset.preset.studsY > 1) && (
-            <Button
-              onClick={() => decomposeBrick(singleAsset.id)}
-              className="w-full"
-            >
-              Decompose
-            </Button>
-          )}
+        <div className="flex flex-col gap-3 -mx-3 px-3 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+          {singleAsset.type === "preset-brick" &&
+            singleAsset.preset &&
+            (singleAsset.preset.studsX > 1 ||
+              singleAsset.preset.studsY > 1) && (
+              <Button
+                onClick={() => decomposeBrick(singleAsset.id)}
+                className="w-full"
+              >
+                Decompose
+              </Button>
+            )}
 
-        <button
-          onClick={() => {
-            selectAsset(null);
-            removeAsset(singleAsset.id);
-          }}
-          className="w-full mt-2 py-1 rounded-md text-[10px] font-medium text-red-500 border border-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors"
-        >
-          Delete Brick
-        </button>
+          <button
+            onClick={() => {
+              selectAsset(null);
+              removeAsset(singleAsset.id);
+            }}
+            className="w-full py-1 rounded-md text-[10px] font-medium text-red-500 border border-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors"
+          >
+            Delete Brick
+          </button>
+        </div>
       </div>
     </div>
   );

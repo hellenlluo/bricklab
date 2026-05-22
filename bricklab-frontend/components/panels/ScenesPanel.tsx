@@ -66,7 +66,7 @@ export default function ScenesPanel() {
       </div>
 
       {/* Scene list */}
-      <ul className="flex flex-col gap-0.5 px-2 pb-2">
+      <ul className="flex flex-col pb-2">
         {scenes.map((scene) => {
           const isActive = scene.id === activeSceneId;
           const isEditing = editingId === scene.id;
@@ -74,7 +74,7 @@ export default function ScenesPanel() {
             <li key={scene.id}>
               <div
                 onClick={() => setActiveScene(scene.id)}
-                className={`flex items-center gap-1.5 px-2 py-1.5 rounded-md cursor-default group transition-colors ${
+                className={`flex items-center gap-1.5 mx-3 px-2 py-1.5 rounded-md cursor-default group transition-colors ${
                   isActive
                     ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
                     : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"

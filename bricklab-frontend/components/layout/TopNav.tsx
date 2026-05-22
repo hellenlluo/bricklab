@@ -12,9 +12,13 @@ const NAV_ITEMS: Panel[] = ["Docs", "Generator", "Library", "Exporter"];
 
 export default function TopNav() {
   const [activePanel, setActivePanel] = useState<Panel | null>(null);
-  const isGeneratorLocked = activePanel === "Generator";
+  const [generatorIsGenerating, setGeneratorIsGenerating] = useState(false);
+  const isGeneratorLocked = generatorIsGenerating;
 
-  const closePanel = () => setActivePanel(null);
+  const closePanel = () => {
+    setActivePanel(null);
+    setGeneratorIsGenerating(false);
+  };
 
   const handleButtonClick = (panel: Panel) => {
     if (isGeneratorLocked) return;
@@ -40,7 +44,12 @@ export default function TopNav() {
       case "Docs":
         return <Docs />;
       case "Generator":
-        return <Generator onClose={closePanel} />;
+        return (
+          <Generator
+            onClose={closePanel}
+            onGeneratingChange={setGeneratorIsGenerating}
+          />
+        );
       case "Exporter":
         return <Exporter onClose={closePanel} />;
     }
@@ -49,8 +58,8 @@ export default function TopNav() {
   return (
     <>
       <nav
-        style={{ height: "7.5vh", top: "1vh", left: "1vw", right: "1vw" }}
-        className="fixed flex items-center justify-between px-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl z-40"
+        style={{ height: "7.5vh", top: 0, left: 0, right: 0 }}
+        className="fixed flex items-center justify-between px-6 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 z-40"
       >
         {/* Left: Title */}
         <span className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
@@ -79,7 +88,7 @@ export default function TopNav() {
       {activePanel && (
         <div
           className="fixed inset-x-0 bottom-0 z-50 flex items-center justify-center bg-black/40"
-          style={{ top: "8.5vh" }}
+          style={{ top: "7.5vh" }}
           onClick={isGeneratorLocked ? undefined : closePanel}
         >
           <div
@@ -87,7 +96,7 @@ export default function TopNav() {
               activePanel === "Library" || activePanel === "Docs"
                 ? "w-[40vw]"
                 : activePanel === "Generator"
-                  ? "w-[50vw]"
+                  ? "w-[58vw]"
                   : activePanel === "Exporter"
                     ? "w-96"
                     : "w-72"

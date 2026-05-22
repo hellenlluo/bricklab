@@ -7,8 +7,8 @@ import ConstraintsPanel from "@/components/panels/ConstraintsPanel";
 export default function LeftSidebar() {
   return (
     <aside
-      style={{ width: "15vw", top: "9.5vh", left: "1vw", bottom: "1vh" }}
-      className="fixed bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl z-40 overflow-y-auto"
+      style={{ width: "15vw", top: "7.5vh", left: 0, bottom: 0 }}
+      className="fixed bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 z-40 overflow-y-auto"
     >
       <ScenesPanel />
       <AssetsPanel />

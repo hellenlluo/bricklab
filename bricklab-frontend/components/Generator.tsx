@@ -751,7 +751,7 @@ export default function Generator({
   );
 
   return (
-    <div className="flex flex-col h-[82.5vh]">
+    <div className="flex flex-col h-[64vh]">
       {/* Header */}
       <div className="px-3 py-3 border-b border-zinc-200 dark:border-zinc-800">
         <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">

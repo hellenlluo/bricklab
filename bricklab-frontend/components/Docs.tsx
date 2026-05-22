@@ -132,74 +132,118 @@ export default function Docs() {
           <div>
             <SectionHeader>Library</SectionHeader>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-              Browse preset bricks or define a custom brick size. Clicking a
-              card adds the brick to the active scene at the origin.
+              Browse a catalog of preset brick sizes or enter custom width and
+              height values to define your own. Clicking any brick card
+              immediately adds it to the active scene at the world origin
+              (0, 0, 0). From there, reposition it by dragging in the viewport,
+              typing exact coordinates into the right sidebar, or using the
+              Properties panel. Custom dimensions are remembered for the session,
+              so you can quickly add several bricks of the same unusual size in
+              a row.
             </p>
           </div>
 
           <div>
             <SectionHeader>Quick Add Toolbar</SectionHeader>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-              Pin up to 6 brick types for one-click placement. Open the ▶
-              selector at the left of the toolbar to change which bricks are
-              pinned.
+              The toolbar across the bottom of the viewport gives you up to 6
+              pinned brick slots for one-click placement without opening the
+              Library. Click the ▶ selector at the far left to open the pin
+              picker and swap any slot to a different brick size. Each slot
+              retains your last choice across placements, so your most-used
+              sizes stay readily accessible. Pinned bricks are added at the
+              origin, just like Library cards.
             </p>
           </div>
 
           <div>
             <SectionHeader>Exporter</SectionHeader>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-              Export the current scene or individual bricks. Choose a format and
-              click <em>Download</em>.
+              Export the entire scene or only the currently selected bricks.
+              Pick an output format from the dropdown — available options
+              include common 3D mesh formats as well as instruction-friendly
+              layouts suited for step-by-step build guides — then click{" "}
+              <em>Download</em> to save the file locally. If nothing is selected
+              the full scene is exported. Large scenes may take a moment to
+              package; the button shows a loading state while the file is being
+              prepared.
             </p>
           </div>
 
           <div>
             <SectionHeader>Scenes</SectionHeader>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-              Manage multiple scenes from the left sidebar. Click a scene to
-              switch to it, double-click the name to rename, or click <em>✕</em>{" "}
-              to delete.
+              The left sidebar lets you manage as many scenes as you need.
+              Click a scene row to switch to it — all panels, the viewport, and
+              the asset list update immediately. Double-click the scene name to
+              rename it inline and press Enter to confirm. Click <em>✕</em> on
+              a row to delete that scene permanently (this cannot be undone).
+              Each scene stores its own brick layout, baseplate dimensions,
+              background color, and last camera position independently, so you
+              can maintain separate designs without them interfering with each
+              other.
             </p>
           </div>
 
           <div>
             <SectionHeader>Assets &amp; Groups</SectionHeader>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-              The Assets panel lists every brick and group in the active scene.
-              Select multiple bricks and press ⌘G / Ctrl+G to group them. Drag
-              an asset onto a group to move it inside. Hover a group row and
-              click <em>✕</em> to ungroup.
+              The Assets panel on the left lists every top-level brick and group
+              in the active scene. Select one or more bricks in the viewport or
+              in the list, then press ⌘G / Ctrl+G to collect them into a named
+              group. You can drag any asset row onto a group row to nest it
+              inside. To dissolve a group without deleting its contents, hover
+              the group row and click <em>✕</em> (ungroup). Groups support
+              arbitrary nesting, so you can build complex hierarchies — for
+              example, grouping wheels into an axle assembly and then grouping
+              axle assemblies into a chassis — and move or copy entire
+              sub-assemblies as a single unit.
             </p>
           </div>
 
           <div>
             <SectionHeader>Constraints</SectionHeader>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-              Define bounding-box constraints that limit where the text-to-3D
-              generator may place bricks. Open the <em>Constraints</em> panel in
-              the left sidebar to create, select, or delete constraints.
+              Constraints are named bounding boxes that tell the AI generator
+              exactly where it is allowed to place bricks. Open the{" "}
+              <em>Constraints</em> panel in the left sidebar to draw a new box
+              by entering its position, width, depth, and height, then save it
+              with a memorable name. In the Generator panel, select a saved
+              constraint from the dropdown before clicking Generate; the model
+              will confine all output bricks to that volume. This is especially
+              useful when you want generated structures to fit a specific gap in
+              an existing build or to stay within a defined footprint.
             </p>
           </div>
 
           <div>
             <SectionHeader>Coordinate System &amp; Grid</SectionHeader>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-              Brick positions use the top-left corner of the brick when viewed
-              from the positive Z axis. Group positions use the top-left corner
-              of the selected group bounding box from that same top-down view.
-              Baseplate sizes are restricted to even numbers so brick placements
-              stay aligned to the stud grid and do not shift onto half-stud
-              offsets after a size change.
+              All brick positions are measured from the brick's top-left corner
+              when the scene is viewed from directly above (looking down the
+              positive Z axis). Group positions similarly reference the top-left
+              corner of the group's bounding box in that same top-down
+              projection. Baseplate sizes are restricted to even numbers to keep
+              every brick snapped to a whole-stud grid position — odd values
+              would cause the grid to shift by half a stud whenever the
+              baseplate is resized. The XYZ axes indicator shown in the
+              viewport's corner updates as you orbit, making it easy to stay
+              oriented when inspecting the model from unusual angles.
             </p>
           </div>
 
           <div>
             <SectionHeader>Properties &amp; Scene Settings</SectionHeader>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-              Select a brick (or group of bricks) to reveal its properties on
-              the right sidebar. The panel shows scene-wide settings when
-              nothing is selected.
+              Selecting one or more bricks (or a group) fills the right sidebar
+              with that element's editable properties: X / Y / Z position,
+              width, height, color, and layer order. When multiple bricks with
+              differing values are selected, the field shows a placeholder and
+              any value you type is applied uniformly to all of them. With
+              nothing selected, the sidebar switches to scene-wide settings such
+              as baseplate size and background color. All property changes take
+              effect immediately in the viewport and are fully undoable with
+              ⌘Z / Ctrl+Z.
             </p>
           </div>
         </div>

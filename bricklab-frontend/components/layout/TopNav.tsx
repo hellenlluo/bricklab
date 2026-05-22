@@ -96,7 +96,7 @@ export default function TopNav() {
               activePanel === "Library" || activePanel === "Docs"
                 ? "w-[40vw]"
                 : activePanel === "Generator"
-                  ? "w-[58vw]"
+                  ? "w-[50vw]"
                   : activePanel === "Exporter"
                     ? "w-96"
                     : "w-72"

@@ -55,26 +55,42 @@ export default function TopNav() {
     }
   }
 
+  const sidebarWidth = "15vw";
+
   return (
     <>
       <nav
         style={{ height: "7.5vh", top: 0, left: 0, right: 0 }}
-        className="fixed flex items-center justify-between px-6 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 z-40"
+        className="relative fixed flex items-stretch bg-white dark:bg-zinc-900 border-b border-zinc-400 dark:border-zinc-600 z-40 pr-[15vw]"
       >
-        {/* Left: Title */}
-        <span className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-          BrickLab
-        </span>
+        {/* Left sidebar column */}
+        <div
+          style={{ width: sidebarWidth }}
+          className="flex shrink-0 items-center px-3 border-r border-zinc-400 dark:border-zinc-600"
+        >
+          <span
+            className="text-xl font-normal tracking-tight text-accent px-2 py-0.5 border"
+            style={{
+              borderColor: "#908095",
+              backgroundColor: "rgb(144 128 149 / 0.25)",
+            }}
+          >
+            BrickLab
+          </span>
+        </div>
 
-        {/* Right: Nav buttons */}
-        <div className="flex items-center gap-3">
+        {/* Center (canvas) */}
+        <div className="min-w-0 flex-1" />
+
+        {/* Nav items */}
+        <div className="flex shrink-0 items-center gap-3 px-3">
           {NAV_ITEMS.map((item) => (
             <button
               key={item}
               onClick={() => handleButtonClick(item)}
-              className={`px-4 py-1.5 rounded-md text-sm font-normal transition-colors ${
+              className={`px-4 py-1.5 rounded-none text-sm font-normal transition-colors ${
                 activePanel === item
-                  ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50"
+                  ? "bg-accent/10 text-accent"
                   : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-zinc-50 dark:hover:bg-zinc-800"
               }`}
             >
@@ -82,6 +98,13 @@ export default function TopNav() {
             </button>
           ))}
         </div>
+
+        {/* Right divider — absolutely positioned to match RightSidebar's fixed right:0 width:15vw */}
+        <div
+          className="absolute top-0 bottom-0 right-0 border-l border-zinc-400 dark:border-zinc-600"
+          style={{ width: sidebarWidth }}
+          aria-hidden
+        />
       </nav>
 
       {/* Panel modal */}
@@ -92,7 +115,7 @@ export default function TopNav() {
           onClick={isGeneratorLocked ? undefined : closePanel}
         >
           <div
-            className={`rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 ${
+            className={`rounded-none border border-zinc-400 dark:border-zinc-500 bg-white dark:bg-zinc-900 ${
               activePanel === "Library" || activePanel === "Docs"
                 ? "w-[40vw]"
                 : activePanel === "Generator"

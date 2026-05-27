@@ -404,7 +404,7 @@ export default function Exporter({ onClose }: ExporterProps) {
   return (
     <div className="flex flex-col">
       {/* Header */}
-      <div className="px-3 py-3 border-b border-zinc-200 dark:border-zinc-800">
+      <div className="px-3 py-3 border-b border-zinc-400 dark:border-zinc-600">
         <span className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
           Exporter
         </span>
@@ -413,7 +413,7 @@ export default function Exporter({ onClose }: ExporterProps) {
       <div className="p-3 flex flex-col gap-4">
         {/* Export name */}
         <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-500">
             Export name
           </span>
           <Input
@@ -426,7 +426,7 @@ export default function Exporter({ onClose }: ExporterProps) {
 
         {/* Format */}
         <div className="flex flex-col gap-2">
-          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-500">
             Format
           </span>
           <div className="flex flex-wrap gap-1.5">
@@ -436,24 +436,24 @@ export default function Exporter({ onClose }: ExporterProps) {
                 type="button"
                 onClick={() => setExportFormat(fmt.id)}
                 title={fmt.description}
-                className={`px-2.5 py-1 rounded text-[10px] font-medium border transition-colors ${
+                className={`px-2.5 py-1 rounded-none text-[10px] font-medium border transition-colors ${
                   exportFormat === fmt.id
-                    ? "bg-zinc-700 text-white border-zinc-700 hover:bg-zinc-600"
-                    : "bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500"
+                    ? "bg-accent text-white border-accent hover:bg-accent-dark"
+                    : "bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-zinc-400 dark:border-zinc-500 hover:border-zinc-500 dark:hover:border-zinc-400"
                 }`}
               >
                 {fmt.label}
               </button>
             ))}
           </div>
-          <p className="text-[10px] text-zinc-400 dark:text-zinc-500 leading-tight">
+          <p className="text-[10px] text-zinc-500 dark:text-zinc-500 leading-tight">
             {FORMAT_OPTIONS.find((f) => f.id === exportFormat)?.description}
           </p>
         </div>
 
         {/* Options */}
         <div className="flex flex-col gap-2">
-          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-500">
             Options
           </span>
           <label className="flex items-center gap-2 cursor-pointer select-none">
@@ -461,9 +461,9 @@ export default function Exporter({ onClose }: ExporterProps) {
               type="checkbox"
               checked={includeBasePlate}
               onChange={(e) => setIncludeBasePlate(e.target.checked)}
-              className="w-3.5 h-3.5 rounded border-zinc-300 dark:border-zinc-600 accent-zinc-700 dark:accent-zinc-300"
+              className="w-3.5 h-3.5 rounded-none border-zinc-400 dark:border-zinc-500 accent-zinc-700 dark:accent-zinc-300"
             />
-            <span className="text-xs text-zinc-600 dark:text-zinc-400">
+            <span className="text-xs text-zinc-500 dark:text-zinc-500">
               Include base plate
             </span>
           </label>
@@ -471,17 +471,15 @@ export default function Exporter({ onClose }: ExporterProps) {
 
         {/* Scene selection */}
         <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-500">
             Scene
           </span>
           <div ref={sceneDropdownRef} className="relative">
             <button
               type="button"
               onClick={() => setSceneDropdownOpen((o) => !o)}
-              className={`flex w-full h-7 items-center gap-1.5 px-2 border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-[10px] leading-none text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors ${
-                sceneDropdownOpen
-                  ? "rounded-t-md rounded-b-none border-b-0"
-                  : "rounded-md"
+              className={`flex w-full h-7 items-center gap-1.5 px-2 border border-zinc-400 dark:border-zinc-500 bg-white dark:bg-zinc-800 text-[10px] leading-none text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors ${
+                sceneDropdownOpen ? "rounded-none border-b-0" : "rounded-none"
               }`}
             >
               <span
@@ -496,15 +494,15 @@ export default function Exporter({ onClose }: ExporterProps) {
               >
                 ▶
               </span>
-              <span className="text-zinc-400 dark:text-zinc-500">Scene:</span>
+              <span className="text-zinc-500 dark:text-zinc-500">Scene:</span>
               <span className="truncate">{selectedScene.name}</span>
-              <span className="ml-auto text-zinc-400 dark:text-zinc-500 shrink-0">
+              <span className="ml-auto text-zinc-500 dark:text-zinc-500 shrink-0">
                 {selectedScene.assets.length} asset
                 {selectedScene.assets.length !== 1 ? "s" : ""}
               </span>
             </button>
             {sceneDropdownOpen && (
-              <div className="absolute top-full left-0 w-full bg-white dark:bg-zinc-900 border border-t-0 border-zinc-200 dark:border-zinc-800 rounded-b-xl z-50 overflow-hidden">
+              <div className="absolute top-full left-0 w-full bg-white dark:bg-zinc-900 border border-t-0 border-zinc-400 dark:border-zinc-600 rounded-none z-50 overflow-hidden">
                 <ul className="py-1">
                   {scenes.map((scene) => (
                     <li key={scene.id}>
@@ -521,7 +519,7 @@ export default function Exporter({ onClose }: ExporterProps) {
                         }`}
                       >
                         <span className="truncate">{scene.name}</span>
-                        <span className="text-zinc-400 dark:text-zinc-500 shrink-0">
+                        <span className="text-zinc-500 dark:text-zinc-500 shrink-0">
                           {scene.assets.length} obj
                           {scene.assets.length !== 1 ? "s" : ""}
                         </span>
@@ -535,21 +533,17 @@ export default function Exporter({ onClose }: ExporterProps) {
         </div>
 
         {/* Summary */}
-        <div className="flex flex-col gap-1 rounded-md bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-100 dark:border-zinc-700 px-3 py-2.5">
-          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-0.5">
+        <div className="flex flex-col gap-1 rounded-none bg-accent/25 border border-accent px-3 py-2.5">
+          <span className="text-xs font-medium text-accent mb-0.5">
             Summary
           </span>
           <div className="flex justify-between text-xs">
-            <span className="text-zinc-500 dark:text-zinc-400">
-              Total bricks
-            </span>
-            <span className="text-zinc-900 dark:text-zinc-100 tabular-nums">
-              {totalBrickCount}
-            </span>
+            <span className="text-accent">Total bricks</span>
+            <span className="text-accent tabular-nums">{totalBrickCount}</span>
           </div>
           <div className="flex justify-between text-xs">
-            <span className="text-zinc-500 dark:text-zinc-400">Format</span>
-            <span className="text-zinc-900 dark:text-zinc-100">
+            <span className="text-accent">Format</span>
+            <span className="text-accent">
               {FORMAT_OPTIONS.find((f) => f.id === exportFormat)?.ext}
             </span>
           </div>
@@ -563,7 +557,7 @@ export default function Exporter({ onClose }: ExporterProps) {
         <Button
           onClick={handleExport}
           disabled={isExporting || !exportName.trim()}
-          className="w-full py-2 text-xs justify-center"
+          className="w-full !h-7 !py-0 flex items-center justify-center"
         >
           {isExporting
             ? "Exporting…"

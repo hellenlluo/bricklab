@@ -1,13 +1,11 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import {
   useScene,
   type AssetCategory,
   type BrickGroup,
-  type SceneAsset,
 } from "@/store/sceneStore";
-import { usePrefixEdit } from "@/store/usePrefixEdit";
 import Texture from "./Texture";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -22,7 +20,7 @@ function Field({
 }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+      <span className="text-[10px] text-zinc-500 dark:text-zinc-500">
         {label}
       </span>
       {children}
@@ -62,30 +60,6 @@ function getCategoryLabel(
   if (category === "text-to-3d") return "Text-to-3d";
   if (category === "image-to-3d") return "Image-to-3d";
   return fallback;
-}
-
-function isPrefixEditBlocking(
-  phase: ReturnType<typeof usePrefixEdit>["phase"],
-) {
-  return phase === "editing_prefix" || phase === "regenerating";
-}
-
-function isGroupUnmoved(group: BrickGroup, members: SceneAsset[]): boolean {
-  if (!group.generationHistory || !group.generationOffset) return false;
-  const history = group.generationHistory;
-  for (const asset of members) {
-    if (!asset.position || !asset.preset) return false;
-    const match = history.some(
-      (h) =>
-        h.x === asset.position![0] &&
-        h.y === asset.position![1] &&
-        h.z === asset.position![2] &&
-        h.studsX === asset.preset!.studsX &&
-        h.studsY === asset.preset!.studsY,
-    );
-    if (!match) return false;
-  }
-  return true;
 }
 
 function NumberValue({
@@ -153,8 +127,6 @@ export default function PropertiesPanel() {
     selectAsset,
   } = useScene();
 
-  const prefixEdit = usePrefixEdit();
-
   const asset = assets.find((a) => a.id === selectedAssetId) ?? null;
   const [replayOpen, setReplayOpen] = useState(false);
 
@@ -201,108 +173,12 @@ export default function PropertiesPanel() {
     setColorDraft(referenceColor);
   }
 
-  // ── Edit-from-here banner (only when the editing group is selected) ──────
-
-  const isEditingThisGroup =
-    prefixEdit.phase !== "idle" &&
-    prefixEdit.groupId !== null &&
-    selectedGroup?.id === prefixEdit.groupId;
-
-  const collidingIds = prefixEdit.collidingIds;
-  const collidingAssets = useMemo(
-    () => assets.filter((a) => collidingIds.has(a.id)),
-    [assets, collidingIds],
-  );
-  const hasCollisions = collidingIds.size > 0;
-
-  const editBanner = isEditingThisGroup ? (
-    prefixEdit.phase === "regenerating" ? (
-      <div data-no-deselect className="mt-3 px-3">
-        <div className="w-full py-1 rounded-md text-center text-[10px] font-medium text-[#74a7fe] border border-[#74a7fe] bg-[#74a7fe]/10 animate-pulse transition-colors">
-          Regenerating from prefix…
-        </div>
-      </div>
-    ) : (
-      <div
-        data-no-deselect
-        className="mx-3 mt-3 min-w-0 p-2 rounded-md border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30"
-      >
-        {prefixEdit.phase === "editing_prefix" && (
-          <div className="flex min-w-0 flex-col gap-1.5">
-            <span className="text-left text-[10px] leading-tight font-semibold text-[#74a7fe]">
-              Paused at step {prefixEdit.revertedStepIndex + 1}
-            </span>
-
-            {hasCollisions && (
-              <div className="rounded-md border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/30 p-1.5 flex flex-col gap-1">
-                <span className="text-[10px] font-semibold text-red-700 dark:text-red-400">
-                  {collidingIds.size} brick{collidingIds.size !== 1 ? "s" : ""}{" "}
-                  overlapping. Fix before regenerating.
-                </span>
-                <ul className="flex flex-col gap-0.5 max-h-28 overflow-y-auto">
-                  {collidingAssets.map((a) => (
-                    <li
-                      key={a.id}
-                      className="px-1.5 py-0.5 text-[10px] text-red-700 dark:text-red-400 truncate"
-                    >
-                      {a.name}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            <div className="grid w-full min-w-0 grid-cols-2 gap-1.5">
-              <button
-                onClick={prefixEdit.regenerateFromPrefix}
-                disabled={hasCollisions}
-                className="min-w-0 px-2 py-1 rounded text-center text-white text-[10px] transition-colors bg-[#74a7fe] hover:bg-[#5a93f0] disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                Regenerate
-              </button>
-              <button
-                onClick={prefixEdit.cancelEdit}
-                className="min-w-0 px-2 py-1 rounded text-center bg-zinc-700 text-white text-[10px] hover:bg-zinc-600 transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
-        {prefixEdit.phase === "error" && (
-          <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="text-[10px] leading-tight font-semibold text-red-800 dark:text-red-300">
-              Regeneration failed
-            </span>
-            <span className="text-[10px] leading-tight text-red-700 dark:text-red-400 break-words">
-              {prefixEdit.errorMessage}
-            </span>
-            <div className="grid w-full min-w-0 grid-cols-2 gap-1.5 pt-0.5">
-              <button
-                onClick={prefixEdit.regenerateFromPrefix}
-                className="min-w-0 px-2 py-1 rounded text-center text-white text-[10px] transition-colors bg-[#74a7fe] hover:bg-[#5a93f0]"
-              >
-                Retry
-              </button>
-              <button
-                onClick={prefixEdit.cancelEdit}
-                className="min-w-0 px-2 py-1 rounded text-center bg-zinc-700 text-white text-[10px] hover:bg-zinc-600 transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    )
-  ) : null;
-
   // ── Empty state ───────────────────────────────────────────────────────────
 
   if (!asset && !selectedGroup) {
     return (
       <div data-no-deselect>
-        <div className="px-3 py-3 text-xs text-zinc-400 dark:text-zinc-500 italic">
+        <div className="px-3 py-3 text-xs text-zinc-500 dark:text-zinc-500 italic">
           Select an asset to view its properties.
         </div>
       </div>
@@ -368,7 +244,6 @@ export default function PropertiesPanel() {
 
     return (
       <div data-no-deselect>
-        {editBanner}
         <div className="px-3 py-2 flex flex-col gap-3">
           <Field label="Group Name">
             <TextValue
@@ -379,7 +254,7 @@ export default function PropertiesPanel() {
           </Field>
 
           <Field label="Category">
-            <span className="text-xs text-zinc-600 dark:text-zinc-400">
+            <span className="text-xs text-zinc-500 dark:text-zinc-500">
               {getCategoryLabel(groupCategory, "Group")}
             </span>
           </Field>
@@ -393,14 +268,6 @@ export default function PropertiesPanel() {
                 <GenerationReplay
                   generationHistory={genGroup.generationHistory!}
                   groupName={genGroup.name}
-                  groupId={genGroup.id}
-                  canPrefixEdit={
-                    !!genGroup.originalPrompt &&
-                    !!genGroup.generationOffset &&
-                    !isPrefixEditBlocking(prefixEdit.phase) &&
-                    isGroupUnmoved(genGroup, groupAssets)
-                  }
-                  onPrefixEdit={prefixEdit.startPrefixEdit}
                   onClose={() => setReplayOpen(false)}
                 />
               )}
@@ -415,7 +282,7 @@ export default function PropertiesPanel() {
                 onChange={(e) => updateAllAssets({ visible: e.target.checked })}
                 className="w-3.5 h-3.5 accent-zinc-700 dark:accent-zinc-400 cursor-pointer"
               />
-              <span className="text-xs text-zinc-600 dark:text-zinc-400">
+              <span className="text-xs text-zinc-500 dark:text-zinc-500">
                 {allVisible ? "Visible" : "Hidden"}
               </span>
             </label>
@@ -431,20 +298,20 @@ export default function PropertiesPanel() {
                 }
                 className="w-3.5 h-3.5 accent-zinc-700 dark:accent-zinc-400 cursor-pointer"
               />
-              <span className="text-xs text-zinc-600 dark:text-zinc-400">
+              <span className="text-xs text-zinc-500 dark:text-zinc-500">
                 {allSelectable ? "Selectable" : "Not selectable"}
               </span>
             </label>
           </Field>
 
           <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+            <span className="text-[10px] text-zinc-500 dark:text-zinc-500">
               Position
             </span>
             <div className="grid grid-cols-3 gap-1.5">
               {(["X", "Y", "Z"] as const).map((axis, i) => (
                 <div key={axis} className="flex flex-col gap-0.5">
-                  <span className="text-[10px] text-zinc-400 dark:text-zinc-500 text-center">
+                  <span className="text-[10px] text-zinc-500 dark:text-zinc-500 text-center">
                     {axis}
                   </span>
                   <NumberValue
@@ -459,7 +326,7 @@ export default function PropertiesPanel() {
           </div>
 
           <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+            <span className="text-[10px] text-zinc-500 dark:text-zinc-500">
               Rotation
             </span>
             <div className="grid grid-cols-2 gap-1.5">
@@ -479,7 +346,7 @@ export default function PropertiesPanel() {
           </div>
 
           <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+            <span className="text-[10px] text-zinc-500 dark:text-zinc-500">
               Color
             </span>
             <div className="flex items-center gap-2">
@@ -490,7 +357,7 @@ export default function PropertiesPanel() {
                   setColorDraft(e.target.value);
                   updateAllAssets({ materialColor: e.target.value });
                 }}
-                className="w-7 h-7 rounded cursor-pointer border border-zinc-200 dark:border-zinc-700 bg-transparent p-0.5"
+                className="w-7 h-7 rounded-none cursor-pointer border border-zinc-400 dark:border-zinc-500 bg-transparent p-0.5"
               />
               <Input
                 type="text"
@@ -520,10 +387,10 @@ export default function PropertiesPanel() {
             onMetalnessChange={(v) => updateAllAssets({ materialMetalness: v })}
           />
 
-          <div className="-mx-3 px-3 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+          <div className="-mx-3 px-3 pt-2 border-t border-zinc-400 dark:border-zinc-600">
             <button
               onClick={() => removeGroup(selectedGroup.id)}
-              className="w-full py-1 rounded-md text-[10px] font-medium text-red-500 border border-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors"
+              className="w-full py-1 rounded-none text-[10px] font-medium text-red-500 border border-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors"
             >
               Delete Group
             </button>
@@ -587,13 +454,13 @@ export default function PropertiesPanel() {
           </span>
 
           <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+            <span className="text-[10px] text-zinc-500 dark:text-zinc-500">
               Position
             </span>
             <div className="grid grid-cols-3 gap-1.5">
               {(["X", "Y", "Z"] as const).map((axis, i) => (
                 <div key={axis} className="flex flex-col gap-0.5">
-                  <span className="text-[10px] text-zinc-400 dark:text-zinc-500 text-center">
+                  <span className="text-[10px] text-zinc-500 dark:text-zinc-500 text-center">
                     {axis}
                   </span>
                   <NumberValue
@@ -609,7 +476,7 @@ export default function PropertiesPanel() {
 
           {allPreset && (
             <div className="flex flex-col gap-0.5">
-              <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+              <span className="text-[10px] text-zinc-500 dark:text-zinc-500">
                 Rotation
               </span>
               <div className="grid grid-cols-2 gap-1.5">
@@ -630,7 +497,7 @@ export default function PropertiesPanel() {
           )}
 
           <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+            <span className="text-[10px] text-zinc-500 dark:text-zinc-500">
               Color
             </span>
             <div className="flex items-center gap-2">
@@ -641,10 +508,10 @@ export default function PropertiesPanel() {
                   setColorDraft(e.target.value);
                   updateMultiAssets({ materialColor: e.target.value });
                 }}
-                className="w-7 h-7 rounded cursor-pointer border border-zinc-200 dark:border-zinc-700 bg-transparent p-0.5 shrink-0"
+                className="w-7 h-7 rounded-none cursor-pointer border border-zinc-400 dark:border-zinc-500 bg-transparent p-0.5 shrink-0"
               />
               {colorIsMixed ? (
-                <span className="text-[10px] text-zinc-400 dark:text-zinc-500 italic">
+                <span className="text-[10px] text-zinc-500 dark:text-zinc-500 italic">
                   Mixed
                 </span>
               ) : (
@@ -691,12 +558,12 @@ export default function PropertiesPanel() {
             ).map(({ label, values, isMixed, avg, key }) => (
               <div key={label} className="flex flex-col gap-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+                  <span className="text-[10px] text-zinc-500 dark:text-zinc-500">
                     {label}
                   </span>
-                  <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono tabular-nums">
+                  <span className="text-[10px] text-zinc-500 dark:text-zinc-500 font-mono tabular-nums">
                     {isMixed ? (
-                      <span className="italic text-zinc-400 dark:text-zinc-500">
+                      <span className="italic text-zinc-500 dark:text-zinc-500">
                         Mixed
                       </span>
                     ) : (
@@ -719,10 +586,10 @@ export default function PropertiesPanel() {
             ))}
           </div>
 
-          <div className="-mx-3 px-3 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+          <div className="-mx-3 px-3 pt-2 border-t border-zinc-400 dark:border-zinc-600">
             <button
               onClick={() => removeSelectedAssets()}
-              className="w-full py-1 rounded-md text-[10px] font-medium text-red-500 border border-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors"
+              className="w-full py-1 rounded-none text-[10px] font-medium text-red-500 border border-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors"
             >
               Delete All Selected
             </button>
@@ -749,7 +616,7 @@ export default function PropertiesPanel() {
         </Field>
 
         <Field label="Category">
-          <span className="text-xs text-zinc-600 dark:text-zinc-400">
+          <span className="text-xs text-zinc-500 dark:text-zinc-500">
             {getCategoryLabel(singleAsset.category, "Primitive")}
           </span>
         </Field>
@@ -765,9 +632,6 @@ export default function PropertiesPanel() {
           };
           const genGroup = findGen(singleAsset.groupId);
           if (!genGroup) return null;
-          const genGroupMembers = assets.filter(
-            (a) => a.groupId === genGroup.id,
-          );
           return (
             <Field label="Generation Process">
               <Button onClick={() => setReplayOpen(true)} className="w-full">
@@ -777,14 +641,6 @@ export default function PropertiesPanel() {
                 <GenerationReplay
                   generationHistory={genGroup.generationHistory!}
                   groupName={genGroup.name}
-                  groupId={genGroup.id}
-                  canPrefixEdit={
-                    !!genGroup.originalPrompt &&
-                    !!genGroup.generationOffset &&
-                    !isPrefixEditBlocking(prefixEdit.phase) &&
-                    isGroupUnmoved(genGroup, genGroupMembers)
-                  }
-                  onPrefixEdit={prefixEdit.startPrefixEdit}
                   onClose={() => setReplayOpen(false)}
                 />
               )}
@@ -802,7 +658,7 @@ export default function PropertiesPanel() {
               }
               className="w-3.5 h-3.5 accent-zinc-700 dark:accent-zinc-400 cursor-pointer"
             />
-            <span className="text-xs text-zinc-600 dark:text-zinc-400">
+            <span className="text-xs text-zinc-500 dark:text-zinc-500">
               {singleAsset.visible ? "Visible" : "Hidden"}
             </span>
           </label>
@@ -818,7 +674,7 @@ export default function PropertiesPanel() {
               }
               className="w-3.5 h-3.5 accent-zinc-700 dark:accent-zinc-400 cursor-pointer"
             />
-            <span className="text-xs text-zinc-600 dark:text-zinc-400">
+            <span className="text-xs text-zinc-500 dark:text-zinc-500">
               {(singleAsset.selectable ?? true)
                 ? "Selectable"
                 : "Not selectable"}
@@ -827,13 +683,13 @@ export default function PropertiesPanel() {
         </Field>
 
         <div className="flex flex-col gap-0.5">
-          <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+          <span className="text-[10px] text-zinc-500 dark:text-zinc-500">
             Position
           </span>
           <div className="grid grid-cols-3 gap-1.5">
             {(["X", "Y", "Z"] as const).map((axis, i) => (
               <div key={axis} className="flex flex-col gap-0.5">
-                <span className="text-[10px] text-zinc-400 dark:text-zinc-500 text-center">
+                <span className="text-[10px] text-zinc-500 dark:text-zinc-500 text-center">
                   {axis}
                 </span>
                 <NumberValue
@@ -874,7 +730,7 @@ export default function PropertiesPanel() {
 
           return (
             <div className="flex flex-col gap-0.5">
-              <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+              <span className="text-[10px] text-zinc-500 dark:text-zinc-500">
                 Rotation
               </span>
               <div className="grid grid-cols-2 gap-1.5">
@@ -896,7 +752,7 @@ export default function PropertiesPanel() {
         })()}
 
         <div className="flex flex-col gap-0.5">
-          <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+          <span className="text-[10px] text-zinc-500 dark:text-zinc-500">
             Color
           </span>
           <div className="flex items-center gap-2">
@@ -907,7 +763,7 @@ export default function PropertiesPanel() {
                 updateAsset(singleAsset.id, { materialColor: e.target.value });
                 setColorDraft(e.target.value);
               }}
-              className="w-7 h-7 rounded cursor-pointer border border-zinc-200 dark:border-zinc-700 bg-transparent p-0.5"
+              className="w-7 h-7 rounded-none cursor-pointer border border-zinc-400 dark:border-zinc-500 bg-transparent p-0.5"
             />
             <Input
               type="text"
@@ -941,7 +797,7 @@ export default function PropertiesPanel() {
           }
         />
 
-        <div className="flex flex-col gap-3 -mx-3 px-3 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+        <div className="flex flex-col gap-3 -mx-3 px-3 pt-3 border-t border-zinc-400 dark:border-zinc-600">
           {singleAsset.type === "preset-brick" &&
             singleAsset.preset &&
             (singleAsset.preset.studsX > 1 ||
@@ -959,7 +815,7 @@ export default function PropertiesPanel() {
               selectAsset(null);
               removeAsset(singleAsset.id);
             }}
-            className="w-full py-1 rounded-md text-[10px] font-medium text-red-500 border border-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors"
+            className="w-full py-1 rounded-none text-[10px] font-medium text-red-500 border border-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors"
           >
             Delete Brick
           </button>

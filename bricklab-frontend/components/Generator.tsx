@@ -24,7 +24,7 @@ import {
   type VoxelData,
   type ClickPoint,
 } from "@/lib/image3dApi";
-import { generateTextBricks } from "@/lib/text3dApi";
+import { generateTextBricksStream } from "@/lib/text3dApi";
 
 type Tab = "text-to-3d" | "image-to-3d";
 
@@ -44,52 +44,22 @@ interface GeneratorProps {
 const PREVIEW_FOV = 35;
 const PREVIEW_PADDING = 1.35;
 
-function computePreviewCamera(bricks: BrickData[]): {
-  position: [number, number, number];
-  target: [number, number, number];
-} {
-  if (bricks.length === 0) {
-    return { position: [15, -15, 12], target: [0, 0, 0] };
-  }
-
-  let minX = Infinity,
-    maxX = -Infinity;
-  let minY = Infinity,
-    maxY = -Infinity;
-  let minZ = Infinity,
-    maxZ = -Infinity;
-  for (const b of bricks) {
-    minX = Math.min(minX, b.x);
-    maxX = Math.max(maxX, b.x + b.h);
-    minY = Math.min(minY, b.y);
-    maxY = Math.max(maxY, b.y + b.w);
-    minZ = Math.min(minZ, b.z);
-    maxZ = Math.max(maxZ, b.z + 1);
-  }
-
-  const cx = (minX + maxX) / 2;
-  const cy = (minY + maxY) / 2;
-  const cz = (minZ + maxZ) / 2;
-  const target: [number, number, number] = [cx, -cy, cz];
-
-  const spanX = maxX - minX;
-  const spanY = maxY - minY;
-  const spanZ = maxZ - minZ;
-  const radius = Math.sqrt(spanX * spanX + spanY * spanY + spanZ * spanZ) / 2;
-
-  const halfFovRad = (PREVIEW_FOV * Math.PI) / 180 / 2;
-  const dist = (radius * PREVIEW_PADDING) / Math.tan(halfFovRad);
-
-  const iso = dist / Math.sqrt(3);
-  const position: [number, number, number] = [cx + iso, -cy - iso, cz + iso];
-
-  return { position, target };
-}
-
 const WORLD_DIM = 20;
 const CONSTRAINT_COLOR = "#FFAB91";
 const CONSTRAINT_EDGE_COLOR = "#FF8A65";
 const GRID_COLOR = "#7ec8e3";
+
+// Fixed camera that shows the entire 20×20×20 workspace cube.
+// Derivation (same formula as computePreviewCamera):
+//   radius = WORLD_DIM * sqrt(3) / 2 ≈ 17.32
+//   dist   = radius * PREVIEW_PADDING / tan(PREVIEW_FOV/2 in rad) ≈ 74.2
+//   iso    = dist / sqrt(3) ≈ 42.8  → position offset from cube centre [10,−10,10]
+const WORKSPACE_CAM_POS: [number, number, number] = [52.8, -52.8, 52.8];
+const WORKSPACE_CAM_TARGET: [number, number, number] = [
+  WORLD_DIM / 2,
+  -WORLD_DIM / 2,
+  WORLD_DIM / 2,
+];
 const TOOLBAR_BUTTON_CLASS =
   "inline-flex h-7 shrink-0 items-center justify-center whitespace-nowrap py-0 leading-none";
 
@@ -230,35 +200,48 @@ function ConstraintPreviewBox({ box }: { box: ConstraintBox }) {
 
 function BrickPreviewScene({
   bricks,
+  rejectedBrick,
   constraintBoxes,
 }: {
   bricks: BrickData[];
+  rejectedBrick: BrickData | null;
   constraintBoxes: ConstraintBox[];
 }) {
-  const { target } = useMemo(() => computePreviewCamera(bricks), [bricks]);
-
   return (
     <>
       <ambientLight intensity={0.4} />
       <directionalLight position={[10, -5, 15]} intensity={1.2} />
       <Environment preset="city" />
-      <OrbitControls target={target} enableDamping dampingFactor={0.1} />
+      <OrbitControls
+        target={WORKSPACE_CAM_TARGET}
+        enableDamping
+        dampingFactor={0.1}
+      />
       <group>
         {bricks.map((b, i) => (
           <group key={i} position={[b.x, -b.y, b.z]}>
             <ParametricBrick studsX={b.h} studsY={b.w} color="#74a7fe" />
           </group>
         ))}
+        {rejectedBrick && (
+          <group
+            key="rejected"
+            position={[rejectedBrick.x, -rejectedBrick.y, rejectedBrick.z]}
+          >
+            <ParametricBrick
+              studsX={rejectedBrick.h}
+              studsY={rejectedBrick.w}
+              color="#ff4444"
+            />
+          </group>
+        )}
       </group>
-      {constraintBoxes.length > 0 && (
-        <>
-          <WorldBoundingBox />
-          {constraintBoxes.map((box) => (
-            <ConstraintPreviewBox key={box.id} box={box} />
-          ))}
-          <PreviewAxes />
-        </>
-      )}
+      {/* Always show the workspace cube so placement context is clear */}
+      <WorldBoundingBox />
+      <PreviewAxes />
+      {constraintBoxes.map((box) => (
+        <ConstraintPreviewBox key={box.id} box={box} />
+      ))}
     </>
   );
 }
@@ -282,6 +265,17 @@ export default function Generator({
     null,
   );
   const abortRef = useRef<AbortController | null>(null);
+
+  // Streaming-specific state
+  const [rejectedBrick, setRejectedBrick] = useState<BrickData | null>(null);
+  const [streamStats, setStreamStats] = useState({
+    accepted: 0,
+    rejected: 0,
+    rollbacks: 0,
+  });
+  const rejectedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Tracks whether the current canvas mounted for streaming (vs. final).
+  const [canvasKey, setCanvasKey] = useState(0);
 
   // ── Image-to-3D pipeline state ─────────────────────────────────────────
   type ImgStage =
@@ -658,6 +652,10 @@ export default function Generator({
     setBricks([]);
     setError(null);
     setGenerationWarning(null);
+    setRejectedBrick(null);
+    setStreamStats({ accepted: 0, rejected: 0, rollbacks: 0 });
+    // New canvas key so it mounts fresh with the streaming camera.
+    setCanvasKey((k) => k + 1);
 
     const constraintPayload = selectedConstraints.flatMap((c) =>
       c.boxes.map((box) => ({
@@ -671,18 +669,54 @@ export default function Generator({
     );
 
     try {
-      const data = await generateTextBricks(
+      await generateTextBricksStream(
         prompt,
         constraintPayload,
+        (event) => {
+          if (event.type === "brick") {
+            setBricks((prev) => [...prev, event.data]);
+            setStreamStats((s) => ({ ...s, accepted: s.accepted + 1 }));
+            // Clear any lingering rejected-brick flash on acceptance.
+            if (rejectedTimerRef.current) {
+              clearTimeout(rejectedTimerRef.current);
+              rejectedTimerRef.current = null;
+            }
+            setRejectedBrick(null);
+          } else if (event.type === "reject") {
+            if (event.data) {
+              setRejectedBrick(event.data);
+              if (rejectedTimerRef.current)
+                clearTimeout(rejectedTimerRef.current);
+              rejectedTimerRef.current = setTimeout(
+                () => setRejectedBrick(null),
+                350,
+              );
+            }
+            setStreamStats((s) => ({ ...s, rejected: s.rejected + 1 }));
+          } else if (event.type === "rollback") {
+            setBricks((prev) => prev.slice(0, event.keep_count));
+            setStreamStats((s) => ({
+              ...s,
+              rollbacks: s.rollbacks + 1,
+            }));
+          } else if (event.type === "done") {
+            if (event.warning) setGenerationWarning(event.warning);
+          } else if (event.type === "error") {
+            setError(event.message);
+          }
+        },
         controller.signal,
       );
-      setBricks(data.bricks);
-      if (data.warning) setGenerationWarning(data.warning);
     } catch (e: unknown) {
       if (e instanceof DOMException && e.name === "AbortError") return;
       setError(e instanceof Error ? e.message : "Generation failed");
     } finally {
       setIsGenerating(false);
+      if (rejectedTimerRef.current) {
+        clearTimeout(rejectedTimerRef.current);
+        rejectedTimerRef.current = null;
+      }
+      setRejectedBrick(null);
     }
   }
 
@@ -745,15 +779,10 @@ export default function Generator({
 
   const hasResult = bricks.length > 0;
 
-  const { position: cameraPosition } = useMemo(
-    () => computePreviewCamera(bricks),
-    [bricks],
-  );
-
   return (
     <div className="flex flex-col h-[64vh]">
       {/* Header */}
-      <div className="px-3 py-3 border-b border-zinc-200 dark:border-zinc-800">
+      <div className="px-3 py-3 border-b border-zinc-400 dark:border-zinc-600">
         <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
           Generator
         </span>
@@ -762,16 +791,16 @@ export default function Generator({
       {/* Body: single two-column layout, divider runs header-to-bottom */}
       <div className="flex flex-col md:flex-row flex-1 min-h-0">
         {/* ── LEFT: tabs + controls + actions ─────────────────────────── */}
-        <div className="flex flex-col md:w-[28%] shrink-0 border-b border-zinc-200 dark:border-zinc-800 md:border-b-0 md:border-r">
+        <div className="flex flex-col md:w-[28%] shrink-0 border-b border-zinc-400 dark:border-zinc-600 md:border-b-0 md:border-r">
           {/* Tab toggle */}
-          <ul className="flex flex-col px-3 py-2 border-b border-zinc-200 dark:border-zinc-800">
+          <ul className="flex flex-col px-3 py-2 border-b border-zinc-400 dark:border-zinc-600">
             {(["text-to-3d", "image-to-3d"] as Tab[]).map((t) => (
               <li key={t}>
                 <button
                   onClick={() => setTab(t)}
-                  className={`w-full flex items-center px-2 py-1.5 rounded-md text-xs text-left transition-colors ${
+                  className={`w-full flex items-center px-2 py-1.5 rounded-none text-xs text-left transition-colors ${
                     tab === t
-                      ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
+                      ? "bg-accent/10 text-accent"
                       : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                   }`}
                 >
@@ -808,16 +837,16 @@ export default function Generator({
                   </span>
                   <ol className="flex flex-col gap-1.5">
                     {[
-                      'Describe the desired structure, e.g. "a 10-stud arch" or "a small house with a sloped roof".',
+                      "Describe the desired structure in natural language.",
                       "Add layout constraints in the Constraints Builder (toolbar) to bound the generation area.",
                       "Use the Constraints selector below to attach saved constraints before generating.",
-                      "Orbit and inspect the preview on the right, then click Add to Scene when satisfied.",
+                      "Orbit and inspect the preview on the right. Click Add to Scene if satisfied.",
                     ].map((item, i) => (
                       <li
                         key={i}
-                        className="flex gap-1.5 text-[10px] leading-snug text-zinc-500 dark:text-zinc-400"
+                        className="flex gap-1.5 text-[10px] leading-snug text-zinc-500 dark:text-zinc-500"
                       >
-                        <span className="shrink-0 font-medium text-zinc-400 dark:text-zinc-500">
+                        <span className="shrink-0 text-zinc-500 dark:text-zinc-500">
                           {i + 1}.
                         </span>
                         <span>{item}</span>
@@ -837,10 +866,10 @@ export default function Generator({
                         <button
                           type="button"
                           onClick={() => setConstraintDropdownOpen((o) => !o)}
-                          className={`flex w-full h-7 items-center gap-1.5 px-2 border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-[10px] leading-none text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors ${
+                          className={`flex w-full h-7 items-center gap-1.5 px-2 border border-zinc-400 dark:border-zinc-500 bg-white dark:bg-zinc-800 text-[10px] leading-none text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors ${
                             constraintDropdownOpen
-                              ? "rounded-t-md rounded-b-none border-b-0"
-                              : "rounded-md"
+                              ? "rounded-none border-b-0"
+                              : "rounded-none"
                           }`}
                         >
                           <span
@@ -855,7 +884,7 @@ export default function Generator({
                           >
                             ▶
                           </span>
-                          <span className="text-zinc-400 dark:text-zinc-500">
+                          <span className="text-zinc-500 dark:text-zinc-500">
                             Select:
                           </span>
                           <span>
@@ -865,7 +894,7 @@ export default function Generator({
                           </span>
                         </button>
                         {constraintDropdownOpen && (
-                          <div className="absolute top-full left-0 w-full bg-white dark:bg-zinc-900 border border-t-0 border-zinc-200 dark:border-zinc-800 rounded-b-xl z-50 overflow-hidden">
+                          <div className="absolute top-full left-0 w-full bg-white dark:bg-zinc-900 border border-t-0 border-zinc-400 dark:border-zinc-600 rounded-none z-50 overflow-hidden">
                             <ul className="py-1">
                               {constraints.map((c) => {
                                 const checked = selectedConstraintIds.includes(
@@ -898,7 +927,7 @@ export default function Generator({
                         )}
                       </div>
                       {selectedConstraintIds.length > 0 && (
-                        <label className="flex cursor-pointer select-none items-center gap-1.5 text-[10px] leading-none text-zinc-600 dark:text-zinc-400">
+                        <label className="flex cursor-pointer select-none items-center gap-1.5 text-[10px] leading-none text-zinc-500 dark:text-zinc-500">
                           <input
                             type="checkbox"
                             checked={showConstraints}
@@ -942,7 +971,7 @@ export default function Generator({
                     {imgFile ? "Change Image" : "Upload Image"}
                   </Button>
                   {imgFile && (
-                    <span className="text-[10px] text-zinc-500 dark:text-zinc-400 truncate">
+                    <span className="text-[10px] text-zinc-500 dark:text-zinc-500 truncate">
                       {imgFile.name}
                     </span>
                   )}
@@ -962,9 +991,9 @@ export default function Generator({
                     ].map((item, i) => (
                       <li
                         key={i}
-                        className="flex gap-1.5 text-[10px] leading-snug text-zinc-500 dark:text-zinc-400"
+                        className="flex gap-1.5 text-[10px] leading-snug text-zinc-500 dark:text-zinc-500"
                       >
-                        <span className="shrink-0 font-medium text-zinc-400 dark:text-zinc-500">
+                        <span className="shrink-0 text-zinc-500 dark:text-zinc-500">
                           {i + 1}.
                         </span>
                         <span>{item}</span>
@@ -979,7 +1008,7 @@ export default function Generator({
                     <span className="text-xs font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
                       Selection
                     </span>
-                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400 leading-snug">
+                    <p className="text-[10px] text-zinc-500 dark:text-zinc-500 leading-snug">
                       Click on the object to select it. Alt+click or right-click
                       to deselect regions.
                     </p>
@@ -1020,7 +1049,7 @@ export default function Generator({
                           <span className="text-xs font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
                             Brick density
                           </span>
-                          <span className="text-[10px] text-zinc-400 dark:text-zinc-500 tabular-nums">
+                          <span className="text-[10px] text-zinc-500 dark:text-zinc-500 tabular-nums">
                             {imgVoxels.length} bricks
                           </span>
                         </div>
@@ -1051,7 +1080,7 @@ export default function Generator({
           </div>
 
           {/* Action buttons (pinned to bottom of left column) */}
-          <div className="flex flex-col gap-2 px-3 py-3 border-t border-zinc-200 dark:border-zinc-800">
+          <div className="flex flex-col gap-2 px-3 py-3 border-t border-zinc-400 dark:border-zinc-600">
             {tab === "text-to-3d" && (
               <>
                 <Button
@@ -1103,27 +1132,31 @@ export default function Generator({
           {tab === "text-to-3d" && (
             <>
               {/* Viewport */}
-              <div className="relative flex-1 min-h-0 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden">
-                {isGenerating && (
-                  <span className="text-xs text-zinc-400 dark:text-zinc-500 animate-pulse">
+              <div className="relative flex-1 min-h-0 rounded-none border border-zinc-400 dark:border-zinc-500 bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden">
+                {/* Empty / error states (only when no bricks to show) */}
+                {!hasResult && isGenerating && (
+                  <span className="text-xs text-zinc-500 dark:text-zinc-500 animate-pulse">
                     Generating…
                   </span>
                 )}
-                {!isGenerating && error && (
+                {!hasResult && !isGenerating && error && (
                   <span className="text-xs text-red-500 dark:text-red-400 px-3 text-center">
                     {error}
                   </span>
                 )}
-                {!isGenerating && !error && !hasResult && (
-                  <span className="text-xs text-zinc-400 dark:text-zinc-500">
+                {!hasResult && !isGenerating && !error && (
+                  <span className="text-xs text-zinc-500 dark:text-zinc-500">
                     Preview
                   </span>
                 )}
-                {!isGenerating && hasResult && (
+
+                {/* 3-D canvas — visible as soon as the first brick arrives */}
+                {hasResult && (
                   <Canvas
+                    key={canvasKey}
                     camera={{
-                      position: cameraPosition,
-                      fov: 35,
+                      position: WORKSPACE_CAM_POS,
+                      fov: PREVIEW_FOV,
                       up: [0, 0, 1],
                     }}
                     gl={{ antialias: true }}
@@ -1132,22 +1165,66 @@ export default function Generator({
                     <color attach="background" args={["#f4f4f5"]} />
                     <BrickPreviewScene
                       bricks={bricks}
+                      rejectedBrick={rejectedBrick}
                       constraintBoxes={showConstraints ? selectedBoxes : []}
                     />
                   </Canvas>
+                )}
+
+                {/* Live generation stats overlay */}
+                {isGenerating && hasResult && (
+                  <div className="absolute bottom-2 left-0 right-0 flex justify-center pointer-events-none">
+                    <div className="flex items-center gap-2 px-2.5 py-1 rounded-none bg-black/40 backdrop-blur-sm">
+                      <span className="text-[10px] leading-none text-white/90 tabular-nums">
+                        <span className="text-blue-300 font-medium">
+                          {streamStats.accepted}
+                        </span>{" "}
+                        placed
+                      </span>
+                      <span className="text-white/30 text-[8px]">·</span>
+                      <span className="text-[10px] leading-none text-white/90 tabular-nums">
+                        <span className="text-red-300 font-medium">
+                          {streamStats.rejected}
+                        </span>{" "}
+                        rejected
+                      </span>
+                      {streamStats.rollbacks > 0 && (
+                        <>
+                          <span className="text-white/30 text-[8px]">·</span>
+                          <span className="text-[10px] leading-none text-white/90 tabular-nums">
+                            <span className="text-amber-300 font-medium">
+                              {streamStats.rollbacks}
+                            </span>{" "}
+                            rollback
+                            {streamStats.rollbacks !== 1 ? "s" : ""}
+                          </span>
+                        </>
+                      )}
+                      <span className="inline-block h-1.5 w-1.5 rounded-none bg-blue-400 animate-pulse ml-0.5" />
+                    </div>
+                  </div>
+                )}
+
+                {/* Post-generation error (when bricks also exist) */}
+                {!isGenerating && error && hasResult && (
+                  <div className="absolute top-2 left-2 right-2">
+                    <span className="text-xs text-red-500 dark:text-red-400">
+                      {error}
+                    </span>
+                  </div>
                 )}
               </div>
 
               {/* Partial-generation / resampling notice */}
               {generationWarning && (
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                <p className="text-xs text-zinc-500 dark:text-zinc-500">
                   {generationWarning}
                 </p>
               )}
 
               {/* Intersection violation check */}
               {hasResult && intersectionCount > 0 && (
-                <div className="px-2 py-1 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                <div className="px-2 py-1 rounded-none bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
                   <span className="text-xs text-red-600 dark:text-red-400">
                     {intersectionCount} brick(s) intersect constraint volumes in
                     the output. Try regenerating or adjusting constraints.
@@ -1158,7 +1235,7 @@ export default function Generator({
           )}
 
           {tab === "image-to-3d" && (
-            <div className="relative flex-1 min-h-0 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden">
+            <div className="relative flex-1 min-h-0 rounded-none border border-zinc-400 dark:border-zinc-500 bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden">
               {/* Loading overlay */}
               {imgLoading && (
                 <div
@@ -1169,7 +1246,7 @@ export default function Generator({
                   }`}
                 >
                   {imgStage !== "segment" && imgStage !== "voxel-adjust" && (
-                    <span className="text-xs text-zinc-400 dark:text-zinc-500 animate-pulse">
+                    <span className="text-xs text-zinc-500 dark:text-zinc-500 animate-pulse">
                       {imgLoadingMsg}
                     </span>
                   )}
@@ -1188,7 +1265,7 @@ export default function Generator({
                 !imgPreviewUrl &&
                 !imgLoading &&
                 !imgError && (
-                  <span className="text-xs text-zinc-400 dark:text-zinc-500">
+                  <span className="text-xs text-zinc-500 dark:text-zinc-500">
                     Upload an image to begin
                   </span>
                 )}
@@ -1269,7 +1346,7 @@ export default function Generator({
 
               {/* Reconstructing placeholder */}
               {imgStage === "reconstructing" && !imgLoading && (
-                <span className="text-xs text-zinc-400 dark:text-zinc-500">
+                <span className="text-xs text-zinc-500 dark:text-zinc-500">
                   Waiting for 3D reconstruction…
                 </span>
               )}

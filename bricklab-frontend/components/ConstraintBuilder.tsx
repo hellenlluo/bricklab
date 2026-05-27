@@ -1,6 +1,13 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import {
+  useState,
+  useCallback,
+  useRef,
+  useMemo,
+  useSyncExternalStore,
+} from "react";
+import { createPortal } from "react-dom";
 import { Canvas, useThree } from "@react-three/fiber";
 import { OrbitControls, TransformControls } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
@@ -11,9 +18,14 @@ import { useScene } from "@/store/sceneStore";
 import type { Constraint, ConstraintBox } from "@/store/sceneStore";
 
 const WORLD_DIM = 20;
+const BUILDER_CAM_POS: [number, number, number] = [52.8, -52.8, 52.8];
+const BUILDER_FOV = 35;
 const CONSTRAINT_COLOR = "#FFAB91";
 const CONSTRAINT_EDGE_COLOR = "#FF8A65";
 const GRID_COLOR = "#7ec8e3";
+const CONTROL_INPUT_CLASS = "!h-7 !py-0 !text-[10px] !leading-none";
+const CONTROL_BUTTON_CLASS =
+  "!h-7 !py-0 flex items-center justify-center shrink-0 leading-none";
 
 interface ConstraintBuilderProps {
   existing: Constraint | null;
@@ -345,6 +357,11 @@ export default function ConstraintBuilder({
   const [newSizeX, setNewSizeX] = useState(4);
   const [newSizeY, setNewSizeY] = useState(4);
   const [newSizeZ, setNewSizeZ] = useState(4);
+  const portalReady = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   const selectedBox = boxes.find((b) => b.id === selectedBoxId);
 
@@ -417,18 +434,19 @@ export default function ConstraintBuilder({
     onClose();
   }
 
-  return (
+  const modal = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      className="fixed inset-x-0 bottom-0 z-50 flex items-center justify-center bg-black/40"
+      style={{ top: "7.5vh" }}
       onClick={onClose}
     >
       <div
-        className="w-[50vw] rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900"
+        className="w-[44vw] rounded-none border border-zinc-400 dark:border-zinc-500 bg-white dark:bg-zinc-900"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex flex-col h-[70vh]">
+        <div className="flex flex-col h-[64vh]">
           {/* Header */}
-          <div className="px-3 py-3 border-b border-zinc-200 dark:border-zinc-800">
+          <div className="px-3 py-3 border-b border-zinc-400 dark:border-zinc-600">
             <span className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
               {existing ? "Edit Constraint" : "New Constraint"}
             </span>
@@ -437,7 +455,7 @@ export default function ConstraintBuilder({
           {/* Name + Add Box controls */}
           <div className="flex gap-2 px-3 pt-3 pb-0 items-end">
             <div className="flex flex-col gap-1 flex-1">
-              <label className="text-[10px] text-zinc-500 dark:text-zinc-400">
+              <label className="text-[10px] text-zinc-500 dark:text-zinc-500">
                 Name
               </label>
               <Input
@@ -445,10 +463,11 @@ export default function ConstraintBuilder({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Constraint name"
+                className={CONTROL_INPUT_CLASS}
               />
             </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-[10px] text-zinc-500 dark:text-zinc-400">
+            <div className="flex flex-col gap-1 items-center">
+              <label className="text-[10px] text-zinc-500 dark:text-zinc-500 text-center w-full">
                 X
               </label>
               <Input
@@ -459,11 +478,11 @@ export default function ConstraintBuilder({
                 onChange={(e) =>
                   setNewSizeX(clampDim(parseInt(e.target.value) || 1))
                 }
-                className="w-14 text-center"
+                className={`w-14 text-center ${CONTROL_INPUT_CLASS}`}
               />
             </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-[10px] text-zinc-500 dark:text-zinc-400">
+            <div className="flex flex-col gap-1 items-center">
+              <label className="text-[10px] text-zinc-500 dark:text-zinc-500 text-center w-full">
                 Y
               </label>
               <Input
@@ -474,11 +493,11 @@ export default function ConstraintBuilder({
                 onChange={(e) =>
                   setNewSizeY(clampDim(parseInt(e.target.value) || 1))
                 }
-                className="w-14 text-center"
+                className={`w-14 text-center ${CONTROL_INPUT_CLASS}`}
               />
             </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-[10px] text-zinc-500 dark:text-zinc-400">
+            <div className="flex flex-col gap-1 items-center">
+              <label className="text-[10px] text-zinc-500 dark:text-zinc-500 text-center w-full">
                 Z
               </label>
               <Input
@@ -489,19 +508,22 @@ export default function ConstraintBuilder({
                 onChange={(e) =>
                   setNewSizeZ(clampDim(parseInt(e.target.value) || 1))
                 }
-                className="w-14 text-center"
+                className={`w-14 text-center ${CONTROL_INPUT_CLASS}`}
               />
             </div>
-            <Button onClick={handleAddBox} className="whitespace-nowrap">
+            <Button
+              onClick={handleAddBox}
+              className={`whitespace-nowrap ${CONTROL_BUTTON_CLASS}`}
+            >
               + Add Box
             </Button>
           </div>
 
           {/* 3D Viewport */}
-          <div className="relative flex-1 min-h-0 m-4 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
+          <div className="relative flex-1 min-h-0 mx-3 mt-3 mb-3 rounded-none border border-zinc-400 dark:border-zinc-500 bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
             {/* Box selector + details overlay */}
             {boxes.length > 0 && (
-              <div className="absolute top-2 left-2 z-10 flex gap-2 items-center h-9 px-2.5 rounded-md bg-white/90 dark:bg-zinc-900/90 border border-zinc-200 dark:border-zinc-700 backdrop-blur-sm">
+              <div className="absolute top-2 left-2 z-10 flex gap-2 items-center h-9 px-2.5 rounded-none bg-white/90 dark:bg-zinc-900/90 border border-zinc-400 dark:border-zinc-500 backdrop-blur-sm">
                 <select
                   value={selectedBoxId ?? ""}
                   onChange={(e) => setSelectedBoxId(e.target.value || null)}
@@ -531,7 +553,9 @@ export default function ConstraintBuilder({
                         }
                         className="w-12 text-center"
                       />
-                      <span className="text-xs text-zinc-400">×</span>
+                      <span className="text-xs text-zinc-500 dark:text-zinc-500">
+                        ×
+                      </span>
                       <Input
                         type="number"
                         min={1}
@@ -546,7 +570,9 @@ export default function ConstraintBuilder({
                         }
                         className="w-12 text-center"
                       />
-                      <span className="text-xs text-zinc-400">×</span>
+                      <span className="text-xs text-zinc-500 dark:text-zinc-500">
+                        ×
+                      </span>
                       <Input
                         type="number"
                         min={1}
@@ -562,7 +588,7 @@ export default function ConstraintBuilder({
                         className="w-12 text-center"
                       />
                     </div>
-                    <span className="text-[9px] text-zinc-400 dark:text-zinc-500">
+                    <span className="text-[9px] text-zinc-500 dark:text-zinc-500">
                       ({selectedBox.posX}, {selectedBox.posY},{" "}
                       {selectedBox.posZ})
                     </span>
@@ -580,8 +606,8 @@ export default function ConstraintBuilder({
             )}
             <Canvas
               camera={{
-                position: [35, -25, 28],
-                fov: 35,
+                position: BUILDER_CAM_POS,
+                fov: BUILDER_FOV,
                 up: [0, 0, 1],
               }}
               gl={{ antialias: true }}
@@ -600,8 +626,14 @@ export default function ConstraintBuilder({
 
           {/* Actions */}
           <div className="flex gap-2 justify-end px-3 pb-3">
-            <Button onClick={onClose}>Cancel</Button>
-            <Button onClick={handleSave} disabled={boxes.length === 0}>
+            <Button onClick={onClose} className={CONTROL_BUTTON_CLASS}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={boxes.length === 0}
+              className={CONTROL_BUTTON_CLASS}
+            >
               Save
             </Button>
           </div>
@@ -609,4 +641,7 @@ export default function ConstraintBuilder({
       </div>
     </div>
   );
+
+  if (!portalReady) return null;
+  return createPortal(modal, document.body);
 }

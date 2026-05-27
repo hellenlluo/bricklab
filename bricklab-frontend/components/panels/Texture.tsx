@@ -10,10 +10,10 @@ function SliderRow({ label, value, onChange }: SliderRowProps) {
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+        <span className="text-[10px] text-zinc-500 dark:text-zinc-500">
           {label}
         </span>
-        <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono tabular-nums">
+        <span className="text-[10px] text-zinc-500 dark:text-zinc-500 font-mono tabular-nums">
           {value.toFixed(2)}
         </span>
       </div>

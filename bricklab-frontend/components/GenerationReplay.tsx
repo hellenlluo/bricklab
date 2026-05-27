@@ -4,7 +4,6 @@ import { useState, useMemo, useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Environment } from "@react-three/drei";
 import ParametricBrick from "@/components/ParametricBrick";
-import Button from "@/components/ui/Button";
 import type { GenerationHistoryEntry } from "@/store/sceneStore";
 
 const PREVIEW_FOV = 35;
@@ -92,17 +91,11 @@ function ReplayScene({
 interface GenerationReplayProps {
   generationHistory: GenerationHistoryEntry[];
   groupName: string;
-  groupId: string;
-  canPrefixEdit: boolean;
-  onPrefixEdit?: (groupId: string, step: number) => void;
   onClose: () => void;
 }
 
 export default function GenerationReplay({
   generationHistory,
-  groupId,
-  canPrefixEdit,
-  onPrefixEdit,
   onClose,
 }: GenerationReplayProps) {
   const [step, setStep] = useState(generationHistory.length - 1);
@@ -149,17 +142,17 @@ export default function GenerationReplay({
       onMouseDown={onClose}
     >
       <div
-        className="relative flex flex-col w-[60vw] h-[65vh] bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden"
+        className="relative flex flex-col w-[60vw] h-[65vh] bg-white dark:bg-zinc-900 rounded-none shadow-2xl border border-zinc-400 dark:border-zinc-600 overflow-hidden"
         onMouseDown={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-zinc-200 dark:border-zinc-800">
+        <div className="flex items-center justify-between px-3 py-3 border-b border-zinc-400 dark:border-zinc-600">
           <span className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
             Generation Replay
           </span>
           <button
             onClick={onClose}
-            className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 dark:text-zinc-400 transition-colors text-xs"
+            className="w-6 h-6 flex items-center justify-center rounded-none hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 dark:text-zinc-500 transition-colors text-xs"
           >
             ✕
           </button>
@@ -182,13 +175,13 @@ export default function GenerationReplay({
         </div>
 
         {/* Playback controls */}
-        <div className="px-5 py-4 border-t border-zinc-200 dark:border-zinc-800 flex flex-col gap-2">
+        <div className="px-3 py-4 border-t border-zinc-400 dark:border-zinc-600 flex flex-col gap-2">
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={togglePlay}
               aria-label={atEnd ? "Restart" : isPlaying ? "Pause" : "Play"}
-              className="w-7 h-7 flex items-center justify-center rounded-full bg-zinc-700 text-white hover:bg-zinc-600 transition-colors shrink-0"
+              className="w-7 h-7 flex items-center justify-center rounded-none bg-accent text-white hover:bg-accent-dark transition-colors shrink-0"
             >
               {atEnd ? (
                 <svg
@@ -230,11 +223,11 @@ export default function GenerationReplay({
               value={step}
               onPointerDown={handleSliderPointerDown}
               onChange={(e) => setStep(Number(e.target.value))}
-              className="flex-1 accent-zinc-700 dark:accent-zinc-400 cursor-pointer"
+              className="flex-1 accent-accent cursor-pointer"
             />
 
             <div
-              className="flex items-center gap-0.5 rounded-md border border-zinc-200 dark:border-zinc-700 p-0.5 shrink-0"
+              className="flex items-center gap-0.5 rounded-none border border-zinc-400 dark:border-zinc-500 p-0.5 shrink-0"
               data-no-deselect
             >
               {SPEED_OPTIONS.map((s) => (
@@ -242,10 +235,10 @@ export default function GenerationReplay({
                   key={s}
                   type="button"
                   onClick={() => setSpeed(s)}
-                  className={`px-1.5 py-0.5 text-[10px] rounded leading-none transition-colors ${
+                  className={`px-1.5 py-0.5 text-[10px] rounded-none leading-none transition-colors ${
                     speed === s
-                      ? "bg-zinc-700 text-white"
-                      : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+                      ? "bg-accent text-white"
+                      : "text-zinc-500 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
                   }`}
                 >
                   {s}×
@@ -254,31 +247,21 @@ export default function GenerationReplay({
             </div>
           </div>
 
-          <div className="flex items-center justify-between text-[10px] text-zinc-400 dark:text-zinc-500">
+          <div className="flex items-center justify-between text-[10px] text-zinc-500 dark:text-zinc-500">
             <span>
               Step {step + 1} of {generationHistory.length}
             </span>
             <div className="flex items-center gap-3">
-              {canPrefixEdit && onPrefixEdit && (
-                <Button
-                  onClick={() => {
-                    onPrefixEdit(groupId, step);
-                    onClose();
-                  }}
-                >
-                  Edit from here
-                </Button>
-              )}
               <span className="flex items-center gap-1">
                 <span
-                  className="inline-block w-2.5 h-2.5 rounded-sm"
+                  className="inline-block w-2.5 h-2.5 rounded-none"
                   style={{ backgroundColor: CURRENT_STEP_COLOR }}
                 />
                 Current
               </span>
               <span className="flex items-center gap-1">
                 <span
-                  className="inline-block w-2.5 h-2.5 rounded-sm"
+                  className="inline-block w-2.5 h-2.5 rounded-none"
                   style={{ backgroundColor: OTHER_BRICK_COLOR }}
                 />
                 Placed

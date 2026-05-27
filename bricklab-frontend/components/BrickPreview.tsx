@@ -21,11 +21,21 @@ function project(x: number, y: number, z: number): [number, number] {
 const STUD_RX_UNIT = STUD_RADIUS * COS30 * Math.SQRT2;
 const STUD_RY_UNIT = STUD_RADIUS * SIN30 * Math.SQRT2;
 
+/** Isometric face fills derived from accent (#908095) and accent-dark (#7d6f82). */
+const ACCENT_BRICK_FILLS = {
+  faceLeft: "#7d6f82",
+  faceRight: "#908095",
+  faceTop: "#b5a8b9",
+  studWall: "#857789",
+  studTop: "#c9c0ca",
+  stroke: "#6a5d6f",
+} as const;
+
 export default function BrickPreview({
   studsX,
   studsY,
   className,
-  stroke = "#2a2a2a",
+  stroke = ACCENT_BRICK_FILLS.stroke,
   strokeWidth = 0.6,
 }: BrickPreviewProps) {
   const W = studsX;
@@ -72,21 +82,21 @@ export default function BrickPreview({
       {/* Left face */}
       <polygon
         points={polyPts([0, D, 0], [W, D, 0], [W, D, H], [0, D, H])}
-        fill="#9dafc8"
+        fill={ACCENT_BRICK_FILLS.faceLeft}
         {...shared}
       />
 
       {/* Right face */}
       <polygon
         points={polyPts([W, 0, 0], [W, D, 0], [W, D, H], [W, 0, H])}
-        fill="#bfcbe0"
+        fill={ACCENT_BRICK_FILLS.faceRight}
         {...shared}
       />
 
       {/* Top face */}
       <polygon
         points={polyPts([0, 0, H], [W, 0, H], [W, D, H], [0, D, H])}
-        fill="#dde4f6"
+        fill={ACCENT_BRICK_FILLS.faceTop}
         {...shared}
       />
 
@@ -105,13 +115,13 @@ export default function BrickPreview({
 
         return (
           <g key={`${ix}-${iy}`}>
-            <path d={wall} fill="#aab6ce" {...shared} />
+            <path d={wall} fill={ACCENT_BRICK_FILLS.studWall} {...shared} />
             <ellipse
               cx={tcx}
               cy={tcy}
               rx={rx}
               ry={ry}
-              fill="#dde4f6"
+              fill={ACCENT_BRICK_FILLS.studTop}
               {...shared}
             />
           </g>

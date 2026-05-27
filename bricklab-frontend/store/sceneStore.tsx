@@ -94,7 +94,7 @@ function createDefaultScene(id: string, name: string): SceneData {
     groups: [],
     selectedAssetId: null,
     selectedAssetIds: [],
-    sceneBackground: "#232323",
+    sceneBackground: "#7d6f82",
     plateSize: 50,
     plateColor: "#ebebeb",
     maxCameraDistance: 100,

@@ -80,16 +80,16 @@ export default function ToolBar() {
         left: "50%",
         transform: "translateX(-50%)",
       }}
-      className="fixed flex items-center px-3 gap-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl z-40"
+      className="fixed flex items-center px-3 gap-2 bg-white dark:bg-zinc-900 border border-zinc-400 dark:border-zinc-600 rounded-none z-40"
     >
       {/* Drop-up brick type selector */}
       <div
         ref={dropupRef}
-        className="relative flex-shrink-0 self-stretch flex items-center"
+        className="relative flex-shrink-0 self-stretch inline-flex items-center"
       >
         <button
           onClick={() => setExpanded((v) => !v)}
-          className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+          className="flex items-center gap-2 px-2 py-1 rounded-none hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
         >
           <span
             className="inline-block text-zinc-900 dark:text-zinc-100 transition-transform duration-200"
@@ -104,13 +104,13 @@ export default function ToolBar() {
           <span className="text-xs font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
             Quick Add
           </span>
-          <span className="text-xs text-zinc-400 dark:text-zinc-500">
+          <span className="text-xs text-zinc-500 dark:text-zinc-500">
             {selectedIds.length}/6
           </span>
         </button>
 
         {expanded && (
-          <div className="absolute bottom-full left-0 w-full bg-white dark:bg-zinc-900 border border-b-0 border-zinc-200 dark:border-zinc-800 rounded-t-xl z-50 overflow-hidden">
+          <div className="absolute bottom-full left-0 w-full bg-white dark:bg-zinc-900 border border-b-0 border-zinc-400 dark:border-zinc-600 rounded-none z-50 overflow-hidden">
             <ul className="py-1">
               {allBricks.map((brick) => {
                 const checked = selectedIds.includes(brick.id);
@@ -146,12 +146,12 @@ export default function ToolBar() {
           key={brick.id}
           onClick={() => handleAdd(brick)}
           title={`Add ${brick.name} brick`}
-          className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors flex-shrink-0"
+          className="flex items-center gap-1 px-2 py-1 rounded-none text-xs text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors flex-shrink-0"
         >
-          <span className="text-zinc-500 dark:text-zinc-400 font-bold leading-none">
+          <span className="text-zinc-500 dark:text-zinc-500 font-normal leading-none">
             +
           </span>
-          <span className="font-medium">{brick.name}</span>
+          <span>{brick.name}</span>
         </button>
       ))}
     </div>

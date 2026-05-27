@@ -29,9 +29,9 @@ function getSelectedRounding(
   nextSelected: boolean,
 ) {
   if (!isSelected) return null;
-  if (!prevSelected && !nextSelected) return "rounded-md";
-  if (!prevSelected) return "rounded-t-md";
-  if (!nextSelected) return "rounded-b-md";
+  if (!prevSelected && !nextSelected) return "rounded-none";
+  if (!prevSelected) return "rounded-none";
+  if (!nextSelected) return "rounded-none";
   return "rounded-none";
 }
 
@@ -164,10 +164,10 @@ function GroupRow({
   );
 
   const headerRounding = isOpen
-    ? "rounded-t-md"
+    ? "rounded-none"
     : isLastInParent && depth > 0
-      ? "rounded-b-md"
-      : "rounded-md";
+      ? "rounded-none"
+      : "rounded-none";
 
   return (
     <li>
@@ -214,14 +214,14 @@ function GroupRow({
             e.stopPropagation();
             onToggleExpand(group.id);
           }}
-          className="shrink-0 text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-200"
+          className="shrink-0 text-zinc-500 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-200"
           style={{ fontSize: "0.45rem", lineHeight: 1 }}
         >
           {isOpen ? "▼" : "▶"}
         </button>
 
         <svg
-          className="shrink-0 w-3 h-3 text-zinc-400 dark:text-zinc-500"
+          className="shrink-0 w-3 h-3 text-zinc-500 dark:text-zinc-500"
           viewBox="0 0 16 16"
           fill="currentColor"
         >
@@ -252,7 +252,7 @@ function GroupRow({
           </span>
         )}
 
-        <span className="ml-auto text-[10px] text-zinc-400 dark:text-zinc-500 shrink-0">
+        <span className="ml-auto text-[10px] text-zinc-500 dark:text-zinc-500 shrink-0">
           {totalChildren}
         </span>
 
@@ -261,7 +261,7 @@ function GroupRow({
             e.stopPropagation();
             onUngroup(group.id);
           }}
-          className="shrink-0 ml-1 w-4 h-4 flex items-center justify-center rounded text-zinc-400 dark:text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:text-zinc-700 dark:hover:text-zinc-200 opacity-0 group-hover:opacity-100 transition-opacity text-[9px]"
+          className="shrink-0 ml-1 w-4 h-4 flex items-center justify-center rounded-none text-zinc-500 dark:text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:text-zinc-700 dark:hover:text-zinc-200 opacity-0 group-hover:opacity-100 transition-opacity text-[9px]"
           title="Ungroup"
         >
           ✕
@@ -450,7 +450,7 @@ export default function AssetsPanel() {
   return (
     <div
       ref={dropdownRef}
-      className="border-b border-zinc-200 dark:border-zinc-800"
+      className="border-b border-zinc-400 dark:border-zinc-600 pb-2"
     >
       {/* Search */}
       <div className="px-3 pt-3 pb-2">
@@ -481,16 +481,16 @@ export default function AssetsPanel() {
         <span className="text-xs font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
           Assets
         </span>
-        <span className="ml-auto text-xs text-zinc-400 dark:text-zinc-500">
+        <span className="ml-auto text-xs text-zinc-500 dark:text-zinc-500">
           {assets.length}
         </span>
       </button>
 
       {/* Collapsible list */}
       {expanded && (
-        <ul className="pb-2" onClick={() => selectAsset(null)}>
+        <ul onClick={() => selectAsset(null)}>
           {topLevelGroups.length === 0 && ungroupedAssets.length === 0 && (
-            <li className="px-3 py-2 text-xs text-zinc-400 dark:text-zinc-500 italic">
+            <li className="px-3 py-2 text-xs text-zinc-500 dark:text-zinc-500 italic">
               {search ? "No matches" : "No assets in scene"}
             </li>
           )}
@@ -579,7 +579,7 @@ function AssetRow({
   };
   const rounding =
     getSelectedRounding(isSelected, adjacency.prev, adjacency.next) ??
-    (depth === 0 ? "rounded-md" : isLast ? "rounded-b-md" : "rounded-none");
+    (depth === 0 ? "rounded-none" : isLast ? "rounded-none" : "rounded-none");
   const indentStyle =
     depth > 0 ? { paddingLeft: `${depth * 2}rem` } : undefined;
 

@@ -40,7 +40,7 @@ export default function SettingsPanel() {
   return (
     <div data-no-deselect className="px-3 py-3 flex flex-col gap-3">
       <div className="flex flex-col gap-0.5">
-        <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+        <span className="text-[10px] text-zinc-500 dark:text-zinc-500">
           Background Color
         </span>
         <div className="flex items-center gap-2">
@@ -48,7 +48,7 @@ export default function SettingsPanel() {
             type="color"
             value={sceneBackground}
             onChange={(e) => setSceneBackground(e.target.value)}
-            className="w-7 h-7 rounded cursor-pointer border border-zinc-200 dark:border-zinc-700 bg-transparent p-0.5"
+            className="w-7 h-7 rounded-none cursor-pointer border border-zinc-400 dark:border-zinc-500 bg-transparent p-0.5"
           />
           <Input
             type="text"
@@ -69,7 +69,7 @@ export default function SettingsPanel() {
       </div>
 
       <div className="flex flex-col gap-0.5">
-        <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+        <span className="text-[10px] text-zinc-500 dark:text-zinc-500">
           Baseplate Color
         </span>
         <div className="flex items-center gap-2">
@@ -77,7 +77,7 @@ export default function SettingsPanel() {
             type="color"
             value={plateColor}
             onChange={(e) => setPlateColor(e.target.value)}
-            className="w-7 h-7 rounded cursor-pointer border border-zinc-200 dark:border-zinc-700 bg-transparent p-0.5"
+            className="w-7 h-7 rounded-none cursor-pointer border border-zinc-400 dark:border-zinc-500 bg-transparent p-0.5"
           />
           <Input
             type="text"
@@ -98,7 +98,7 @@ export default function SettingsPanel() {
       </div>
 
       <div className="flex flex-col gap-0.5">
-        <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+        <span className="text-[10px] text-zinc-500 dark:text-zinc-500">
           Baseplate Size
         </span>
         <Input
@@ -126,7 +126,7 @@ export default function SettingsPanel() {
       </div>
 
       <div className="flex flex-col gap-0.5">
-        <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+        <span className="text-[10px] text-zinc-500 dark:text-zinc-500">
           Max Zoom Distance
         </span>
         <Input
@@ -153,7 +153,7 @@ export default function SettingsPanel() {
       </div>
 
       <div className="flex flex-col gap-0.5">
-        <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+        <span className="text-[10px] text-zinc-500 dark:text-zinc-500">
           Default Brick Color
         </span>
         <div className="flex items-center gap-2">
@@ -161,7 +161,7 @@ export default function SettingsPanel() {
             type="color"
             value={defaultBrickColor}
             onChange={(e) => setDefaultBrickColor(e.target.value)}
-            className="w-7 h-7 rounded cursor-pointer border border-zinc-200 dark:border-zinc-700 bg-transparent p-0.5"
+            className="w-7 h-7 rounded-none cursor-pointer border border-zinc-400 dark:border-zinc-500 bg-transparent p-0.5"
           />
           <Input
             type="text"
@@ -182,7 +182,7 @@ export default function SettingsPanel() {
       </div>
 
       <div className="flex flex-col gap-0.5">
-        <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+        <span className="text-[10px] text-zinc-500 dark:text-zinc-500">
           Selection Color
         </span>
         <div className="flex items-center gap-2">
@@ -190,7 +190,7 @@ export default function SettingsPanel() {
             type="color"
             value={selectionColor}
             onChange={(e) => setSelectionColor(e.target.value)}
-            className="w-7 h-7 rounded cursor-pointer border border-zinc-200 dark:border-zinc-700 bg-transparent p-0.5"
+            className="w-7 h-7 rounded-none cursor-pointer border border-zinc-400 dark:border-zinc-500 bg-transparent p-0.5"
           />
           <Input
             type="text"

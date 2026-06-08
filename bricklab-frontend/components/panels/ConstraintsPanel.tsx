@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useScene } from "@/store/sceneStore";
 import type { Constraint } from "@/store/sceneStore";
-import Button from "@/components/ui/Button";
 import ConstraintBuilder from "../ConstraintBuilder";
 
 export default function ConstraintsPanel() {
@@ -39,9 +38,13 @@ export default function ConstraintsPanel() {
           <span className="ml-auto text-xs text-zinc-500 dark:text-zinc-500">
             {constraints.length}
           </span>
-          <Button onClick={handleNew} title="Add Constraint">
+          <button
+            onClick={handleNew}
+            title="Add Constraint"
+            className="py-0.5 px-2 text-[10px] rounded-none border transition-colors border-[#908095] bg-[#908095]/25 text-[#908095] hover:bg-[#908095]/35"
+          >
             + New
-          </Button>
+          </button>
         </div>
 
         {/* Constraint list */}

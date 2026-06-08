@@ -2,8 +2,6 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useScene } from "@/store/sceneStore";
-import Button from "@/components/ui/Button";
-
 export default function ScenesPanel() {
   const {
     scenes,
@@ -60,9 +58,13 @@ export default function ScenesPanel() {
         <span className="ml-auto text-xs text-zinc-500 dark:text-zinc-500">
           {scenes.length}
         </span>
-        <Button onClick={addScene} title="Add Scene">
+        <button
+          onClick={addScene}
+          title="Add Scene"
+          className="py-0.5 px-2 text-[10px] rounded-none border transition-colors border-[#908095] bg-[#908095]/25 text-[#908095] hover:bg-[#908095]/35"
+        >
           + New
-        </Button>
+        </button>
       </div>
 
       {/* Scene list */}

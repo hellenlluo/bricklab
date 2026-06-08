@@ -11,8 +11,11 @@ build/
 .eggs/
 .venv/
 venv/
+# Local secrets (e.g. HF_TOKEN in bricklab-backend/.env)
 .env
+.env.local
 *.env
+!.env.example
 
 # ── uv / pip ──────────────────────────────────────────────────────────────────
 .uv/

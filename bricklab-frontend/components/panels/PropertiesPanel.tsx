@@ -390,7 +390,7 @@ export default function PropertiesPanel() {
           <div className="-mx-3 px-3 pt-2 border-t border-zinc-400 dark:border-zinc-600">
             <button
               onClick={() => removeGroup(selectedGroup.id)}
-              className="w-full py-1 rounded-none text-[10px] font-medium text-red-500 border border-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors"
+              className="w-full h-7 flex items-center justify-center rounded-none text-[10px] font-medium text-red-500 border border-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors"
             >
               Delete Group
             </button>
@@ -589,7 +589,7 @@ export default function PropertiesPanel() {
           <div className="-mx-3 px-3 pt-2 border-t border-zinc-400 dark:border-zinc-600">
             <button
               onClick={() => removeSelectedAssets()}
-              className="w-full py-1 rounded-none text-[10px] font-medium text-red-500 border border-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors"
+              className="w-full h-7 flex items-center justify-center rounded-none text-[10px] font-medium text-red-500 border border-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors"
             >
               Delete All Selected
             </button>
@@ -815,7 +815,7 @@ export default function PropertiesPanel() {
               selectAsset(null);
               removeAsset(singleAsset.id);
             }}
-            className="w-full py-1 rounded-none text-[10px] font-medium text-red-500 border border-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors"
+            className="w-full h-7 flex items-center justify-center rounded-none text-[10px] font-medium text-red-500 border border-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors"
           >
             Delete Brick
           </button>

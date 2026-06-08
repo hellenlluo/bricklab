@@ -146,7 +146,7 @@ export default function Library({ onClose }: LibraryProps) {
   }
 
   const tabClass = (t: Tab) =>
-    `flex-1 py-1.5 text-sm font-normal transition-colors rounded-none ${
+    `flex-1 h-7 flex items-center justify-center text-sm font-normal transition-colors rounded-none ${
       tab === t
         ? "bg-accent/10 text-accent"
         : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-zinc-50 dark:hover:bg-zinc-800"

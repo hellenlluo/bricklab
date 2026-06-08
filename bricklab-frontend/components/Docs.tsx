@@ -235,6 +235,46 @@ export default function Docs() {
           </div>
 
           <div>
+            <SectionHeader>Generator: Text-to-3D</SectionHeader>
+            <ol className="flex flex-col gap-1.5 mt-1">
+              {[
+                "Describe the desired structure in natural language.",
+                "Add layout constraints in the Constraints Builder (toolbar) to bound the generation area.",
+                "Use the Constraints selector in the panel to attach saved constraints before generating.",
+                "Orbit and inspect the preview on the right. Click Add to Scene if satisfied.",
+              ].map((item, i) => (
+                <li
+                  key={i}
+                  className="flex gap-1.5 text-xs leading-snug text-zinc-500 dark:text-zinc-500"
+                >
+                  <span className="shrink-0">{i + 1}.</span>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+
+          <div>
+            <SectionHeader>Generator: Image-to-3D</SectionHeader>
+            <ol className="flex flex-col gap-1.5 mt-1">
+              {[
+                "Upload a photo containing the object you want to convert.",
+                "Click on the object to add selection points. Alt-click or right-click to mark background.",
+                "Click Reconstruct 3D once the mask looks right.",
+                "Adjust brick density with the slider, then click Add to Scene.",
+              ].map((item, i) => (
+                <li
+                  key={i}
+                  className="flex gap-1.5 text-xs leading-snug text-zinc-500 dark:text-zinc-500"
+                >
+                  <span className="shrink-0">{i + 1}.</span>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+
+          <div>
             <SectionHeader>Coordinate System &amp; Grid</SectionHeader>
             <p className="text-xs text-zinc-500 dark:text-zinc-500 leading-relaxed">
               All brick positions are measured from the brick&apos;s top-left

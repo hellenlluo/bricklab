@@ -225,7 +225,7 @@ export function SceneProvider({ children }: { children: React.ReactNode }) {
   const [activeSceneId, setActiveSceneId] = useState<string>(DEFAULT_SCENE_ID);
   const [constraints, setConstraints] = useState<Constraint[]>([]);
   const [customBricks, setCustomBricks] = useState<CustomBrickDefinition[]>([]);
-  const [defaultBrickColor, setDefaultBrickColor] = useState<string>("#bfbfff");
+  const [defaultBrickColor, setDefaultBrickColor] = useState<string>("#a8c6fe");
   const [selectionColor, setSelectionColor] = useState<string>("#ff8c82");
   const [viewportType, setViewportType] = useState<string>("Perspective");
 

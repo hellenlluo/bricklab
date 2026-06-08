@@ -89,7 +89,7 @@ export default function ToolBar() {
       >
         <button
           onClick={() => setExpanded((v) => !v)}
-          className="flex items-center gap-2 px-2 py-1 rounded-none hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+          className="h-7 flex items-center gap-2 px-2 rounded-none hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
         >
           <span
             className="inline-block text-zinc-900 dark:text-zinc-100 transition-transform duration-200"
@@ -146,7 +146,7 @@ export default function ToolBar() {
           key={brick.id}
           onClick={() => handleAdd(brick)}
           title={`Add ${brick.name} brick`}
-          className="flex items-center gap-1 px-2 py-1 rounded-none text-xs text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors flex-shrink-0"
+          className="h-7 flex items-center gap-1 px-2 rounded-none text-xs text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors flex-shrink-0"
         >
           <span className="text-zinc-500 dark:text-zinc-500 font-normal leading-none">
             +

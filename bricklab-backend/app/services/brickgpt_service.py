@@ -11,7 +11,7 @@ import sys
 import threading
 from collections import Counter
 from pathlib import Path
-from typing import TypedDict
+from typing import Callable, TypedDict
 
 BRICKGPT_SRC = Path(__file__).resolve().parents[2] / "external" / "BrickGPT" / "src"
 if str(BRICKGPT_SRC) not in sys.path:
@@ -307,3 +307,266 @@ def generate_from_prefix(
         "partial": partial,
         "warning": warning,
     }
+
+
+# ---------------------------------------------------------------------------
+# Streaming generation
+# ---------------------------------------------------------------------------
+
+def generate_from_prefix_streaming(
+    prompt: str,
+    prefix_bricks: list[dict],
+    constraints: list[_ConstraintBox] | None,
+    on_event: Callable[[dict], None],
+) -> None:
+    """Stream BrickGPT continuation from an edited prefix as brick-by-brick SSE.
+
+    Emits the same event types as ``generate_bricks_streaming`` but only for
+    bricks added **after** the prefix.  Rollback ``keep_count`` values are
+    expressed as total brick indices (prefix + generated so far) so the
+    frontend can slice its full list.
+
+    The ``done`` event also includes ``"prefix_count"`` so the caller knows
+    which leading bricks were fixed vs. generated.
+    """
+    model = get_model()
+    prefix_count = len(prefix_bricks)
+
+    # Re-normalize so the prefix starts at z=0 (model training distribution).
+    z_min = min((b["z"] for b in prefix_bricks), default=0)
+    prefix_objs = [
+        Brick(h=b["h"], w=b["w"], x=b["x"], y=b["y"], z=b["z"] - z_min)
+        for b in prefix_bricks
+    ]
+
+    constraint_boxes = constraints or []
+    if z_min != 0 and constraint_boxes:
+        constraint_boxes = [
+            {**box, "pos_z": box["pos_z"] - z_min}
+            for box in constraint_boxes
+        ]
+
+    orig_try = BrickGPT._try_adding_brick
+
+    def _streaming_try(brick_str: str, bricks, rejected_bricks) -> str:
+        result = orig_try(brick_str, bricks, rejected_bricks)
+
+        if result == "success" and constraint_boxes:
+            try:
+                b = Brick.from_txt(brick_str)
+                if _brick_in_any_constraint(b.h, b.w, b.x, b.y, b.z, constraint_boxes):
+                    result = "constraint_violation"
+            except Exception:
+                pass
+
+        try:
+            b = Brick.from_txt(brick_str)
+            # Shift z back to original coordinate space for the event payload.
+            brick_dict: dict | None = {
+                "h": b.h, "w": b.w, "x": b.x, "y": b.y, "z": b.z + z_min,
+            }
+        except Exception:
+            brick_dict = None
+
+        if result == "success":
+            on_event({"type": "brick", "data": brick_dict})
+        elif brick_dict is not None:
+            on_event({"type": "reject", "data": brick_dict, "reason": result})
+
+        return result
+
+    rejection_reasons: Counter = Counter()
+
+    with _model_lock:
+        model._try_adding_brick = _streaming_try
+        try:
+            starting = BrickStructure(list(prefix_objs))
+            structure: BrickStructure | None = None
+
+            for _ in range(model.max_regenerations + 1):
+                structure, reasons = model._generate_structure(
+                    prompt, starting_bricks=starting,
+                )
+                rejection_reasons.update(reasons)
+
+                if model.max_regenerations == 0 or model._is_stable(structure):
+                    break
+
+                try:
+                    rollback = model._remove_all_bricks_after_first_unstable_brick(
+                        structure,
+                    )
+                except ValueError:
+                    break
+
+                # Never roll back below the prefix.
+                if len(rollback.bricks) < prefix_count:
+                    rollback = BrickStructure(list(prefix_objs))
+
+                # keep_count is total bricks to keep (prefix + surviving new bricks).
+                on_event({"type": "rollback", "keep_count": len(rollback.bricks)})
+                starting = rollback
+        finally:
+            try:
+                del model._try_adding_brick
+            except AttributeError:
+                pass
+
+    assert structure is not None
+
+    # Post-generation constraint sweep (only for new bricks after the prefix).
+    accepted_new: list[dict] = []
+    post_sweep_removals = 0
+    for b in structure.bricks[prefix_count:]:
+        if constraint_boxes and _brick_in_any_constraint(
+            b.h, b.w, b.x, b.y, b.z, constraint_boxes
+        ):
+            post_sweep_removals += 1
+        else:
+            accepted_new.append(
+                {"h": b.h, "w": b.w, "x": b.x, "y": b.y, "z": b.z + z_min}
+            )
+
+    total_rejections = (
+        rejection_reasons.get("constraint_violation", 0) + post_sweep_removals
+    )
+    partial = total_rejections > 0
+    warning: str | None = None
+    if total_rejections >= _CONSTRAINT_REJECTION_WARNING_THRESHOLD:
+        warning = (
+            f"Constraint enforcement required {total_rejections} brick "
+            "rejection(s). The returned structure may be incomplete due to "
+            "overly restrictive constraints."
+        )
+    elif total_rejections > 0:
+        warning = (
+            f"{total_rejections} brick placement(s) were re-sampled during "
+            "generation due to constraint violations."
+        )
+
+    on_event({
+        "type": "done",
+        "partial": partial,
+        "warning": warning,
+        "total_bricks": prefix_count + len(accepted_new),
+        "prefix_count": prefix_count,
+    })
+
+
+def generate_bricks_streaming(
+    prompt: str,
+    constraints: list[_ConstraintBox] | None,
+    on_event: Callable[[dict], None],
+) -> None:
+    """Run BrickGPT inference and fire *on_event* as each brick is resolved.
+
+    Events emitted (all called from the executor thread; *on_event* must be
+    thread-safe, e.g. ``loop.call_soon_threadsafe``):
+
+    * ``{"type": "brick",    "data": {"h":…,"w":…,"x":…,"y":…,"z":…}}``
+      — a brick was accepted and added to the structure.
+    * ``{"type": "reject",   "data": {…}|None, "reason": str}``
+      — a candidate brick was rejected during per-brick sampling.
+      *data* is ``None`` when the candidate could not be parsed.
+    * ``{"type": "rollback", "keep_count": int}``
+      — the structure was physically unstable; bricks after index
+      *keep_count* have been discarded and generation continues from
+      the rollback point.
+    * ``{"type": "done",     "partial": bool, "warning": str|None,
+                              "total_bricks": int}``
+      — generation finished (always the last event).
+    """
+    model = get_model()
+    constraint_boxes = constraints or []
+    orig_try = BrickGPT._try_adding_brick
+
+    def _streaming_try(brick_str: str, bricks, rejected_bricks) -> str:
+        result = orig_try(brick_str, bricks, rejected_bricks)
+
+        # Constraint check (same logic as the constrained path).
+        if result == "success" and constraint_boxes:
+            try:
+                b = Brick.from_txt(brick_str)
+                if _brick_in_any_constraint(b.h, b.w, b.x, b.y, b.z, constraint_boxes):
+                    result = "constraint_violation"
+            except Exception:
+                pass
+
+        # Parse for event payload.
+        try:
+            b = Brick.from_txt(brick_str)
+            brick_dict: dict | None = {"h": b.h, "w": b.w, "x": b.x, "y": b.y, "z": b.z}
+        except Exception:
+            brick_dict = None
+
+        if result == "success":
+            on_event({"type": "brick", "data": brick_dict})
+        elif brick_dict is not None:
+            on_event({"type": "reject", "data": brick_dict, "reason": result})
+
+        return result
+
+    rejection_reasons: Counter = Counter()
+
+    with _model_lock:
+        model._try_adding_brick = _streaming_try
+        try:
+            starting = BrickStructure([])
+            structure: BrickStructure | None = None
+
+            for _ in range(model.max_regenerations + 1):
+                structure, reasons = model._generate_structure(
+                    prompt, starting_bricks=starting,
+                )
+                rejection_reasons.update(reasons)
+
+                if model.max_regenerations == 0 or model._is_stable(structure):
+                    break
+
+                try:
+                    rollback = model._remove_all_bricks_after_first_unstable_brick(structure)
+                except ValueError:
+                    break
+
+                on_event({"type": "rollback", "keep_count": len(rollback.bricks)})
+                starting = rollback
+        finally:
+            try:
+                del model._try_adding_brick
+            except AttributeError:
+                pass
+
+    assert structure is not None
+
+    # Post-generation constraint sweep.
+    accepted: list[dict] = []
+    post_sweep_removals = 0
+    for b in structure.bricks:
+        if constraint_boxes and _brick_in_any_constraint(
+            b.h, b.w, b.x, b.y, b.z, constraint_boxes
+        ):
+            post_sweep_removals += 1
+        else:
+            accepted.append({"h": b.h, "w": b.w, "x": b.x, "y": b.y, "z": b.z})
+
+    total_rejections = rejection_reasons.get("constraint_violation", 0) + post_sweep_removals
+    partial = total_rejections > 0
+    warning: str | None = None
+    if total_rejections >= _CONSTRAINT_REJECTION_WARNING_THRESHOLD:
+        warning = (
+            f"Constraint enforcement required {total_rejections} brick "
+            "rejection(s). The returned structure may be incomplete due to "
+            "overly restrictive constraints."
+        )
+    elif total_rejections > 0:
+        warning = (
+            f"{total_rejections} brick placement(s) were re-sampled during "
+            "generation due to constraint violations."
+        )
+
+    on_event({
+        "type": "done",
+        "partial": partial,
+        "warning": warning,
+        "total_bricks": len(accepted),
+    })

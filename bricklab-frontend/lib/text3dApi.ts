@@ -126,6 +126,59 @@ export async function generateTextBricksStream(
   }
 }
 
+/**
+ * Stream continuation generation from an edited prefix as Server-Sent Events.
+ *
+ * Only bricks added **after** the prefix are emitted as ``brick`` events —
+ * the prefix is assumed to already be in the caller's state.  The ``done``
+ * event additionally carries ``prefix_count``.
+ */
+export async function regenerateTextBricksFromPrefixStream(
+  prompt: string,
+  prefixBricks: BackendBrick[],
+  constraints: BackendConstraint[],
+  onEvent: (event: StreamEvent) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  const res = await fetch(`${API_URL}/generate/regenerate-from-prefix/stream`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      prompt,
+      prefix_bricks: prefixBricks,
+      constraints,
+    }),
+    signal,
+  });
+  await assertOk(res);
+
+  const reader = res.body!.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        const raw = line.slice(6).trim();
+        if (!raw) continue;
+        const event = JSON.parse(raw) as StreamEvent;
+        onEvent(event);
+        if (event.type === "done" || event.type === "error") return;
+      }
+    }
+  } finally {
+    reader.cancel().catch(() => undefined);
+  }
+}
+
 /** Continue generation from an edited brick prefix, appending new bricks after the user's changes. */
 export async function regenerateTextBricksFromPrefix(
   prompt: string,

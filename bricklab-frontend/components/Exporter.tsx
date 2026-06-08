@@ -436,7 +436,7 @@ export default function Exporter({ onClose }: ExporterProps) {
                 type="button"
                 onClick={() => setExportFormat(fmt.id)}
                 title={fmt.description}
-                className={`px-2.5 py-1 rounded-none text-[10px] font-medium border transition-colors ${
+                className={`h-7 flex items-center justify-center px-2.5 rounded-none text-[10px] font-medium border transition-colors ${
                   exportFormat === fmt.id
                     ? "bg-accent text-white border-accent hover:bg-accent-dark"
                     : "bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-zinc-400 dark:border-zinc-500 hover:border-zinc-500 dark:hover:border-zinc-400"

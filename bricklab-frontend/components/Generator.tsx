@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
-import { Canvas } from "@react-three/fiber";
-import { OrbitControls, Environment } from "@react-three/drei";
+import { Canvas, useThree } from "@react-three/fiber";
+import { OrbitControls, Environment, TransformControls } from "@react-three/drei";
 import * as THREE from "three";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -24,7 +24,10 @@ import {
   type VoxelData,
   type ClickPoint,
 } from "@/lib/image3dApi";
-import { generateTextBricksStream } from "@/lib/text3dApi";
+import {
+  generateTextBricksStream,
+  regenerateTextBricksFromPrefixStream,
+} from "@/lib/text3dApi";
 
 type Tab = "text-to-3d" | "image-to-3d";
 
@@ -198,31 +201,143 @@ function ConstraintPreviewBox({ box }: { box: ConstraintBox }) {
   );
 }
 
+const BRICK_COLOR = "#74a7fe";
+const SELECTED_BRICK_COLOR = "#96d35f";
+const COLLIDING_BRICK_COLOR = "#ff4444";
+
+// Interactive translate gizmo for the currently selected brick. Snaps the
+// brick back to the integer BrickGPT grid on release and commits the move.
+function BrickEditGizmo({
+  brick,
+  index,
+  onCommitMove,
+}: {
+  brick: BrickData;
+  index: number;
+  onCommitMove: (index: number, x: number, y: number, z: number) => void;
+}) {
+  const scene = useThree((s) => s.scene);
+  const pivot = useMemo(() => new THREE.Group(), []);
+  const lastPivot = useRef(new THREE.Vector3());
+
+  // Centre the gizmo on the brick whenever the selection or its position
+  // changes (scene-space: bricks extend +X, -Y, +Z from their corner).
+  useEffect(() => {
+    const center = new THREE.Vector3(
+      brick.x + brick.h / 2,
+      -brick.y - brick.w / 2,
+      brick.z + 0.5,
+    );
+    pivot.position.copy(center);
+    lastPivot.current.copy(center);
+  }, [brick.x, brick.y, brick.z, brick.h, brick.w, pivot]);
+
+  const handleChange = useCallback(() => {
+    const delta = pivot.position.clone().sub(lastPivot.current);
+    if (delta.lengthSq() === 0) return;
+    const obj = scene.getObjectByName(`ebrick-${index}`);
+    if (obj) obj.position.add(delta);
+    lastPivot.current.copy(pivot.position);
+  }, [pivot, scene, index]);
+
+  const handleMouseUp = useCallback(() => {
+    const obj = scene.getObjectByName(`ebrick-${index}`);
+    if (!obj) return;
+    // Convert scene-space corner back to BrickGPT grid coords and snap.
+    const nx = Math.round(obj.position.x);
+    const nz = Math.max(0, Math.round(obj.position.z));
+    const ny = -Math.round(obj.position.y);
+    obj.position.set(nx, -ny, nz);
+    onCommitMove(index, nx, ny, nz);
+  }, [scene, index, onCommitMove]);
+
+  return (
+    <>
+      <primitive object={pivot} visible={false} />
+      <TransformControls
+        object={pivot}
+        mode="translate"
+        size={0.7}
+        onChange={handleChange}
+        onMouseUp={handleMouseUp}
+      />
+    </>
+  );
+}
+
 function BrickPreviewScene({
   bricks,
   rejectedBrick,
   constraintBoxes,
+  editing = false,
+  keepCount,
+  selectedIndex = null,
+  collidingIndices,
+  onSelect,
+  onCommitMove,
 }: {
   bricks: BrickData[];
   rejectedBrick: BrickData | null;
   constraintBoxes: ConstraintBox[];
+  editing?: boolean;
+  keepCount?: number;
+  selectedIndex?: number | null;
+  collidingIndices?: Set<number>;
+  onSelect?: (index: number | null) => void;
+  onCommitMove?: (index: number, x: number, y: number, z: number) => void;
 }) {
+  const activeCount = editing
+    ? Math.min(keepCount ?? bricks.length, bricks.length)
+    : bricks.length;
+  const activeBricks = bricks.slice(0, activeCount);
+  const selectedBrick =
+    editing && selectedIndex != null && selectedIndex < activeCount
+      ? bricks[selectedIndex]
+      : null;
+
   return (
     <>
       <ambientLight intensity={0.4} />
       <directionalLight position={[10, -5, 15]} intensity={1.2} />
       <Environment preset="city" />
       <OrbitControls
+        makeDefault
         target={WORKSPACE_CAM_TARGET}
         enableDamping
         dampingFactor={0.1}
       />
       <group>
-        {bricks.map((b, i) => (
-          <group key={i} position={[b.x, -b.y, b.z]}>
-            <ParametricBrick studsX={b.h} studsY={b.w} color="#74a7fe" />
-          </group>
-        ))}
+        {activeBricks.map((b, i) => {
+          const isColliding = collidingIndices?.has(i) ?? false;
+          const isSelected = editing && i === selectedIndex;
+          const color = isColliding
+            ? COLLIDING_BRICK_COLOR
+            : isSelected
+              ? SELECTED_BRICK_COLOR
+              : BRICK_COLOR;
+          return (
+            <group
+              key={i}
+              name={`ebrick-${i}`}
+              position={[b.x, -b.y, b.z]}
+              onClick={
+                editing
+                  ? (e) => {
+                      e.stopPropagation();
+                      onSelect?.(i);
+                    }
+                  : undefined
+              }
+            >
+              <ParametricBrick
+                studsX={b.h}
+                studsY={b.w}
+                color={color}
+                isSelected={isSelected}
+              />
+            </group>
+          );
+        })}
         {rejectedBrick && (
           <group
             key="rejected"
@@ -231,11 +346,19 @@ function BrickPreviewScene({
             <ParametricBrick
               studsX={rejectedBrick.h}
               studsY={rejectedBrick.w}
-              color="#ff4444"
+              color={COLLIDING_BRICK_COLOR}
             />
           </group>
         )}
       </group>
+      {selectedBrick && onCommitMove && (
+        <BrickEditGizmo
+          key={selectedIndex}
+          brick={selectedBrick}
+          index={selectedIndex!}
+          onCommitMove={onCommitMove}
+        />
+      )}
       {/* Always show the workspace cube so placement context is clear */}
       <WorldBoundingBox />
       <PreviewAxes />
@@ -276,6 +399,54 @@ export default function Generator({
   const rejectedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Tracks whether the current canvas mounted for streaming (vs. final).
   const [canvasKey, setCanvasKey] = useState(0);
+
+  // ── Pause / edit / regenerate-from-prefix state ─────────────────────────
+  const [selectedBrickIndex, setSelectedBrickIndex] = useState<number | null>(
+    null,
+  );
+  // Number of leading bricks kept as the regeneration prefix. Sliding this
+  // down "reverts" to an earlier generation step (later bricks are discarded
+  // when regenerating).
+  const [keepCount, setKeepCount] = useState(0);
+  const [regenLoading, setRegenLoading] = useState(false);
+  // Whether the user has actually changed anything since entering edit mode.
+  // Drives the button label: false → "Continue Generation", true → "Regenerate".
+  const [bricksModified, setBricksModified] = useState(false);
+
+  // Keep `keepCount` pinned to the full brick list while generation is streaming,
+  // so the slider always starts at the end when editing mode becomes available.
+  useEffect(() => {
+    const isEditing = bricks.length > 0 && !isGenerating && !regenLoading;
+    if (!isEditing) setKeepCount(bricks.length);
+  }, [bricks.length, isGenerating, regenLoading]);
+
+  // Drop a stale selection if the kept prefix shrinks past it.
+  useEffect(() => {
+    if (selectedBrickIndex != null && selectedBrickIndex >= keepCount) {
+      setSelectedBrickIndex(null);
+    }
+  }, [keepCount, selectedBrickIndex]);
+
+  const collidingIndices = useMemo(() => {
+    const set = new Set<number>();
+    const isEditing = bricks.length > 0 && !isGenerating && !regenLoading;
+    if (!isEditing) return set;
+    const active = bricks.slice(0, keepCount);
+    for (let i = 0; i < active.length; i++) {
+      for (let j = i + 1; j < active.length; j++) {
+        const a = active[i];
+        const b = active[j];
+        const xOverlap = a.x < b.x + b.h && b.x < a.x + a.h;
+        const yOverlap = a.y < b.y + b.w && b.y < a.y + a.w;
+        const zOverlap = a.z < b.z + 1 && b.z < a.z + 1;
+        if (xOverlap && yOverlap && zOverlap) {
+          set.add(i);
+          set.add(j);
+        }
+      }
+    }
+    return set;
+  }, [bricks, isGenerating, regenLoading, keepCount]);
 
   // ── Image-to-3D pipeline state ─────────────────────────────────────────
   type ImgStage =
@@ -641,6 +812,21 @@ export default function Generator({
 
   // ── Text-to-3D handlers ─────────────────────────────────────────────
 
+  const buildConstraintPayload = useCallback(
+    () =>
+      selectedConstraints.flatMap((c) =>
+        c.boxes.map((box) => ({
+          pos_x: box.posX,
+          pos_y: box.posY,
+          pos_z: box.posZ,
+          size_x: box.sizeX,
+          size_y: box.sizeY,
+          size_z: box.sizeZ,
+        })),
+      ),
+    [selectedConstraints],
+  );
+
   async function handleGenerate() {
     if (!prompt.trim()) return;
 
@@ -649,6 +835,8 @@ export default function Generator({
     abortRef.current = controller;
 
     setIsGenerating(true);
+    setSelectedBrickIndex(null);
+    setBricksModified(false);
     setBricks([]);
     setError(null);
     setGenerationWarning(null);
@@ -657,16 +845,7 @@ export default function Generator({
     // New canvas key so it mounts fresh with the streaming camera.
     setCanvasKey((k) => k + 1);
 
-    const constraintPayload = selectedConstraints.flatMap((c) =>
-      c.boxes.map((box) => ({
-        pos_x: box.posX,
-        pos_y: box.posY,
-        pos_z: box.posZ,
-        size_x: box.sizeX,
-        size_y: box.sizeY,
-        size_z: box.sizeZ,
-      })),
-    );
+    const constraintPayload = buildConstraintPayload();
 
     try {
       await generateTextBricksStream(
@@ -720,6 +899,95 @@ export default function Generator({
     }
   }
 
+  // Pause the live stream, freezing the bricks placed so far. Editing mode
+  // becomes active automatically once `isGenerating` goes false.
+  function handlePause() {
+    abortRef.current?.abort();
+    abortRef.current = null;
+  }
+
+  function handleBrickMove(index: number, x: number, y: number, z: number) {
+    setBricks((prev) =>
+      prev.map((b, i) => (i === index ? { ...b, x, y, z } : b)),
+    );
+    setBricksModified(true);
+  }
+
+  function handleDeleteSelected() {
+    if (selectedBrickIndex == null) return;
+    setBricks((prev) => prev.filter((_, i) => i !== selectedBrickIndex));
+    setKeepCount((c) => Math.max(0, c - 1));
+    setSelectedBrickIndex(null);
+    setBricksModified(true);
+  }
+
+  async function handleRegenerateFromHere() {
+    const prefix = bricks.slice(0, keepCount);
+    if (prefix.length === 0 || collidingIndices.size > 0) return;
+
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    setRegenLoading(true);
+    setError(null);
+    setGenerationWarning(null);
+    setSelectedBrickIndex(null);
+
+    // Seed the canvas with the prefix — new bricks stream in after.
+    setBricks(prefix);
+    setStreamStats({ accepted: 0, rejected: 0, rollbacks: 0 });
+
+    try {
+      await regenerateTextBricksFromPrefixStream(
+        prompt,
+        prefix,
+        buildConstraintPayload(),
+        (event) => {
+          if (event.type === "brick") {
+            setBricks((prev) => [...prev, event.data]);
+            setStreamStats((s) => ({ ...s, accepted: s.accepted + 1 }));
+            if (rejectedTimerRef.current) {
+              clearTimeout(rejectedTimerRef.current);
+              rejectedTimerRef.current = null;
+            }
+            setRejectedBrick(null);
+          } else if (event.type === "reject") {
+            if (event.data) {
+              setRejectedBrick(event.data);
+              if (rejectedTimerRef.current)
+                clearTimeout(rejectedTimerRef.current);
+              rejectedTimerRef.current = setTimeout(
+                () => setRejectedBrick(null),
+                350,
+              );
+            }
+            setStreamStats((s) => ({ ...s, rejected: s.rejected + 1 }));
+          } else if (event.type === "rollback") {
+            setBricks((prev) => prev.slice(0, event.keep_count));
+            setStreamStats((s) => ({ ...s, rollbacks: s.rollbacks + 1 }));
+          } else if (event.type === "done") {
+            if (event.warning) setGenerationWarning(event.warning);
+          } else if (event.type === "error") {
+            setError(event.message);
+          }
+        },
+        controller.signal,
+      );
+      setBricksModified(false);
+    } catch (e: unknown) {
+      if (e instanceof DOMException && e.name === "AbortError") return;
+      setError(e instanceof Error ? e.message : "Regeneration failed");
+    } finally {
+      setRegenLoading(false);
+      if (rejectedTimerRef.current) {
+        clearTimeout(rejectedTimerRef.current);
+        rejectedTimerRef.current = null;
+      }
+      setRejectedBrick(null);
+    }
+  }
+
   function handleCancel() {
     abortRef.current?.abort();
     abortRef.current = null;
@@ -732,14 +1000,17 @@ export default function Generator({
     abortRef.current?.abort();
     abortRef.current = null;
 
-    if (bricks.length > 0) {
-      const genOffset = computeGenerationOffset(bricks);
+    // When the user has reverted to an earlier step, only commit the kept prefix.
+    const outBricks = editing ? bricks.slice(0, keepCount) : bricks;
+
+    if (outBricks.length > 0) {
+      const genOffset = computeGenerationOffset(outBricks);
       const { minX, minNegY, minZ } = genOffset;
 
       const category: AssetCategory =
         tab === "image-to-3d" ? "image-to-3d" : "text-to-3d";
       const ts = Date.now();
-      const sceneAssets: SceneAsset[] = bricks.map((b, i) => ({
+      const sceneAssets: SceneAsset[] = outBricks.map((b, i) => ({
         id: `gen-${i}-${ts}`,
         name: `Brick ${assets.length + i + 1}`,
         type: "preset-brick",
@@ -756,7 +1027,7 @@ export default function Generator({
         materialMetalness: 0.2,
         preset: { studsX: b.h, studsY: b.w },
       }));
-      const generationHistory: GenerationHistoryEntry[] = bricks.map((b) => ({
+      const generationHistory: GenerationHistoryEntry[] = outBricks.map((b) => ({
         x: b.x - minX,
         y: -b.y - minNegY,
         z: b.z - minZ,
@@ -778,6 +1049,12 @@ export default function Generator({
   }
 
   const hasResult = bricks.length > 0;
+
+  // Editing mode is active whenever a result exists and no generation/regen is
+  // running. No explicit toggle — it's always on after generation finishes.
+  const editing = hasResult && !isGenerating && !regenLoading;
+
+  const hasEdited = keepCount < bricks.length || bricksModified;
 
   return (
     <div className="flex flex-col h-[64vh]">
@@ -828,31 +1105,6 @@ export default function Generator({
                     className="w-full !h-7 !py-0 !text-[10px] !leading-none"
                     disabled={isGenerating}
                   />
-                </div>
-
-                {/* Instructions */}
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-xs font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-                    How to use
-                  </span>
-                  <ol className="flex flex-col gap-1.5">
-                    {[
-                      "Describe the desired structure in natural language.",
-                      "Add layout constraints in the Constraints Builder (toolbar) to bound the generation area.",
-                      "Use the Constraints selector below to attach saved constraints before generating.",
-                      "Orbit and inspect the preview on the right. Click Add to Scene if satisfied.",
-                    ].map((item, i) => (
-                      <li
-                        key={i}
-                        className="flex gap-1.5 text-[10px] leading-snug text-zinc-500 dark:text-zinc-500"
-                      >
-                        <span className="shrink-0 text-zinc-500 dark:text-zinc-500">
-                          {i + 1}.
-                        </span>
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ol>
                 </div>
 
                 {/* Constraint selector */}
@@ -942,6 +1194,75 @@ export default function Generator({
                     </div>
                   </div>
                 )}
+
+                {/* Edit / revert / regenerate controls — visible after generation */}
+                {editing && (
+                  <div className="flex flex-col gap-2 border border-zinc-400 dark:border-zinc-600 p-2">
+                    <p className="text-[10px] leading-snug text-zinc-500 dark:text-zinc-500">
+                      Revert to an earlier step using the slider. Move or delete
+                      bricks in the preview. Then regenerate from the edited prefix.
+                    </p>
+
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-zinc-500 dark:text-zinc-500">
+                          Keep steps
+                        </span>
+                        <span className="text-[10px] text-zinc-500 dark:text-zinc-500 tabular-nums">
+                          {keepCount} / {bricks.length}
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min={0}
+                        max={bricks.length}
+                        step={1}
+                        value={keepCount}
+                        onChange={(e) => {
+                          setKeepCount(Number(e.target.value));
+                          if (Number(e.target.value) < bricks.length)
+                            setBricksModified(true);
+                        }}
+                        disabled={regenLoading}
+                        className="w-full h-1 accent-accent cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-2 mt-2">
+                      <button
+                        onClick={handleDeleteSelected}
+                        disabled={selectedBrickIndex == null || regenLoading}
+                        className="w-full h-7 flex items-center justify-center rounded-none text-[10px] font-medium text-red-500 border border-red-500 bg-red-500/10 hover:bg-red-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Delete selected brick
+                      </button>
+
+                      {collidingIndices.size > 0 && (
+                        <p className="text-[10px] leading-snug text-red-600 dark:text-red-400">
+                          {collidingIndices.size} brick
+                          {collidingIndices.size !== 1 ? "s" : ""} overlap — fix
+                          before regenerating.
+                        </p>
+                      )}
+
+                      <Button
+                        onClick={handleRegenerateFromHere}
+                        disabled={
+                          regenLoading ||
+                          keepCount === 0 ||
+                          collidingIndices.size > 0
+                        }
+                        className="w-full h-7 flex items-center justify-center"
+                      >
+                        {regenLoading
+                          ? "Regenerating…"
+                          : hasEdited
+                            ? "Regenerate"
+                            : "Continue Generation"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </>
             )}
 
@@ -975,31 +1296,6 @@ export default function Generator({
                       {imgFile.name}
                     </span>
                   )}
-                </div>
-
-                {/* Instructions */}
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-xs font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-                    How to use
-                  </span>
-                  <ol className="flex flex-col gap-1.5">
-                    {[
-                      "Upload a photo containing the object you want to convert.",
-                      "Click on the object to add selection points. Alt-click or right-click to mark background.",
-                      "Click Reconstruct 3D once the mask looks right.",
-                      "Adjust brick density with the slider, then click Add to Scene.",
-                    ].map((item, i) => (
-                      <li
-                        key={i}
-                        className="flex gap-1.5 text-[10px] leading-snug text-zinc-500 dark:text-zinc-500"
-                      >
-                        <span className="shrink-0 text-zinc-500 dark:text-zinc-500">
-                          {i + 1}.
-                        </span>
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ol>
                 </div>
 
                 {/* Segment stage controls */}
@@ -1083,13 +1379,22 @@ export default function Generator({
           <div className="flex flex-col gap-2 px-3 py-3 border-t border-zinc-400 dark:border-zinc-600">
             {tab === "text-to-3d" && (
               <>
-                <Button
-                  onClick={handleGenerate}
-                  disabled={!prompt.trim() || isGenerating}
-                  className="w-full h-7 flex items-center justify-center"
-                >
-                  {isGenerating ? "Generating…" : "Generate"}
-                </Button>
+                {isGenerating ? (
+                  <Button
+                    onClick={handlePause}
+                    className="w-full h-7 flex items-center justify-center"
+                  >
+                    Pause
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={handleGenerate}
+                    disabled={!prompt.trim() || regenLoading}
+                    className="w-full h-7 flex items-center justify-center"
+                  >
+                    Generate
+                  </Button>
+                )}
                 <div className="flex gap-2">
                   <Button
                     onClick={handleCancel}
@@ -1099,7 +1404,7 @@ export default function Generator({
                   </Button>
                   <Button
                     onClick={handleAddToScene}
-                    disabled={!hasResult}
+                    disabled={!hasResult || isGenerating || regenLoading}
                     className="flex-1 h-7 flex items-center justify-center"
                   >
                     Add to Scene
@@ -1161,18 +1466,38 @@ export default function Generator({
                     }}
                     gl={{ antialias: true }}
                     style={{ position: "absolute", inset: 0 }}
+                    onPointerMissed={
+                      editing ? () => setSelectedBrickIndex(null) : undefined
+                    }
                   >
                     <color attach="background" args={["#f4f4f5"]} />
                     <BrickPreviewScene
                       bricks={bricks}
                       rejectedBrick={rejectedBrick}
                       constraintBoxes={showConstraints ? selectedBoxes : []}
+                      editing={editing}
+                      keepCount={keepCount}
+                      selectedIndex={selectedBrickIndex}
+                      collidingIndices={collidingIndices}
+                      onSelect={setSelectedBrickIndex}
+                      onCommitMove={handleBrickMove}
                     />
                   </Canvas>
                 )}
 
+                {/* Edit-mode / regen-mode hint badge */}
+                {(editing || regenLoading) && (
+                  <div className="absolute top-2 left-2 pointer-events-none">
+                    <span className="px-2 py-0.5 rounded-none bg-accent/90 text-white text-[10px] leading-none">
+                      {regenLoading
+                        ? `Regenerating from step ${bricks.length}…`
+                        : `Editing prefix · ${keepCount} brick${keepCount !== 1 ? "s" : ""}`}
+                    </span>
+                  </div>
+                )}
+
                 {/* Live generation stats overlay */}
-                {isGenerating && hasResult && (
+                {(isGenerating || regenLoading) && hasResult && (
                   <div className="absolute bottom-2 left-0 right-0 flex justify-center pointer-events-none">
                     <div className="flex items-center gap-2 px-2.5 py-1 rounded-none bg-black/40 backdrop-blur-sm">
                       <span className="text-[10px] leading-none text-white/90 tabular-nums">

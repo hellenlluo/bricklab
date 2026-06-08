@@ -5,6 +5,7 @@ import Docs from "@/components/Docs";
 import Generator from "@/components/Generator";
 import Library from "@/components/Library";
 import Exporter from "@/components/Exporter";
+import BrickPreview from "@/components/BrickPreview";
 
 type Panel = "Docs" | "Generator" | "Library" | "Exporter";
 
@@ -69,12 +70,13 @@ export default function TopNav() {
           className="flex shrink-0 items-center px-3 border-r border-zinc-400 dark:border-zinc-600"
         >
           <span
-            className="text-xl font-normal tracking-tight text-accent px-2 py-0.5 border"
+            className="inline-flex items-center gap-1.5 text-xl font-normal tracking-tight text-accent px-2 py-0.5 border"
             style={{
               borderColor: "#908095",
               backgroundColor: "rgb(144 128 149 / 0.25)",
             }}
           >
+            <BrickPreview studsX={1} studsY={1} className="w-6 h-6 shrink-0" strokeWidth={0.5} />
             BrickLab
           </span>
         </div>
@@ -88,7 +90,7 @@ export default function TopNav() {
             <button
               key={item}
               onClick={() => handleButtonClick(item)}
-              className={`px-4 py-1.5 rounded-none text-sm font-normal transition-colors ${
+              className={`h-7 flex items-center px-4 rounded-none text-sm font-normal transition-colors ${
                 activePanel === item
                   ? "bg-accent/10 text-accent"
                   : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-zinc-50 dark:hover:bg-zinc-800"

@@ -1,7 +1,5 @@
 # BrickLab
 
-A browser-based 3D brick scene editor with AI-powered generation.
-
 | Layer    | Stack                                  | Port |
 | -------- | -------------------------------------- | ---- |
 | Frontend | Next.js 16 + React 19 + Three.js (R3F) | 3000 |

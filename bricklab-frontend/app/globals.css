@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: var(--font-inter), Arial, Helvetica, sans-serif;
+  --font-sans: var(--font-titillium-web), Arial, Helvetica, sans-serif;
   --color-accent: #908095;
   --color-accent-dark: #7d6f82;
 }

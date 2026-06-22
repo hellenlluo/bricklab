@@ -24,9 +24,8 @@ const BUILDER_FOV = 35;
 const CONSTRAINT_COLOR = "#FFAB91";
 const CONSTRAINT_EDGE_COLOR = "#FF8A65";
 const GRID_COLOR = "#7ec8e3";
-const CONTROL_INPUT_CLASS = "!h-7 !py-0 !text-[10px] !leading-none";
-const CONTROL_BUTTON_CLASS =
-  "!h-7 !py-0 flex items-center justify-center shrink-0 leading-none";
+const CONTROL_INPUT_CLASS = "";
+const CONTROL_BUTTON_CLASS = "flex items-center justify-center shrink-0";
 
 interface ConstraintBuilderProps {
   existing: Constraint | null;
@@ -442,13 +441,13 @@ export default function ConstraintBuilder({
       onClick={onClose}
     >
       <div
-        className="w-[44vw] rounded-none border border-zinc-400 dark:border-zinc-500 bg-white dark:bg-zinc-900"
+        className="w-[44vw] rounded-none border border-border bg-background"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex flex-col h-[64vh]">
           {/* Header */}
-          <div className="px-3 py-3 border-b border-zinc-400 dark:border-zinc-600">
-            <span className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+          <div className="px-3 py-3 border-b border-border">
+            <span className="text-sm font-semibold tracking-tight text-foreground">
               {existing ? "Edit Constraint" : "New Constraint"}
             </span>
           </div>
@@ -456,9 +455,7 @@ export default function ConstraintBuilder({
           {/* Name + Add Box controls */}
           <div className="flex gap-2 px-3 pt-3 pb-0 items-end">
             <div className="flex flex-col gap-1 flex-1">
-              <label className="text-[10px] text-zinc-500 dark:text-zinc-500">
-                Name
-              </label>
+              <label className="text-[10px] text-muted-foreground">Name</label>
               <Input
                 type="text"
                 value={name}
@@ -468,7 +465,7 @@ export default function ConstraintBuilder({
               />
             </div>
             <div className="flex flex-col gap-1 items-center">
-              <label className="text-[10px] text-zinc-500 dark:text-zinc-500 text-center w-full">
+              <label className="text-[10px] text-muted-foreground text-center w-full">
                 X
               </label>
               <Input
@@ -483,7 +480,7 @@ export default function ConstraintBuilder({
               />
             </div>
             <div className="flex flex-col gap-1 items-center">
-              <label className="text-[10px] text-zinc-500 dark:text-zinc-500 text-center w-full">
+              <label className="text-[10px] text-muted-foreground text-center w-full">
                 Y
               </label>
               <Input
@@ -498,7 +495,7 @@ export default function ConstraintBuilder({
               />
             </div>
             <div className="flex flex-col gap-1 items-center">
-              <label className="text-[10px] text-zinc-500 dark:text-zinc-500 text-center w-full">
+              <label className="text-[10px] text-muted-foreground text-center w-full">
                 Z
               </label>
               <Input
@@ -521,14 +518,14 @@ export default function ConstraintBuilder({
           </div>
 
           {/* 3D Viewport */}
-          <div className="relative flex-1 min-h-0 mx-3 mt-3 mb-3 rounded-none border border-zinc-400 dark:border-zinc-500 bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
+          <div className="relative flex-1 min-h-0 mx-3 mt-3 mb-3 rounded-none border border-border bg-muted overflow-hidden">
             {/* Box selector + details overlay */}
             {boxes.length > 0 && (
-              <div className="absolute top-2 left-2 z-10 flex gap-2 items-center h-9 px-2.5 rounded-none bg-white/90 dark:bg-zinc-900/90 border border-zinc-400 dark:border-zinc-500 backdrop-blur-sm">
+              <div className="absolute top-2 left-2 z-10 flex gap-2 items-center h-9 px-2.5 rounded-none bg-background/90 border border-border backdrop-blur-sm">
                 <select
                   value={selectedBoxId ?? ""}
                   onChange={(e) => setSelectedBoxId(e.target.value || null)}
-                  className="text-xs bg-transparent outline-none text-zinc-700 dark:text-zinc-200 cursor-pointer"
+                  className="text-xs bg-transparent outline-none text-foreground cursor-pointer"
                 >
                   <option value="">Select a constraint box</option>
                   {boxes.map((box, idx) => (
@@ -554,9 +551,7 @@ export default function ConstraintBuilder({
                         }
                         className="w-12 text-center"
                       />
-                      <span className="text-xs text-zinc-500 dark:text-zinc-500">
-                        ×
-                      </span>
+                      <span className="text-xs text-muted-foreground">×</span>
                       <Input
                         type="number"
                         min={1}
@@ -571,9 +566,7 @@ export default function ConstraintBuilder({
                         }
                         className="w-12 text-center"
                       />
-                      <span className="text-xs text-zinc-500 dark:text-zinc-500">
-                        ×
-                      </span>
+                      <span className="text-xs text-muted-foreground">×</span>
                       <Input
                         type="number"
                         min={1}
@@ -589,14 +582,14 @@ export default function ConstraintBuilder({
                         className="w-12 text-center"
                       />
                     </div>
-                    <span className="text-[9px] text-zinc-500 dark:text-zinc-500">
+                    <span className="text-[9px] text-muted-foreground">
                       ({selectedBox.posX}, {selectedBox.posY},{" "}
                       {selectedBox.posZ})
                     </span>
                     <button
                       onClick={() => handleRemoveBox(selectedBox.id)}
                       title="Delete box"
-                      className="text-zinc-400 hover:text-red-500 transition-colors"
+                      className="text-muted-foreground hover:text-red-500 transition-colors"
                       style={{ fontSize: "0.55rem", lineHeight: 1 }}
                     >
                       ✕

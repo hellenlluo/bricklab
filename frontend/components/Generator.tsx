@@ -3,10 +3,16 @@
 import Image from "next/image";
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
-import { OrbitControls, Environment, TransformControls } from "@react-three/drei";
+import {
+  OrbitControls,
+  Environment,
+  TransformControls,
+} from "@react-three/drei";
 import * as THREE from "three";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Slider } from "@/components/ui/slider";
 import ParametricBrick from "@/components/ParametricBrick";
 import { useScene } from "@/store/sceneStore";
 import type {
@@ -64,7 +70,7 @@ const WORKSPACE_CAM_TARGET: [number, number, number] = [
   WORLD_DIM / 2,
 ];
 const TOOLBAR_BUTTON_CLASS =
-  "inline-flex h-7 shrink-0 items-center justify-center whitespace-nowrap py-0 leading-none";
+  "inline-flex h-6.5 shrink-0 items-center justify-center whitespace-nowrap py-0 leading-none";
 
 function PreviewAxes() {
   const axes = useMemo(() => {
@@ -1027,13 +1033,15 @@ export default function Generator({
         materialMetalness: 0.2,
         preset: { studsX: b.h, studsY: b.w },
       }));
-      const generationHistory: GenerationHistoryEntry[] = outBricks.map((b) => ({
-        x: b.x - minX,
-        y: -b.y - minNegY,
-        z: b.z - minZ,
-        studsX: b.h,
-        studsY: b.w,
-      }));
+      const generationHistory: GenerationHistoryEntry[] = outBricks.map(
+        (b) => ({
+          x: b.x - minX,
+          y: -b.y - minNegY,
+          z: b.z - minZ,
+          studsX: b.h,
+          studsY: b.w,
+        }),
+      );
       const label = prompt.trim().slice(0, 20);
       addAssetsAsGroup(
         sceneAssets,
@@ -1059,26 +1067,22 @@ export default function Generator({
   return (
     <div className="flex flex-col h-[64vh]">
       {/* Header */}
-      <div className="px-3 py-3 border-b border-zinc-400 dark:border-zinc-600">
-        <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-          Generator
-        </span>
+      <div className="px-3 py-3 border-b border-border">
+        <span className="text-sm font-semibold text-foreground">Generator</span>
       </div>
 
       {/* Body: single two-column layout, divider runs header-to-bottom */}
       <div className="flex flex-col md:flex-row flex-1 min-h-0">
         {/* ── LEFT: tabs + controls + actions ─────────────────────────── */}
-        <div className="flex flex-col md:w-[28%] shrink-0 border-b border-zinc-400 dark:border-zinc-600 md:border-b-0 md:border-r">
+        <div className="flex flex-col md:w-[28%] shrink-0 border-b border-border md:border-b-0 md:border-r">
           {/* Tab toggle */}
-          <ul className="flex flex-col px-3 py-2 border-b border-zinc-400 dark:border-zinc-600">
+          <ul className="flex flex-col gap-2 px-3 py-2 border-b border-border">
             {(["text-to-3d", "image-to-3d"] as Tab[]).map((t) => (
               <li key={t}>
                 <button
                   onClick={() => setTab(t)}
-                  className={`w-full flex items-center px-2 py-1.5 rounded-none text-xs text-left transition-colors ${
-                    tab === t
-                      ? "bg-accent/10 text-accent"
-                      : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                  className={`w-full h-6.5 flex items-center px-2 rounded-none text-xs leading-none text-left text-foreground transition-colors ${
+                    tab === t ? "bg-muted" : "hover:bg-muted"
                   }`}
                 >
                   {t === "text-to-3d" ? "Text-to-3D" : "Image-to-3D"}
@@ -1093,7 +1097,7 @@ export default function Generator({
               <>
                 {/* Prompt */}
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-xs font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+                  <span className="text-xs font-semibold tracking-tight text-foreground">
                     Prompt
                   </span>
                   <Input
@@ -1102,7 +1106,7 @@ export default function Generator({
                     onChange={(e) => setPrompt(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleGenerate()}
                     placeholder="Describe a 3D brick structure..."
-                    className="w-full !h-7 !py-0 !text-[10px] !leading-none"
+                    className="w-full"
                     disabled={isGenerating}
                   />
                 </div>
@@ -1110,7 +1114,7 @@ export default function Generator({
                 {/* Constraint selector */}
                 {constraints.length > 0 && (
                   <div className="flex flex-col gap-1.5">
-                    <span className="text-xs font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+                    <span className="text-xs font-semibold tracking-tight text-foreground">
                       Constraints
                     </span>
                     <div className="flex flex-col gap-2">
@@ -1118,14 +1122,14 @@ export default function Generator({
                         <button
                           type="button"
                           onClick={() => setConstraintDropdownOpen((o) => !o)}
-                          className={`flex w-full h-7 items-center gap-1.5 px-2 border border-zinc-400 dark:border-zinc-500 bg-white dark:bg-zinc-800 text-[10px] leading-none text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors ${
+                          className={`flex w-full h-6.5 items-center gap-1.5 px-2 border border-border bg-background text-xs leading-none text-foreground hover:bg-muted/50 transition-colors ${
                             constraintDropdownOpen
                               ? "rounded-none border-b-0"
                               : "rounded-none"
                           }`}
                         >
                           <span
-                            className="inline-block shrink-0 text-zinc-900 dark:text-zinc-100 transition-transform duration-200"
+                            className="inline-block shrink-0 text-foreground transition-transform duration-200"
                             style={{
                               fontSize: "0.45rem",
                               transform: constraintDropdownOpen
@@ -1136,9 +1140,7 @@ export default function Generator({
                           >
                             ▶
                           </span>
-                          <span className="text-zinc-500 dark:text-zinc-500">
-                            Select:
-                          </span>
+                          <span className="text-muted-foreground">Select:</span>
                           <span>
                             {selectedConstraintIds.length === 0
                               ? "None"
@@ -1146,7 +1148,7 @@ export default function Generator({
                           </span>
                         </button>
                         {constraintDropdownOpen && (
-                          <div className="absolute top-full left-0 w-full bg-white dark:bg-zinc-900 border border-t-0 border-zinc-400 dark:border-zinc-600 rounded-none z-50 overflow-hidden">
+                          <div className="absolute top-full left-0 w-full bg-background border border-t-0 border-border rounded-none z-50 overflow-hidden">
                             <ul className="py-1">
                               {constraints.map((c) => {
                                 const checked = selectedConstraintIds.includes(
@@ -1154,20 +1156,19 @@ export default function Generator({
                                 );
                                 return (
                                   <li key={c.id}>
-                                    <label className="flex cursor-pointer items-center gap-2 px-3 py-1.5 text-[10px] leading-none hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
-                                      <input
-                                        type="checkbox"
+                                    <label className="flex cursor-pointer items-center gap-2 px-3 py-1.5 text-xs hover:bg-muted transition-colors">
+                                      <Checkbox
                                         checked={checked}
-                                        onChange={() =>
+                                        onCheckedChange={() =>
                                           setSelectedConstraintIds((prev) =>
                                             checked
                                               ? prev.filter((id) => id !== c.id)
                                               : [...prev, c.id],
                                           )
                                         }
-                                        className="h-3 w-3 accent-zinc-700 dark:accent-zinc-400 cursor-pointer shrink-0"
+                                        className="size-3 shrink-0"
                                       />
-                                      <span className="truncate text-zinc-700 dark:text-zinc-200">
+                                      <span className="truncate text-foreground">
                                         {c.name}
                                       </span>
                                     </label>
@@ -1179,14 +1180,13 @@ export default function Generator({
                         )}
                       </div>
                       {selectedConstraintIds.length > 0 && (
-                        <label className="flex cursor-pointer select-none items-center gap-1.5 text-[10px] leading-none text-zinc-500 dark:text-zinc-500">
-                          <input
-                            type="checkbox"
+                        <label className="flex cursor-pointer select-none items-center gap-1.5 text-xs text-muted-foreground">
+                          <Checkbox
                             checked={showConstraints}
-                            onChange={(e) =>
-                              setShowConstraints(e.target.checked)
+                            onCheckedChange={(v) =>
+                              setShowConstraints(v as boolean)
                             }
-                            className="h-3 w-3 accent-zinc-700 dark:accent-zinc-400 cursor-pointer shrink-0"
+                            className="size-3 shrink-0"
                           />
                           <span>Show in preview</span>
                         </label>
@@ -1197,34 +1197,33 @@ export default function Generator({
 
                 {/* Edit / revert / regenerate controls — visible after generation */}
                 {editing && (
-                  <div className="flex flex-col gap-2 border border-zinc-400 dark:border-zinc-600 p-2">
-                    <p className="text-[10px] leading-snug text-zinc-500 dark:text-zinc-500">
+                  <div className="flex flex-col gap-2 border border-border p-2">
+                    <p className="text-[10px] leading-snug text-muted-foreground">
                       Revert to an earlier step using the slider. Move or delete
-                      bricks in the preview. Then regenerate from the edited prefix.
+                      bricks in the preview. Then regenerate from the edited
+                      prefix.
                     </p>
 
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] text-zinc-500 dark:text-zinc-500">
+                        <span className="text-[10px] text-muted-foreground">
                           Keep steps
                         </span>
-                        <span className="text-[10px] text-zinc-500 dark:text-zinc-500 tabular-nums">
+                        <span className="text-[10px] text-muted-foreground tabular-nums">
                           {keepCount} / {bricks.length}
                         </span>
                       </div>
-                      <input
-                        type="range"
+                      <Slider
                         min={0}
                         max={bricks.length}
                         step={1}
-                        value={keepCount}
-                        onChange={(e) => {
-                          setKeepCount(Number(e.target.value));
-                          if (Number(e.target.value) < bricks.length)
-                            setBricksModified(true);
+                        value={[keepCount]}
+                        onValueChange={([v]) => {
+                          setKeepCount(v);
+                          if (v < bricks.length) setBricksModified(true);
                         }}
                         disabled={regenLoading}
-                        className="w-full h-1 accent-accent cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="w-full"
                       />
                     </div>
 
@@ -1232,7 +1231,7 @@ export default function Generator({
                       <button
                         onClick={handleDeleteSelected}
                         disabled={selectedBrickIndex == null || regenLoading}
-                        className="w-full h-7 flex items-center justify-center rounded-none text-[10px] font-medium text-red-500 border border-red-500 bg-red-500/10 hover:bg-red-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        className="w-full h-6.5 flex items-center justify-center rounded-none text-xs font-medium leading-none text-red-500 border border-red-500 bg-red-500/10 hover:bg-red-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                       >
                         Delete selected brick
                       </button>
@@ -1252,7 +1251,7 @@ export default function Generator({
                           keepCount === 0 ||
                           collidingIndices.size > 0
                         }
-                        className="w-full h-7 flex items-center justify-center"
+                        className="w-full h-6.5 flex items-center justify-center"
                       >
                         {regenLoading
                           ? "Regenerating…"
@@ -1280,19 +1279,19 @@ export default function Generator({
 
                 {/* Upload / file name */}
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-xs font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+                  <span className="text-xs font-semibold tracking-tight text-foreground">
                     Image
                   </span>
                   <Button
                     type="button"
                     onClick={() => imgFileInputRef.current?.click()}
                     disabled={imgLoading && imgStage !== "segment"}
-                    className="w-full h-7 flex items-center justify-center"
+                    className="w-full h-6.5 flex items-center justify-center"
                   >
                     {imgFile ? "Change Image" : "Upload Image"}
                   </Button>
                   {imgFile && (
-                    <span className="text-[10px] text-zinc-500 dark:text-zinc-500 truncate">
+                    <span className="text-[10px] text-muted-foreground truncate">
                       {imgFile.name}
                     </span>
                   )}
@@ -1301,10 +1300,10 @@ export default function Generator({
                 {/* Segment stage controls */}
                 {imgStage === "segment" && (
                   <div className="flex flex-col gap-2">
-                    <span className="text-xs font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+                    <span className="text-xs font-semibold tracking-tight text-foreground">
                       Selection
                     </span>
-                    <p className="text-[10px] text-zinc-500 dark:text-zinc-500 leading-snug">
+                    <p className="text-[10px] text-muted-foreground leading-snug">
                       Click on the object to select it. Alt+click or right-click
                       to deselect regions.
                     </p>
@@ -1342,30 +1341,27 @@ export default function Generator({
                     {imgPlyId && (
                       <div className="flex flex-col gap-1.5">
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+                          <span className="text-xs font-semibold tracking-tight text-foreground">
                             Brick density
                           </span>
-                          <span className="text-[10px] text-zinc-500 dark:text-zinc-500 tabular-nums">
+                          <span className="text-[10px] text-muted-foreground tabular-nums">
                             {imgVoxels.length} bricks
                           </span>
                         </div>
-                        <input
-                          type="range"
+                        <Slider
                           min={5}
                           max={100}
                           step={1}
-                          value={imgDensity}
-                          onChange={(e) =>
-                            handleDensityChange(parseInt(e.target.value))
-                          }
-                          className="w-full h-1 accent-zinc-700 dark:accent-zinc-400 cursor-pointer"
+                          value={[imgDensity]}
+                          onValueChange={([v]) => handleDensityChange(v)}
                           disabled={imgLoading}
+                          className="w-full"
                         />
                       </div>
                     )}
                     <Button
                       onClick={handleImgReset}
-                      className="w-full h-7 flex items-center justify-center"
+                      className="w-full h-6.5 flex items-center justify-center"
                     >
                       Start Over
                     </Button>
@@ -1376,13 +1372,13 @@ export default function Generator({
           </div>
 
           {/* Action buttons (pinned to bottom of left column) */}
-          <div className="flex flex-col gap-2 px-3 py-3 border-t border-zinc-400 dark:border-zinc-600">
+          <div className="flex flex-col gap-2 px-3 py-3 border-t border-border">
             {tab === "text-to-3d" && (
               <>
                 {isGenerating ? (
                   <Button
                     onClick={handlePause}
-                    className="w-full h-7 flex items-center justify-center"
+                    className="w-full h-6.5 flex items-center justify-center"
                   >
                     Pause
                   </Button>
@@ -1390,22 +1386,22 @@ export default function Generator({
                   <Button
                     onClick={handleGenerate}
                     disabled={!prompt.trim() || regenLoading}
-                    className="w-full h-7 flex items-center justify-center"
+                    className="w-full h-6.5 flex items-center justify-center"
                   >
                     Generate
                   </Button>
                 )}
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-3">
                   <Button
                     onClick={handleCancel}
-                    className="flex-1 h-7 flex items-center justify-center"
+                    className="flex-1 min-w-max h-6.5 flex items-center justify-center"
                   >
                     Cancel
                   </Button>
                   <Button
                     onClick={handleAddToScene}
                     disabled={!hasResult || isGenerating || regenLoading}
-                    className="flex-1 h-7 flex items-center justify-center"
+                    className="flex-1 min-w-max h-6.5 flex items-center justify-center"
                   >
                     Add to Scene
                   </Button>
@@ -1413,17 +1409,17 @@ export default function Generator({
               </>
             )}
             {tab === "image-to-3d" && (
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-3">
                 <Button
                   onClick={handleCancel}
-                  className="flex-1 h-7 flex items-center justify-center"
+                  className="flex-1 min-w-max h-6.5 flex items-center justify-center"
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={handleImgAddToScene}
                   disabled={imgVoxels.length === 0}
-                  className="flex-1 h-7 flex items-center justify-center"
+                  className="flex-1 min-w-max h-6.5 flex items-center justify-center"
                 >
                   Add to Scene
                 </Button>
@@ -1437,10 +1433,10 @@ export default function Generator({
           {tab === "text-to-3d" && (
             <>
               {/* Viewport */}
-              <div className="relative flex-1 min-h-0 rounded-none border border-zinc-400 dark:border-zinc-500 bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden">
+              <div className="relative flex-1 min-h-0 rounded-none border border-border bg-muted flex items-center justify-center overflow-hidden">
                 {/* Empty / error states (only when no bricks to show) */}
                 {!hasResult && isGenerating && (
-                  <span className="text-xs text-zinc-500 dark:text-zinc-500 animate-pulse">
+                  <span className="text-xs text-muted-foreground animate-pulse">
                     Generating…
                   </span>
                 )}
@@ -1450,9 +1446,7 @@ export default function Generator({
                   </span>
                 )}
                 {!hasResult && !isGenerating && !error && (
-                  <span className="text-xs text-zinc-500 dark:text-zinc-500">
-                    Preview
-                  </span>
+                  <span className="text-xs text-muted-foreground">Preview</span>
                 )}
 
                 {/* 3-D canvas — visible as soon as the first brick arrives */}
@@ -1542,7 +1536,7 @@ export default function Generator({
 
               {/* Partial-generation / resampling notice */}
               {generationWarning && (
-                <p className="text-xs text-zinc-500 dark:text-zinc-500">
+                <p className="text-xs text-muted-foreground">
                   {generationWarning}
                 </p>
               )}
@@ -1560,18 +1554,18 @@ export default function Generator({
           )}
 
           {tab === "image-to-3d" && (
-            <div className="relative flex-1 min-h-0 rounded-none border border-zinc-400 dark:border-zinc-500 bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden">
+            <div className="relative flex-1 min-h-0 rounded-none border border-border bg-muted flex items-center justify-center overflow-hidden">
               {/* Loading overlay */}
               {imgLoading && (
                 <div
                   className={`absolute inset-0 flex items-center justify-center z-20 ${
                     imgStage === "segment" || imgStage === "voxel-adjust"
                       ? "bg-transparent"
-                      : "bg-zinc-100/60 dark:bg-zinc-800/60"
+                      : "bg-muted/60"
                   }`}
                 >
                   {imgStage !== "segment" && imgStage !== "voxel-adjust" && (
-                    <span className="text-xs text-zinc-500 dark:text-zinc-500 animate-pulse">
+                    <span className="text-xs text-muted-foreground animate-pulse">
                       {imgLoadingMsg}
                     </span>
                   )}
@@ -1590,7 +1584,7 @@ export default function Generator({
                 !imgPreviewUrl &&
                 !imgLoading &&
                 !imgError && (
-                  <span className="text-xs text-zinc-500 dark:text-zinc-500">
+                  <span className="text-xs text-muted-foreground">
                     Upload an image to begin
                   </span>
                 )}
@@ -1671,7 +1665,7 @@ export default function Generator({
 
               {/* Reconstructing placeholder */}
               {imgStage === "reconstructing" && !imgLoading && (
-                <span className="text-xs text-zinc-500 dark:text-zinc-500">
+                <span className="text-xs text-muted-foreground">
                   Waiting for 3D reconstruction…
                 </span>
               )}

@@ -13,7 +13,7 @@ export default function LeftSidebar() {
         left: 0,
         bottom: 0,
       }}
-      className="fixed bg-white dark:bg-zinc-900 border-r border-zinc-400 dark:border-zinc-600 z-40 overflow-y-auto"
+      className="fixed bg-background border-r border-border z-40 overflow-y-auto"
     >
       <ScenesPanel />
       <AssetsPanel />

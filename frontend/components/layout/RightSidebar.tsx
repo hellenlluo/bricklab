@@ -21,10 +21,10 @@ export default function RightSidebar() {
         right: 0,
         bottom: 0,
       }}
-      className="fixed bg-white dark:bg-zinc-900 border-l border-zinc-400 dark:border-zinc-600 z-40 overflow-y-auto"
+      className="fixed bg-background border-l border-border z-40 overflow-y-auto"
     >
-      <div className="px-3 py-2 border-b border-zinc-400 dark:border-zinc-600">
-        <span className="text-xs font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+      <div className="px-3 py-2 border-b border-border">
+        <span className="text-xs font-semibold tracking-tight text-foreground">
           {showProperties ? "Properties" : "Scene Settings"}
         </span>
       </div>

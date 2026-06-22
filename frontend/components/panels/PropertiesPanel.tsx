@@ -10,6 +10,8 @@ import Texture from "./Texture";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import GenerationReplay from "@/components/GenerationReplay";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Slider } from "@/components/ui/slider";
 
 function Field({
   label,
@@ -20,9 +22,7 @@ function Field({
 }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="text-[10px] text-zinc-500 dark:text-zinc-500">
-        {label}
-      </span>
+      <span className="text-[10px] text-muted-foreground">{label}</span>
       {children}
     </div>
   );
@@ -178,7 +178,7 @@ export default function PropertiesPanel() {
   if (!asset && !selectedGroup) {
     return (
       <div data-no-deselect>
-        <div className="px-3 py-3 text-xs text-zinc-500 dark:text-zinc-500 italic">
+        <div className="px-3 py-3 text-xs text-muted-foreground italic">
           Select an asset to view its properties.
         </div>
       </div>
@@ -253,8 +253,35 @@ export default function PropertiesPanel() {
             />
           </Field>
 
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <Checkbox
+                checked={allVisible}
+                onCheckedChange={(v) =>
+                  updateAllAssets({ visible: v as boolean })
+                }
+                className="size-3.5"
+              />
+              <span className="text-xs text-muted-foreground">
+                {allVisible ? "Visible" : "Hidden"}
+              </span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <Checkbox
+                checked={allSelectable}
+                onCheckedChange={(v) =>
+                  updateAllAssets({ selectable: v as boolean })
+                }
+                className="size-3.5"
+              />
+              <span className="text-xs text-muted-foreground">
+                {allSelectable ? "Selectable" : "Not selectable"}
+              </span>
+            </label>
+          </div>
+
           <Field label="Category">
-            <span className="text-xs text-zinc-500 dark:text-zinc-500">
+            <span className="text-xs text-muted-foreground">
               {getCategoryLabel(groupCategory, "Group")}
             </span>
           </Field>
@@ -274,44 +301,12 @@ export default function PropertiesPanel() {
             </Field>
           )}
 
-          <Field label="Visibility">
-            <label className="flex items-center gap-2 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={allVisible}
-                onChange={(e) => updateAllAssets({ visible: e.target.checked })}
-                className="w-3.5 h-3.5 accent-zinc-700 dark:accent-zinc-400 cursor-pointer"
-              />
-              <span className="text-xs text-zinc-500 dark:text-zinc-500">
-                {allVisible ? "Visible" : "Hidden"}
-              </span>
-            </label>
-          </Field>
-
-          <Field label="Selectability">
-            <label className="flex items-center gap-2 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={allSelectable}
-                onChange={(e) =>
-                  updateAllAssets({ selectable: e.target.checked })
-                }
-                className="w-3.5 h-3.5 accent-zinc-700 dark:accent-zinc-400 cursor-pointer"
-              />
-              <span className="text-xs text-zinc-500 dark:text-zinc-500">
-                {allSelectable ? "Selectable" : "Not selectable"}
-              </span>
-            </label>
-          </Field>
-
           <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] text-zinc-500 dark:text-zinc-500">
-              Position
-            </span>
+            <span className="text-[10px] text-muted-foreground">Position</span>
             <div className="grid grid-cols-3 gap-1.5">
               {(["X", "Y", "Z"] as const).map((axis, i) => (
                 <div key={axis} className="flex flex-col gap-0.5">
-                  <span className="text-[10px] text-zinc-500 dark:text-zinc-500 text-center">
+                  <span className="text-[10px] text-muted-foreground text-center">
                     {axis}
                   </span>
                   <NumberValue
@@ -326,9 +321,7 @@ export default function PropertiesPanel() {
           </div>
 
           <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] text-zinc-500 dark:text-zinc-500">
-              Rotation
-            </span>
+            <span className="text-[10px] text-muted-foreground">Rotation</span>
             <div className="grid grid-cols-2 gap-1.5">
               <Button
                 onClick={() => rotateSelectedAssets("ccw")}
@@ -346,9 +339,7 @@ export default function PropertiesPanel() {
           </div>
 
           <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] text-zinc-500 dark:text-zinc-500">
-              Color
-            </span>
+            <span className="text-[10px] text-muted-foreground">Color</span>
             <div className="flex items-center gap-2">
               <input
                 type="color"
@@ -357,7 +348,7 @@ export default function PropertiesPanel() {
                   setColorDraft(e.target.value);
                   updateAllAssets({ materialColor: e.target.value });
                 }}
-                className="w-7 h-7 rounded-none cursor-pointer border border-zinc-400 dark:border-zinc-500 bg-transparent p-0.5"
+                className="w-6.5 h-6.5 rounded-none cursor-pointer border border-border bg-transparent p-0.5"
               />
               <Input
                 type="text"
@@ -387,10 +378,10 @@ export default function PropertiesPanel() {
             onMetalnessChange={(v) => updateAllAssets({ materialMetalness: v })}
           />
 
-          <div className="-mx-3 px-3 pt-2 border-t border-zinc-400 dark:border-zinc-600">
+          <div className="-mx-3 px-3 pt-2 border-t border-border">
             <button
               onClick={() => removeGroup(selectedGroup.id)}
-              className="w-full h-7 flex items-center justify-center rounded-none text-[10px] font-medium text-red-500 border border-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors"
+              className="w-full h-6.5 flex items-center justify-center rounded-none text-xs font-medium text-red-500 border border-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors leading-none"
             >
               Delete Group
             </button>
@@ -449,18 +440,16 @@ export default function PropertiesPanel() {
     return (
       <div data-no-deselect>
         <div className="px-3 py-2 flex flex-col gap-3">
-          <span className="text-xs font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+          <span className="text-xs font-semibold tracking-tight text-foreground">
             {multiAssets.length} Selected
           </span>
 
           <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] text-zinc-500 dark:text-zinc-500">
-              Position
-            </span>
+            <span className="text-[10px] text-muted-foreground">Position</span>
             <div className="grid grid-cols-3 gap-1.5">
               {(["X", "Y", "Z"] as const).map((axis, i) => (
                 <div key={axis} className="flex flex-col gap-0.5">
-                  <span className="text-[10px] text-zinc-500 dark:text-zinc-500 text-center">
+                  <span className="text-[10px] text-muted-foreground text-center">
                     {axis}
                   </span>
                   <NumberValue
@@ -476,7 +465,7 @@ export default function PropertiesPanel() {
 
           {allPreset && (
             <div className="flex flex-col gap-0.5">
-              <span className="text-[10px] text-zinc-500 dark:text-zinc-500">
+              <span className="text-[10px] text-muted-foreground">
                 Rotation
               </span>
               <div className="grid grid-cols-2 gap-1.5">
@@ -497,9 +486,7 @@ export default function PropertiesPanel() {
           )}
 
           <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] text-zinc-500 dark:text-zinc-500">
-              Color
-            </span>
+            <span className="text-[10px] text-muted-foreground">Color</span>
             <div className="flex items-center gap-2">
               <input
                 type="color"
@@ -508,10 +495,10 @@ export default function PropertiesPanel() {
                   setColorDraft(e.target.value);
                   updateMultiAssets({ materialColor: e.target.value });
                 }}
-                className="w-7 h-7 rounded-none cursor-pointer border border-zinc-400 dark:border-zinc-500 bg-transparent p-0.5 shrink-0"
+                className="w-6.5 h-6.5 rounded-none cursor-pointer border border-border bg-transparent p-0.5 shrink-0"
               />
               {colorIsMixed ? (
-                <span className="text-[10px] text-zinc-500 dark:text-zinc-500 italic">
+                <span className="text-[10px] text-muted-foreground italic">
                   Mixed
                 </span>
               ) : (
@@ -558,12 +545,12 @@ export default function PropertiesPanel() {
             ).map(({ label, values, isMixed, avg, key }) => (
               <div key={label} className="flex flex-col gap-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-zinc-500 dark:text-zinc-500">
+                  <span className="text-[10px] text-muted-foreground">
                     {label}
                   </span>
-                  <span className="text-[10px] text-zinc-500 dark:text-zinc-500 font-mono tabular-nums">
+                  <span className="text-[10px] text-muted-foreground font-mono tabular-nums">
                     {isMixed ? (
-                      <span className="italic text-zinc-500 dark:text-zinc-500">
+                      <span className="italic text-muted-foreground">
                         Mixed
                       </span>
                     ) : (
@@ -571,25 +558,22 @@ export default function PropertiesPanel() {
                     )}
                   </span>
                 </div>
-                <input
-                  type="range"
+                <Slider
                   min={0}
                   max={1}
                   step={0.01}
-                  value={isMixed ? avg : values[0]}
-                  onChange={(e) =>
-                    updateMultiAssets({ [key]: parseFloat(e.target.value) })
-                  }
-                  className="w-full h-1 accent-zinc-700 dark:accent-zinc-400 cursor-pointer"
+                  value={[isMixed ? avg : values[0]]}
+                  onValueChange={([v]) => updateMultiAssets({ [key]: v })}
+                  className="w-full"
                 />
               </div>
             ))}
           </div>
 
-          <div className="-mx-3 px-3 pt-2 border-t border-zinc-400 dark:border-zinc-600">
+          <div className="-mx-3 px-3 pt-2 border-t border-border">
             <button
               onClick={() => removeSelectedAssets()}
-              className="w-full h-7 flex items-center justify-center rounded-none text-[10px] font-medium text-red-500 border border-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors"
+              className="w-full h-6.5 flex items-center justify-center rounded-none text-xs font-medium text-red-500 border border-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors leading-none"
             >
               Delete All Selected
             </button>
@@ -615,8 +599,37 @@ export default function PropertiesPanel() {
           />
         </Field>
 
+        <div className="flex items-center gap-4">
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <Checkbox
+              checked={singleAsset.visible}
+              onCheckedChange={(v) =>
+                updateAsset(singleAsset.id, { visible: v as boolean })
+              }
+              className="size-3.5"
+            />
+            <span className="text-xs text-muted-foreground">
+              {singleAsset.visible ? "Visible" : "Hidden"}
+            </span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <Checkbox
+              checked={singleAsset.selectable ?? true}
+              onCheckedChange={(v) =>
+                updateAsset(singleAsset.id, { selectable: v as boolean })
+              }
+              className="size-3.5"
+            />
+            <span className="text-xs text-muted-foreground">
+              {(singleAsset.selectable ?? true)
+                ? "Selectable"
+                : "Not selectable"}
+            </span>
+          </label>
+        </div>
+
         <Field label="Category">
-          <span className="text-xs text-zinc-500 dark:text-zinc-500">
+          <span className="text-xs text-muted-foreground">
             {getCategoryLabel(singleAsset.category, "Primitive")}
           </span>
         </Field>
@@ -648,48 +661,12 @@ export default function PropertiesPanel() {
           );
         })()}
 
-        <Field label="Visibility">
-          <label className="flex items-center gap-2 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={singleAsset.visible}
-              onChange={(e) =>
-                updateAsset(singleAsset.id, { visible: e.target.checked })
-              }
-              className="w-3.5 h-3.5 accent-zinc-700 dark:accent-zinc-400 cursor-pointer"
-            />
-            <span className="text-xs text-zinc-500 dark:text-zinc-500">
-              {singleAsset.visible ? "Visible" : "Hidden"}
-            </span>
-          </label>
-        </Field>
-
-        <Field label="Selectability">
-          <label className="flex items-center gap-2 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={singleAsset.selectable ?? true}
-              onChange={(e) =>
-                updateAsset(singleAsset.id, { selectable: e.target.checked })
-              }
-              className="w-3.5 h-3.5 accent-zinc-700 dark:accent-zinc-400 cursor-pointer"
-            />
-            <span className="text-xs text-zinc-500 dark:text-zinc-500">
-              {(singleAsset.selectable ?? true)
-                ? "Selectable"
-                : "Not selectable"}
-            </span>
-          </label>
-        </Field>
-
         <div className="flex flex-col gap-0.5">
-          <span className="text-[10px] text-zinc-500 dark:text-zinc-500">
-            Position
-          </span>
+          <span className="text-[10px] text-muted-foreground">Position</span>
           <div className="grid grid-cols-3 gap-1.5">
             {(["X", "Y", "Z"] as const).map((axis, i) => (
               <div key={axis} className="flex flex-col gap-0.5">
-                <span className="text-[10px] text-zinc-500 dark:text-zinc-500 text-center">
+                <span className="text-[10px] text-muted-foreground text-center">
                   {axis}
                 </span>
                 <NumberValue
@@ -730,7 +707,7 @@ export default function PropertiesPanel() {
 
           return (
             <div className="flex flex-col gap-0.5">
-              <span className="text-[10px] text-zinc-500 dark:text-zinc-500">
+              <span className="text-[10px] text-muted-foreground">
                 Rotation
               </span>
               <div className="grid grid-cols-2 gap-1.5">
@@ -752,9 +729,7 @@ export default function PropertiesPanel() {
         })()}
 
         <div className="flex flex-col gap-0.5">
-          <span className="text-[10px] text-zinc-500 dark:text-zinc-500">
-            Color
-          </span>
+          <span className="text-[10px] text-muted-foreground">Color</span>
           <div className="flex items-center gap-2">
             <input
               type="color"
@@ -763,7 +738,7 @@ export default function PropertiesPanel() {
                 updateAsset(singleAsset.id, { materialColor: e.target.value });
                 setColorDraft(e.target.value);
               }}
-              className="w-7 h-7 rounded-none cursor-pointer border border-zinc-400 dark:border-zinc-500 bg-transparent p-0.5"
+              className="w-6.5 h-6.5 rounded-none cursor-pointer border border-border bg-transparent p-0.5"
             />
             <Input
               type="text"
@@ -797,7 +772,7 @@ export default function PropertiesPanel() {
           }
         />
 
-        <div className="flex flex-col gap-3 -mx-3 px-3 pt-3 border-t border-zinc-400 dark:border-zinc-600">
+        <div className="flex flex-col gap-3 -mx-3 px-3 pt-3 border-t border-border">
           {singleAsset.type === "preset-brick" &&
             singleAsset.preset &&
             (singleAsset.preset.studsX > 1 ||
@@ -815,7 +790,7 @@ export default function PropertiesPanel() {
               selectAsset(null);
               removeAsset(singleAsset.id);
             }}
-            className="w-full h-7 flex items-center justify-center rounded-none text-[10px] font-medium text-red-500 border border-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors"
+            className="w-full h-6.5 flex items-center justify-center rounded-none text-xs font-medium text-red-500 border border-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors leading-none"
           >
             Delete Brick
           </button>

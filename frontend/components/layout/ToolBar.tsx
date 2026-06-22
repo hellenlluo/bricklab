@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { BRICK_LIBRARY, type BrickDefinition } from "@/lib/brickLibrary";
 import { useScene, type CustomBrickDefinition } from "@/store/sceneStore";
 import type { SceneAsset } from "@/store/sceneStore";
+import { Checkbox } from "@/components/ui/checkbox";
 
 type AnyBrick = BrickDefinition | CustomBrickDefinition;
 
@@ -80,7 +81,7 @@ export default function ToolBar() {
         left: "50%",
         transform: "translateX(-50%)",
       }}
-      className="fixed flex items-center px-3 gap-2 bg-white dark:bg-zinc-900 border border-zinc-400 dark:border-zinc-600 rounded-none z-40"
+      className="fixed flex items-center px-3 gap-2 bg-background border border-border rounded-none z-40"
     >
       {/* Drop-up brick type selector */}
       <div
@@ -89,10 +90,10 @@ export default function ToolBar() {
       >
         <button
           onClick={() => setExpanded((v) => !v)}
-          className="h-7 flex items-center gap-2 px-2 rounded-none hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+          className="h-6.5 flex items-center gap-2 px-2 rounded-none leading-none hover:bg-muted transition-colors"
         >
           <span
-            className="inline-block text-zinc-900 dark:text-zinc-100 transition-transform duration-200"
+            className="inline-block text-foreground transition-transform duration-200"
             style={{
               fontSize: "0.5rem",
               transform: expanded ? "rotate(-90deg)" : "rotate(0deg)",
@@ -101,16 +102,16 @@ export default function ToolBar() {
           >
             ▶
           </span>
-          <span className="text-xs font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+          <span className="text-xs font-semibold tracking-tight text-foreground">
             Quick Add
           </span>
-          <span className="text-xs text-zinc-500 dark:text-zinc-500">
+          <span className="text-xs text-muted-foreground">
             {selectedIds.length}/6
           </span>
         </button>
 
         {expanded && (
-          <div className="absolute bottom-full left-0 w-full bg-white dark:bg-zinc-900 border border-b-0 border-zinc-400 dark:border-zinc-600 rounded-none z-50 overflow-hidden">
+          <div className="absolute bottom-full left-0 w-full bg-background border border-b-0 border-border rounded-none z-50 overflow-hidden">
             <ul className="py-1">
               {allBricks.map((brick) => {
                 const checked = selectedIds.includes(brick.id);
@@ -119,16 +120,15 @@ export default function ToolBar() {
                   <li key={brick.id}>
                     <label
                       className={`flex items-center gap-2 w-full px-3 py-1.5 text-xs text-left transition-colors select-none
-                        ${disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800"}
-                        ${checked ? "text-zinc-900 dark:text-zinc-50" : "text-zinc-700 dark:text-zinc-300"}
+                        ${disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer hover:bg-muted"}
+                        ${checked ? "text-foreground" : "text-muted-foreground"}
                       `}
                     >
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         checked={checked}
                         disabled={disabled}
-                        onChange={() => toggleBrick(brick.id)}
-                        className="w-3.5 h-3.5 accent-zinc-700 dark:accent-zinc-400 cursor-pointer flex-shrink-0 disabled:cursor-not-allowed"
+                        onCheckedChange={() => toggleBrick(brick.id)}
+                        className="size-3.5 flex-shrink-0"
                       />
                       <span>{brick.name}</span>
                     </label>
@@ -146,9 +146,9 @@ export default function ToolBar() {
           key={brick.id}
           onClick={() => handleAdd(brick)}
           title={`Add ${brick.name} brick`}
-          className="h-7 flex items-center gap-1 px-2 rounded-none text-xs text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors flex-shrink-0"
+          className="h-6.5 flex items-center gap-1 px-2 rounded-none text-xs leading-none text-muted-foreground hover:bg-muted transition-colors flex-shrink-0"
         >
-          <span className="text-zinc-500 dark:text-zinc-500 font-normal leading-none">
+          <span className="text-muted-foreground font-normal leading-none">
             +
           </span>
           <span>{brick.name}</span>

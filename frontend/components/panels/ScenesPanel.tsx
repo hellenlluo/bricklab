@@ -51,17 +51,17 @@ export default function ScenesPanel() {
   return (
     <div className="flex flex-col">
       {/* Header */}
-      <div className="flex items-center gap-2 px-3 pt-3 pb-1.5">
-        <span className="text-xs font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+      <div className="flex items-end gap-2 px-3 pt-3 pb-1.5">
+        <span className="text-xs font-semibold tracking-tight text-foreground">
           Scenes
         </span>
-        <span className="ml-auto text-xs text-zinc-500 dark:text-zinc-500">
+        <span className="ml-auto text-xs text-muted-foreground">
           {scenes.length}
         </span>
         <button
           onClick={addScene}
           title="Add Scene"
-          className="py-0.5 px-2 text-[10px] rounded-none border transition-colors border-[#908095] bg-[#908095]/25 text-[#908095] hover:bg-[#908095]/35"
+          className="h-5 px-2 flex items-center text-[10px] leading-none rounded-none border transition-colors border-accent bg-accent/25 text-accent hover:bg-accent/35"
         >
           + New
         </button>
@@ -76,10 +76,8 @@ export default function ScenesPanel() {
             <li key={scene.id}>
               <div
                 onClick={() => setActiveScene(scene.id)}
-                className={`flex items-center gap-1.5 mx-3 px-2 py-1.5 rounded-none cursor-default group transition-colors ${
-                  isActive
-                    ? "bg-accent/10 text-accent"
-                    : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                className={`flex items-center gap-1.5 mx-3 px-2 py-1.5 rounded-none cursor-default group text-foreground transition-colors ${
+                  isActive ? "bg-muted" : "hover:bg-muted"
                 }`}
               >
                 {/* Name / edit input */}
@@ -91,7 +89,7 @@ export default function ScenesPanel() {
                     onBlur={() => commitEdit(scene.id)}
                     onKeyDown={(e) => handleKeyDown(e, scene.id)}
                     onClick={(e) => e.stopPropagation()}
-                    className="flex-1 min-w-0 bg-transparent outline-none border-b border-black dark:border-white text-xs text-zinc-800 dark:text-zinc-100 leading-none p-0 m-0 h-[1em]"
+                    className="flex-1 min-w-0 bg-transparent outline-none text-xs text-foreground leading-none p-0 m-0 h-[1em]"
                   />
                 ) : (
                   <span
@@ -107,7 +105,7 @@ export default function ScenesPanel() {
 
                 {/* Asset count badge */}
                 {!isEditing && (
-                  <span className="shrink-0 text-[9px] text-zinc-500 dark:text-zinc-500 tabular-nums">
+                  <span className="shrink-0 text-[9px] text-muted-foreground tabular-nums">
                     {scene.assets.length}
                   </span>
                 )}
@@ -120,7 +118,7 @@ export default function ScenesPanel() {
                       removeScene(scene.id);
                     }}
                     title="Delete scene"
-                    className="shrink-0 opacity-0 group-hover:opacity-100 text-zinc-500 dark:text-zinc-500 hover:text-red-500 dark:hover:text-red-400 transition-all"
+                    className="shrink-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-500 dark:hover:text-red-400 transition-all"
                     style={{ fontSize: "0.6rem", lineHeight: 1 }}
                   >
                     ✕
@@ -133,7 +131,7 @@ export default function ScenesPanel() {
       </ul>
 
       {/* Divider */}
-      <div className="border-t border-zinc-400 dark:border-zinc-600" />
+      <div className="border-t border-border" />
     </div>
   );
 }

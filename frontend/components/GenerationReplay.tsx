@@ -5,6 +5,7 @@ import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Environment } from "@react-three/drei";
 import ParametricBrick from "@/components/ParametricBrick";
 import type { GenerationHistoryEntry } from "@/store/sceneStore";
+import { Slider } from "@/components/ui/slider";
 
 const PREVIEW_FOV = 35;
 const PREVIEW_PADDING = 1.35;
@@ -142,24 +143,24 @@ export default function GenerationReplay({
       onMouseDown={onClose}
     >
       <div
-        className="relative flex flex-col w-[60vw] h-[65vh] bg-white dark:bg-zinc-900 rounded-none shadow-2xl border border-zinc-400 dark:border-zinc-600 overflow-hidden"
+        className="relative flex flex-col w-[60vw] h-[65vh] bg-background rounded-none shadow-2xl border border-border overflow-hidden"
         onMouseDown={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-3 py-3 border-b border-zinc-400 dark:border-zinc-600">
-          <span className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+        <div className="flex items-center justify-between px-3 py-3 border-b border-border">
+          <span className="text-sm font-semibold tracking-tight text-foreground">
             Generation Replay
           </span>
           <button
             onClick={onClose}
-            className="w-6 h-6 flex items-center justify-center rounded-none hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 dark:text-zinc-500 transition-colors text-xs"
+            className="w-6 h-6 flex items-center justify-center rounded-none hover:bg-muted text-muted-foreground transition-colors text-xs"
           >
             ✕
           </button>
         </div>
 
         {/* 3D viewport */}
-        <div className="flex-1 min-h-0 bg-zinc-100 dark:bg-zinc-800">
+        <div className="flex-1 min-h-0 bg-muted">
           <Canvas
             camera={{
               position: cameraPosition,
@@ -175,7 +176,7 @@ export default function GenerationReplay({
         </div>
 
         {/* Playback controls */}
-        <div className="px-3 py-4 border-t border-zinc-400 dark:border-zinc-600 flex flex-col gap-2">
+        <div className="px-3 py-4 border-t border-border flex flex-col gap-2">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -216,18 +217,18 @@ export default function GenerationReplay({
               )}
             </button>
 
-            <input
-              type="range"
+            <Slider
               min={0}
               max={maxStep}
-              value={step}
+              step={1}
+              value={[step]}
+              onValueChange={([v]) => setStep(v)}
               onPointerDown={handleSliderPointerDown}
-              onChange={(e) => setStep(Number(e.target.value))}
-              className="flex-1 accent-accent cursor-pointer"
+              className="flex-1"
             />
 
             <div
-              className="flex items-center gap-0.5 rounded-none border border-zinc-400 dark:border-zinc-500 p-0.5 shrink-0"
+              className="flex items-center gap-0.5 rounded-none border border-border p-0.5 shrink-0"
               data-no-deselect
             >
               {SPEED_OPTIONS.map((s) => (
@@ -238,7 +239,7 @@ export default function GenerationReplay({
                   className={`px-1.5 py-0.5 text-[10px] rounded-none leading-none transition-colors ${
                     speed === s
                       ? "bg-accent text-white"
-                      : "text-zinc-500 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   {s}×
@@ -247,7 +248,7 @@ export default function GenerationReplay({
             </div>
           </div>
 
-          <div className="flex items-center justify-between text-[10px] text-zinc-500 dark:text-zinc-500">
+          <div className="flex items-center justify-between text-[10px] text-muted-foreground">
             <span>
               Step {step + 1} of {generationHistory.length}
             </span>

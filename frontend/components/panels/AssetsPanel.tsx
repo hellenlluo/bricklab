@@ -201,12 +201,12 @@ function GroupRow({
           }
         }}
         style={indentStyle}
-        className={`flex items-center gap-1 mx-3 px-2 py-1.5 text-xs cursor-default group transition-colors ${selectedRounding ?? headerRounding} ${
+        className={`flex items-center gap-1 mx-3 px-2 py-1.5 text-xs cursor-default group transition-colors text-foreground ${selectedRounding ?? headerRounding} ${
           isDragOver
             ? "ring-2 ring-[#74a7fe] bg-blue-50 dark:bg-blue-900/20"
             : grpSelected
-              ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
-              : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              ? "bg-muted"
+              : "hover:bg-muted"
         }`}
       >
         <button
@@ -214,14 +214,14 @@ function GroupRow({
             e.stopPropagation();
             onToggleExpand(group.id);
           }}
-          className="shrink-0 text-zinc-500 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-200"
+          className="shrink-0 leading-none text-muted-foreground hover:text-foreground"
           style={{ fontSize: "0.45rem", lineHeight: 1 }}
         >
           {isOpen ? "▼" : "▶"}
         </button>
 
         <svg
-          className="shrink-0 w-3 h-3 text-zinc-500 dark:text-zinc-500"
+          className="shrink-0 w-3 h-3 text-muted-foreground"
           viewBox="0 0 16 16"
           fill="currentColor"
         >
@@ -236,7 +236,7 @@ function GroupRow({
             onChange={(e) => onEditChange(e.target.value)}
             onBlur={() => onCommitEdit(group.id, true)}
             onKeyDown={(e) => onKeyDown(e, group.id, true)}
-            className="flex-1 min-w-0 bg-transparent outline-none border-b border-black dark:border-white text-xs text-zinc-800 dark:text-zinc-100 leading-none p-0 m-0 h-[1em]"
+            className="flex-1 min-w-0 bg-transparent outline-none text-xs text-foreground leading-none p-0 m-0 h-[1em]"
             autoFocus
           />
         ) : (
@@ -252,7 +252,7 @@ function GroupRow({
           </span>
         )}
 
-        <span className="ml-auto text-[10px] text-zinc-500 dark:text-zinc-500 shrink-0">
+        <span className="ml-auto text-[10px] text-muted-foreground shrink-0">
           {totalChildren}
         </span>
 
@@ -261,7 +261,7 @@ function GroupRow({
             e.stopPropagation();
             onUngroup(group.id);
           }}
-          className="shrink-0 ml-1 w-4 h-4 flex items-center justify-center rounded-none text-zinc-500 dark:text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:text-zinc-700 dark:hover:text-zinc-200 opacity-0 group-hover:opacity-100 transition-opacity text-[9px]"
+          className="shrink-0 ml-1 w-4 h-4 flex items-center justify-center rounded-none text-[9px] leading-none text-muted-foreground hover:bg-muted hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
           title="Ungroup"
         >
           ✕
@@ -448,10 +448,7 @@ export default function AssetsPanel() {
   };
 
   return (
-    <div
-      ref={dropdownRef}
-      className="border-b border-zinc-400 dark:border-zinc-600 pb-2"
-    >
+    <div ref={dropdownRef} className="border-b border-border pb-2">
       {/* Search */}
       <div className="px-3 pt-3 pb-2">
         <Input
@@ -459,17 +456,17 @@ export default function AssetsPanel() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search assets…"
-          className="w-full !h-7 !py-0 !text-[10px] !leading-none"
+          className="w-full"
         />
       </div>
 
       {/* Collapsible header */}
       <button
         onClick={handleToggle}
-        className="flex w-full items-center gap-2 px-3 py-1.5 text-left hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+        className="flex w-full items-center gap-2 px-3 py-1.5 text-left leading-none hover:bg-muted transition-colors"
       >
         <span
-          className="inline-block text-zinc-900 dark:text-zinc-100 transition-transform duration-200"
+          className="inline-block text-foreground transition-transform duration-200"
           style={{
             fontSize: "0.5rem",
             transform: expanded ? "rotate(90deg)" : "rotate(0deg)",
@@ -478,10 +475,10 @@ export default function AssetsPanel() {
         >
           ▶
         </span>
-        <span className="text-xs font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+        <span className="text-xs font-semibold tracking-tight text-foreground">
           Assets
         </span>
-        <span className="ml-auto text-xs text-zinc-500 dark:text-zinc-500">
+        <span className="ml-auto text-xs text-muted-foreground">
           {assets.length}
         </span>
       </button>
@@ -490,7 +487,7 @@ export default function AssetsPanel() {
       {expanded && (
         <ul onClick={() => selectAsset(null)}>
           {topLevelGroups.length === 0 && ungroupedAssets.length === 0 && (
-            <li className="px-3 py-2 text-xs text-zinc-500 dark:text-zinc-500 italic">
+            <li className="px-3 py-2 text-xs text-muted-foreground italic">
               {search ? "No matches" : "No assets in scene"}
             </li>
           )}
@@ -592,10 +589,8 @@ function AssetRow({
       }}
       onClick={onSelect}
       style={indentStyle}
-      className={`flex items-center gap-2 mx-3 px-2 py-1.5 text-xs cursor-default group transition-colors ${rounding} ${
-        selectedAssetIds.includes(asset.id)
-          ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
-          : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+      className={`flex items-center gap-2 mx-3 px-2 py-1.5 text-xs cursor-default group transition-colors text-foreground ${rounding} ${
+        selectedAssetIds.includes(asset.id) ? "bg-muted" : "hover:bg-muted"
       }`}
     >
       {editingId === asset.id ? (
@@ -610,7 +605,7 @@ function AssetRow({
               onCancelEdit();
             } else onKeyDown(e);
           }}
-          className="flex-1 min-w-0 bg-transparent outline-none border-b border-black dark:border-white text-xs text-zinc-800 dark:text-zinc-100 leading-none p-0 m-0 h-[1em]"
+          className="flex-1 min-w-0 bg-transparent outline-none border-b border-foreground text-xs text-foreground leading-none p-0 m-0 h-[1em]"
           autoFocus
         />
       ) : (

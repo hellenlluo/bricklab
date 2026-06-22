@@ -11,6 +11,7 @@ import { useScene } from "@/store/sceneStore";
 import type { SceneData } from "@/store/sceneStore";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const STUD_SPACING = 1;
 const BODY_HEIGHT = 1;
@@ -404,16 +405,79 @@ export default function Exporter({ onClose }: ExporterProps) {
   return (
     <div className="flex flex-col">
       {/* Header */}
-      <div className="px-3 py-3 border-b border-zinc-400 dark:border-zinc-600">
-        <span className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+      <div className="px-3 py-3 border-b border-border">
+        <span className="text-sm font-semibold tracking-tight text-foreground">
           Exporter
         </span>
       </div>
 
       <div className="p-3 flex flex-col gap-4">
+        {/* Scene selection */}
+        <div className="flex flex-col gap-1.5">
+          <span className="text-xs font-semibold tracking-tight text-foreground">
+            Scene
+          </span>
+          <div ref={sceneDropdownRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setSceneDropdownOpen((o) => !o)}
+              className={`flex w-full h-6.5 items-center gap-1.5 px-2 border border-border bg-background text-xs leading-none text-foreground hover:bg-muted/50 transition-colors ${
+                sceneDropdownOpen ? "rounded-none border-b-0" : "rounded-none"
+              }`}
+            >
+              <span
+                className="inline-block shrink-0 text-foreground transition-transform duration-200"
+                style={{
+                  fontSize: "0.45rem",
+                  transform: sceneDropdownOpen
+                    ? "rotate(90deg)"
+                    : "rotate(0deg)",
+                  lineHeight: 1,
+                }}
+              >
+                ▶
+              </span>
+              <span className="text-muted-foreground">Scene:</span>
+              <span className="truncate">{selectedScene.name}</span>
+              <span className="ml-auto text-muted-foreground shrink-0">
+                {selectedScene.assets.length} asset
+                {selectedScene.assets.length !== 1 ? "s" : ""}
+              </span>
+            </button>
+            {sceneDropdownOpen && (
+              <div className="absolute top-full left-0 w-full bg-background border border-t-0 border-border rounded-none z-50 overflow-hidden">
+                <ul className="py-1">
+                  {scenes.map((scene) => (
+                    <li key={scene.id}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedSceneId(scene.id);
+                          setSceneDropdownOpen(false);
+                        }}
+                        className={`flex w-full cursor-pointer items-center justify-between gap-2 px-3 py-1.5 text-xs hover:bg-muted transition-colors ${
+                          scene.id === selectedSceneId
+                            ? "text-foreground"
+                            : "text-foreground"
+                        }`}
+                      >
+                        <span className="truncate">{scene.name}</span>
+                        <span className="text-muted-foreground shrink-0">
+                          {scene.assets.length} obj
+                          {scene.assets.length !== 1 ? "s" : ""}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Export name */}
         <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-500">
+          <span className="text-xs font-semibold tracking-tight text-foreground">
             Export name
           </span>
           <Input
@@ -426,7 +490,7 @@ export default function Exporter({ onClose }: ExporterProps) {
 
         {/* Format */}
         <div className="flex flex-col gap-2">
-          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-500">
+          <span className="text-xs font-semibold tracking-tight text-foreground">
             Format
           </span>
           <div className="flex flex-wrap gap-1.5">
@@ -436,100 +500,36 @@ export default function Exporter({ onClose }: ExporterProps) {
                 type="button"
                 onClick={() => setExportFormat(fmt.id)}
                 title={fmt.description}
-                className={`h-7 flex items-center justify-center px-2.5 rounded-none text-[10px] font-medium border transition-colors ${
+                className={`h-6.5 flex items-center justify-center px-2.5 rounded-none text-xs font-medium leading-none border transition-colors ${
                   exportFormat === fmt.id
                     ? "bg-accent text-white border-accent hover:bg-accent-dark"
-                    : "bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-zinc-400 dark:border-zinc-500 hover:border-zinc-500 dark:hover:border-zinc-400"
+                    : "bg-background text-muted-foreground border-border hover:bg-muted"
                 }`}
               >
                 {fmt.label}
               </button>
             ))}
           </div>
-          <p className="text-[10px] text-zinc-500 dark:text-zinc-500 leading-tight">
+          <p className="text-[10px] text-muted-foreground leading-tight">
             {FORMAT_OPTIONS.find((f) => f.id === exportFormat)?.description}
           </p>
         </div>
 
         {/* Options */}
         <div className="flex flex-col gap-2">
-          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-500">
+          <span className="text-xs font-semibold tracking-tight text-foreground">
             Options
           </span>
           <label className="flex items-center gap-2 cursor-pointer select-none">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={includeBasePlate}
-              onChange={(e) => setIncludeBasePlate(e.target.checked)}
-              className="w-3.5 h-3.5 rounded-none border-zinc-400 dark:border-zinc-500 accent-zinc-700 dark:accent-zinc-300"
+              onCheckedChange={(v) => setIncludeBasePlate(v as boolean)}
+              className="size-3.5"
             />
-            <span className="text-xs text-zinc-500 dark:text-zinc-500">
+            <span className="text-xs text-muted-foreground">
               Include base plate
             </span>
           </label>
-        </div>
-
-        {/* Scene selection */}
-        <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-500">
-            Scene
-          </span>
-          <div ref={sceneDropdownRef} className="relative">
-            <button
-              type="button"
-              onClick={() => setSceneDropdownOpen((o) => !o)}
-              className={`flex w-full h-7 items-center gap-1.5 px-2 border border-zinc-400 dark:border-zinc-500 bg-white dark:bg-zinc-800 text-[10px] leading-none text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors ${
-                sceneDropdownOpen ? "rounded-none border-b-0" : "rounded-none"
-              }`}
-            >
-              <span
-                className="inline-block shrink-0 text-zinc-900 dark:text-zinc-100 transition-transform duration-200"
-                style={{
-                  fontSize: "0.45rem",
-                  transform: sceneDropdownOpen
-                    ? "rotate(90deg)"
-                    : "rotate(0deg)",
-                  lineHeight: 1,
-                }}
-              >
-                ▶
-              </span>
-              <span className="text-zinc-500 dark:text-zinc-500">Scene:</span>
-              <span className="truncate">{selectedScene.name}</span>
-              <span className="ml-auto text-zinc-500 dark:text-zinc-500 shrink-0">
-                {selectedScene.assets.length} asset
-                {selectedScene.assets.length !== 1 ? "s" : ""}
-              </span>
-            </button>
-            {sceneDropdownOpen && (
-              <div className="absolute top-full left-0 w-full bg-white dark:bg-zinc-900 border border-t-0 border-zinc-400 dark:border-zinc-600 rounded-none z-50 overflow-hidden">
-                <ul className="py-1">
-                  {scenes.map((scene) => (
-                    <li key={scene.id}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedSceneId(scene.id);
-                          setSceneDropdownOpen(false);
-                        }}
-                        className={`flex w-full cursor-pointer items-center justify-between gap-2 px-3 py-1.5 text-[10px] leading-none hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${
-                          scene.id === selectedSceneId
-                            ? "text-zinc-900 dark:text-zinc-100"
-                            : "text-zinc-700 dark:text-zinc-200"
-                        }`}
-                      >
-                        <span className="truncate">{scene.name}</span>
-                        <span className="text-zinc-500 dark:text-zinc-500 shrink-0">
-                          {scene.assets.length} obj
-                          {scene.assets.length !== 1 ? "s" : ""}
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
         </div>
 
         {/* Summary */}
@@ -557,7 +557,7 @@ export default function Exporter({ onClose }: ExporterProps) {
         <Button
           onClick={handleExport}
           disabled={isExporting || !exportName.trim()}
-          className="w-full !h-7 !py-0 flex items-center justify-center"
+          className="w-full !h-6.5 !py-0 flex items-center justify-center"
         >
           {isExporting
             ? "Exporting…"

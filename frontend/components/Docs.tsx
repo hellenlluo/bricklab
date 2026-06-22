@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 
 function SectionHeader({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="text-xs font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 mb-2">
+    <h3 className="text-xs font-semibold tracking-tight text-foreground mb-2">
       {children}
     </h3>
   );
@@ -18,13 +18,11 @@ function ShortcutRow({
   note?: string;
 }) {
   return (
-    <div className="flex items-center justify-between py-1.5 border-b border-zinc-400 dark:border-zinc-600 last:border-0">
+    <div className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
       <div className="min-w-0">
-        <span className="text-xs text-zinc-700 dark:text-zinc-300">
-          {action}
-        </span>
+        <span className="text-xs text-muted-foreground">{action}</span>
         {note && (
-          <span className="block text-[10px] text-zinc-500 dark:text-zinc-500 mt-0.5">
+          <span className="block text-[10px] text-muted-foreground mt-0.5">
             {note}
           </span>
         )}
@@ -32,13 +30,11 @@ function ShortcutRow({
       <div className="flex items-center gap-1 ml-3 flex-shrink-0">
         {keys.map((k, i) => (
           <span key={i} className="flex items-center gap-1">
-            <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-zinc-100 dark:bg-zinc-800 border border-zinc-400 dark:border-zinc-600 rounded-none text-zinc-700 dark:text-zinc-300 leading-tight">
+            <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-muted border border-border rounded-none text-muted-foreground leading-tight">
               {k}
             </kbd>
             {i < keys.length - 1 && (
-              <span className="text-[10px] text-zinc-500 dark:text-zinc-500">
-                +
-              </span>
+              <span className="text-[10px] text-muted-foreground">+</span>
             )}
           </span>
         ))}
@@ -88,13 +84,8 @@ export default function Docs() {
       style={cardHeight ? { height: `${cardHeight}px` } : undefined}
     >
       {/* Header */}
-      <div
-        ref={cardHeaderRef}
-        className="px-3 py-3 border-b border-zinc-400 dark:border-zinc-600"
-      >
-        <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-          Docs
-        </span>
+      <div ref={cardHeaderRef} className="px-3 py-3 border-b border-border">
+        <span className="text-sm font-semibold text-foreground">Docs</span>
       </div>
 
       {/* Content */}
@@ -150,7 +141,7 @@ export default function Docs() {
         <div className="flex flex-col gap-4 mt-5">
           <div>
             <SectionHeader>Library</SectionHeader>
-            <p className="text-xs text-zinc-500 dark:text-zinc-500 leading-relaxed">
+            <p className="text-xs text-muted-foreground leading-relaxed">
               Browse a catalog of preset brick sizes or enter custom width and
               height values to define your own. Clicking any brick card
               immediately adds it to the active scene at the world origin (0, 0,
@@ -163,7 +154,7 @@ export default function Docs() {
 
           <div>
             <SectionHeader>Quick Add Toolbar</SectionHeader>
-            <p className="text-xs text-zinc-500 dark:text-zinc-500 leading-relaxed">
+            <p className="text-xs text-muted-foreground leading-relaxed">
               The toolbar across the bottom of the viewport gives you up to 6
               pinned brick slots for one-click placement without opening the
               Library. Click the ▶ selector at the far left to open the pin
@@ -176,7 +167,7 @@ export default function Docs() {
 
           <div>
             <SectionHeader>Exporter</SectionHeader>
-            <p className="text-xs text-zinc-500 dark:text-zinc-500 leading-relaxed">
+            <p className="text-xs text-muted-foreground leading-relaxed">
               Export the entire scene or only the currently selected bricks.
               Pick an output format from the dropdown — available options
               include common 3D mesh formats as well as instruction-friendly
@@ -190,7 +181,7 @@ export default function Docs() {
 
           <div>
             <SectionHeader>Scenes</SectionHeader>
-            <p className="text-xs text-zinc-500 dark:text-zinc-500 leading-relaxed">
+            <p className="text-xs text-muted-foreground leading-relaxed">
               The left sidebar lets you manage as many scenes as you need. Click
               a scene row to switch to it — all panels, the viewport, and the
               asset list update immediately. Double-click the scene name to
@@ -205,7 +196,7 @@ export default function Docs() {
 
           <div>
             <SectionHeader>Assets &amp; Groups</SectionHeader>
-            <p className="text-xs text-zinc-500 dark:text-zinc-500 leading-relaxed">
+            <p className="text-xs text-muted-foreground leading-relaxed">
               The Assets panel on the left lists every top-level brick and group
               in the active scene. Select one or more bricks in the viewport or
               in the list, then press ⌘G / Ctrl+G to collect them into a named
@@ -221,7 +212,7 @@ export default function Docs() {
 
           <div>
             <SectionHeader>Constraints</SectionHeader>
-            <p className="text-xs text-zinc-500 dark:text-zinc-500 leading-relaxed">
+            <p className="text-xs text-muted-foreground leading-relaxed">
               Constraints are named bounding boxes that tell the AI generator
               exactly where it is allowed to place bricks. Open the{" "}
               <em>Constraints</em> panel in the left sidebar to draw a new box
@@ -245,7 +236,7 @@ export default function Docs() {
               ].map((item, i) => (
                 <li
                   key={i}
-                  className="flex gap-1.5 text-xs leading-snug text-zinc-500 dark:text-zinc-500"
+                  className="flex gap-1.5 text-xs leading-snug text-muted-foreground"
                 >
                   <span className="shrink-0">{i + 1}.</span>
                   <span>{item}</span>
@@ -265,7 +256,7 @@ export default function Docs() {
               ].map((item, i) => (
                 <li
                   key={i}
-                  className="flex gap-1.5 text-xs leading-snug text-zinc-500 dark:text-zinc-500"
+                  className="flex gap-1.5 text-xs leading-snug text-muted-foreground"
                 >
                   <span className="shrink-0">{i + 1}.</span>
                   <span>{item}</span>
@@ -276,7 +267,7 @@ export default function Docs() {
 
           <div>
             <SectionHeader>Coordinate System &amp; Grid</SectionHeader>
-            <p className="text-xs text-zinc-500 dark:text-zinc-500 leading-relaxed">
+            <p className="text-xs text-muted-foreground leading-relaxed">
               All brick positions are measured from the brick&apos;s top-left
               corner when the scene is viewed from directly above (looking down
               the positive Z axis). Group positions similarly reference the
@@ -292,7 +283,7 @@ export default function Docs() {
 
           <div>
             <SectionHeader>Properties &amp; Scene Settings</SectionHeader>
-            <p className="text-xs text-zinc-500 dark:text-zinc-500 leading-relaxed">
+            <p className="text-xs text-muted-foreground leading-relaxed">
               Selecting one or more bricks (or a group) fills the right sidebar
               with that element&apos;s editable properties: X / Y / Z position,
               width, height, color, and layer order. When multiple bricks with

@@ -1,6 +1,19 @@
 import type { Metadata } from "next";
-import { Geist_Mono, Titillium_Web } from "next/font/google";
+import {
+  Geist_Mono,
+  Titillium_Web,
+  JetBrains_Mono,
+  Oxanium,
+} from "next/font/google";
 import "./globals.css";
+import { cn } from "@/lib/utils";
+
+const oxanium = Oxanium({ subsets: ["latin"], variable: "--font-sans" });
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+});
 
 const titilliumWeb = Titillium_Web({
   variable: "--font-titillium-web",
@@ -26,7 +39,15 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${titilliumWeb.variable} ${geistMono.variable} h-full antialiased`}
+      className={cn(
+        "h-full",
+        "antialiased",
+        titilliumWeb.variable,
+        geistMono.variable,
+        jetbrainsMono.variable,
+        "font-sans",
+        oxanium.variable,
+      )}
     >
       <body className={`${titilliumWeb.className} min-h-full flex flex-col`}>
         {children}

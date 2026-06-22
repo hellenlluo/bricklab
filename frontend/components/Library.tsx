@@ -50,7 +50,7 @@ function BrickCard({
 }) {
   return (
     <div
-      className={`group relative flex flex-col rounded-none border border-accent bg-accent/25 overflow-hidden transition-all${fillHeight ? " h-full" : ""}`}
+      className={`group relative flex flex-col rounded-none border border-accent bg-chart-1 overflow-hidden transition-all${fillHeight ? " h-full" : ""}`}
     >
       <button
         onClick={onClick}
@@ -80,7 +80,7 @@ function BrickCard({
             e.stopPropagation();
             onRemove();
           }}
-          className="absolute top-1 right-1 w-5 h-5 flex items-center justify-center rounded-none bg-zinc-200 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-500 hover:bg-red-100 hover:text-red-500 dark:hover:bg-red-900/40 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity text-[10px] leading-none"
+          className="absolute top-1 right-1 w-5 h-5 flex items-center justify-center rounded-none bg-muted text-muted-foreground hover:bg-red-100 hover:text-red-500 dark:hover:bg-red-900/40 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity text-[10px] leading-none"
           title="Remove"
         >
           ✕
@@ -146,23 +146,21 @@ export default function Library({ onClose }: LibraryProps) {
   }
 
   const tabClass = (t: Tab) =>
-    `flex-1 h-7 flex items-center justify-center text-sm font-normal transition-colors rounded-none ${
-      tab === t
-        ? "bg-accent/10 text-accent"
-        : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-zinc-50 dark:hover:bg-zinc-800"
+    `flex-1 h-6.5 flex items-center justify-center text-sm font-normal leading-none text-foreground transition-colors rounded-none ${
+      tab === t ? "bg-muted" : "hover:bg-muted"
     }`;
 
   return (
-    <div className="flex flex-col h-[60vh]">
+    <div className="flex flex-col h-[calc(60vh-0.25rem)]">
       {/* Header */}
-      <div className="px-3 py-3 border-b border-zinc-400 dark:border-zinc-600">
-        <span className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+      <div className="px-3 py-3 border-b border-border">
+        <span className="text-sm font-semibold tracking-tight text-foreground">
           Library
         </span>
       </div>
 
       {/* Tab toggle */}
-      <div className="flex gap-3 px-3 pt-2 pb-0">
+      <div className="flex gap-2 px-3 pt-2 pb-0">
         <button className={tabClass("preset")} onClick={() => setTab("preset")}>
           Preset
         </button>
@@ -175,7 +173,7 @@ export default function Library({ onClose }: LibraryProps) {
       <div className="flex-1 min-h-0">
         {tab === "preset" && (
           <div className="h-full p-3">
-            <div className="grid grid-cols-4 grid-rows-2 gap-3 h-full">
+            <div className="grid grid-cols-4 grid-rows-2 gap-2 h-full">
               {BRICK_LIBRARY.map((brick) => (
                 <BrickCard
                   key={brick.id}
@@ -193,7 +191,7 @@ export default function Library({ onClose }: LibraryProps) {
             {/* Define new custom brick */}
             <div className="flex items-end gap-1.5 mb-3">
               <div className="flex flex-col gap-0.5">
-                <span className="text-[10px] text-zinc-500 dark:text-zinc-500 text-center">
+                <span className="text-[10px] text-muted-foreground text-center">
                   X
                 </span>
                 <Input
@@ -202,11 +200,11 @@ export default function Library({ onClose }: LibraryProps) {
                   max={32}
                   value={studsX}
                   onChange={(e) => setStudsX(e.target.value)}
-                  className="w-16 !h-7 !py-0 !text-[10px] !leading-none"
+                  className="w-16"
                 />
               </div>
               <div className="flex flex-col gap-0.5">
-                <span className="text-[10px] text-zinc-500 dark:text-zinc-500 text-center">
+                <span className="text-[10px] text-muted-foreground text-center">
                   Y
                 </span>
                 <Input
@@ -215,12 +213,12 @@ export default function Library({ onClose }: LibraryProps) {
                   max={32}
                   value={studsY}
                   onChange={(e) => setStudsY(e.target.value)}
-                  className="w-16 !h-7 !py-0 !text-[10px] !leading-none"
+                  className="w-16"
                 />
               </div>
               <Button
                 onClick={handleAddCustom}
-                className="!h-7 !py-0 flex items-center justify-center shrink-0 leading-none"
+                className="!h-6.5 !py-0 flex items-center justify-center shrink-0 leading-none"
               >
                 Add
               </Button>
@@ -230,13 +228,13 @@ export default function Library({ onClose }: LibraryProps) {
             )}
 
             {customBricks.length === 0 && (
-              <p className="text-xs text-zinc-500 dark:text-zinc-500 mb-2">
+              <p className="text-xs text-muted-foreground mb-2">
                 No custom brick types yet. Define one above.
               </p>
             )}
 
             {customBricks.length > 0 && (
-              <div className="grid grid-cols-4 gap-3 [grid-auto-rows:calc((60vh_-_85px_-_40px)_/_2)]">
+              <div className="grid grid-cols-4 gap-2 [grid-auto-rows:calc((60vh_-_0.25rem_-_85px_-_40px)_/_2)]">
                 {customBricks.map((brick) => (
                   <BrickCard
                     key={brick.id}

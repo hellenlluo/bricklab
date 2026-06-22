@@ -81,12 +81,12 @@ export default function ToolBar() {
         left: "50%",
         transform: "translateX(-50%)",
       }}
-      className="fixed flex items-center px-3 gap-2 bg-background border border-border rounded-none z-40"
+      className="fixed flex items-center px-2 gap-2 bg-background border border-border rounded-none z-40 leading-none"
     >
       {/* Drop-up brick type selector */}
       <div
         ref={dropupRef}
-        className="relative flex-shrink-0 self-stretch inline-flex items-center"
+        className="relative flex-shrink-0 self-stretch inline-flex items-center leading-none"
       >
         <button
           onClick={() => setExpanded((v) => !v)}
@@ -102,10 +102,10 @@ export default function ToolBar() {
           >
             ▶
           </span>
-          <span className="text-xs font-semibold tracking-tight text-foreground">
+          <span className="text-xs font-semibold leading-none tracking-tight text-foreground">
             Quick Add
           </span>
-          <span className="text-xs text-muted-foreground">
+          <span className="text-xs leading-none text-muted-foreground">
             {selectedIds.length}/6
           </span>
         </button>
@@ -119,7 +119,7 @@ export default function ToolBar() {
                 return (
                   <li key={brick.id}>
                     <label
-                      className={`flex items-center gap-2 w-full px-3 py-1.5 text-xs text-left transition-colors select-none
+                      className={`flex items-center gap-2 w-full px-2 py-1.5 text-xs leading-none text-left transition-colors select-none
                         ${disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer hover:bg-muted"}
                         ${checked ? "text-foreground" : "text-muted-foreground"}
                       `}
@@ -151,7 +151,7 @@ export default function ToolBar() {
           <span className="text-muted-foreground font-normal leading-none">
             +
           </span>
-          <span>{brick.name}</span>
+          <span className="leading-none">{brick.name}</span>
         </button>
       ))}
     </div>

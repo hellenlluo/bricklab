@@ -67,7 +67,7 @@ export default function TopNav() {
         {/* Left sidebar column */}
         <div
           style={{ width: sidebarWidth }}
-          className="flex shrink-0 items-center px-3 border-r border-border"
+          className="flex shrink-0 items-center pl-2.5 border-r border-border"
         >
           <span className="inline-flex items-center gap-1.5 text-xl font-normal tracking-tight text-accent px-2 py-0.5 border border-accent bg-chart-1">
             <BrickPreview
@@ -84,12 +84,12 @@ export default function TopNav() {
         <div className="min-w-0 flex-1" />
 
         {/* Nav items */}
-        <div className="flex shrink-0 items-center gap-2 px-2">
+        <div className="flex shrink-0 items-center gap-2 px-5">
           {NAV_ITEMS.map((item) => (
             <button
               key={item}
               onClick={() => handleButtonClick(item)}
-              className={`h-6.5 flex items-center justify-center px-2 rounded-none text-sm font-normal leading-none text-foreground transition-colors ${
+              className={`h-8 flex items-center justify-center px-2.5 rounded-none text-sm font-normal leading-none text-foreground transition-colors ${
                 activePanel === item ? "bg-muted" : "hover:bg-muted"
               }`}
             >
@@ -98,7 +98,7 @@ export default function TopNav() {
           ))}
         </div>
 
-        {/* Right divider — absolutely positioned to match RightSidebar's fixed right:0 width:15vw */}
+        {/* Right divider — absolutely positioned to match RightSidebar's fixed right:0 width:17.5vw */}
         <div
           className="absolute top-0 bottom-0 right-0 border-l border-border"
           style={{ width: sidebarWidth }}

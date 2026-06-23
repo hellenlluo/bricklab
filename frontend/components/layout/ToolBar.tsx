@@ -75,13 +75,12 @@ export default function ToolBar() {
   return (
     <div
       style={{
-        height: "5vh",
         width: "35vw",
         bottom: "5vh",
         left: "50%",
         transform: "translateX(-50%)",
       }}
-      className="fixed flex items-center px-2 gap-2 bg-background border border-border rounded-none z-40 leading-none"
+      className="fixed flex items-center p-2.5 gap-2 bg-background border border-border rounded-none z-40 leading-none"
     >
       {/* Drop-up brick type selector */}
       <div
@@ -90,19 +89,18 @@ export default function ToolBar() {
       >
         <button
           onClick={() => setExpanded((v) => !v)}
-          className="h-6.5 flex items-center gap-2 px-2 rounded-none leading-none hover:bg-muted transition-colors"
+          className="h-8 flex items-center gap-2 px-2 rounded-none leading-none hover:bg-muted transition-colors"
         >
           <span
-            className="inline-block text-foreground transition-transform duration-200"
+            className="inline-block text-xs text-foreground transition-transform duration-200"
             style={{
-              fontSize: "0.5rem",
               transform: expanded ? "rotate(-90deg)" : "rotate(0deg)",
               lineHeight: 1,
             }}
           >
             ▶
           </span>
-          <span className="text-xs font-semibold leading-none tracking-tight text-foreground">
+          <span className="text-sm font-semibold leading-none tracking-tight text-foreground">
             Quick Add
           </span>
           <span className="text-xs leading-none text-muted-foreground">
@@ -119,7 +117,7 @@ export default function ToolBar() {
                 return (
                   <li key={brick.id}>
                     <label
-                      className={`flex items-center gap-2 w-full px-2 py-1.5 text-xs leading-none text-left transition-colors select-none
+                      className={`flex items-center gap-2 w-full px-2 h-8 text-xs leading-none text-left transition-colors select-none
                         ${disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer hover:bg-muted"}
                         ${checked ? "text-foreground" : "text-muted-foreground"}
                       `}
@@ -146,7 +144,7 @@ export default function ToolBar() {
           key={brick.id}
           onClick={() => handleAdd(brick)}
           title={`Add ${brick.name} brick`}
-          className="h-6.5 flex items-center gap-1 px-2 rounded-none text-xs leading-none text-muted-foreground hover:bg-muted transition-colors flex-shrink-0"
+          className="h-8 flex items-center gap-1 px-2 rounded-none text-xs leading-none text-muted-foreground hover:bg-muted transition-colors flex-shrink-0"
         >
           <span className="text-muted-foreground font-normal leading-none">
             +

@@ -201,7 +201,7 @@ function GroupRow({
           }
         }}
         style={indentStyle}
-        className={`flex items-center gap-1 mx-3 px-2 py-1.5 text-xs cursor-default group transition-colors text-foreground ${selectedRounding ?? headerRounding} ${
+        className={`flex items-center gap-1 mx-2.5 px-2 h-8 text-xs cursor-default group transition-colors text-foreground ${selectedRounding ?? headerRounding} ${
           isDragOver
             ? "ring-2 ring-[#74a7fe] bg-blue-50 dark:bg-blue-900/20"
             : grpSelected
@@ -214,8 +214,7 @@ function GroupRow({
             e.stopPropagation();
             onToggleExpand(group.id);
           }}
-          className="shrink-0 leading-none text-muted-foreground hover:text-foreground"
-          style={{ fontSize: "0.45rem", lineHeight: 1 }}
+          className="shrink-0 text-xs leading-none text-muted-foreground hover:text-foreground"
         >
           {isOpen ? "▼" : "▶"}
         </button>
@@ -236,7 +235,7 @@ function GroupRow({
             onChange={(e) => onEditChange(e.target.value)}
             onBlur={() => onCommitEdit(group.id, true)}
             onKeyDown={(e) => onKeyDown(e, group.id, true)}
-            className="flex-1 min-w-0 bg-transparent outline-none text-xs text-foreground leading-none p-0 m-0 h-[1em]"
+            className="flex-1 min-w-0 bg-transparent outline-none text-xs text-foreground leading-none p-0 m-0"
             autoFocus
           />
         ) : (
@@ -252,7 +251,7 @@ function GroupRow({
           </span>
         )}
 
-        <span className="ml-auto text-[10px] text-muted-foreground shrink-0">
+        <span className="ml-auto text-xs text-muted-foreground shrink-0">
           {totalChildren}
         </span>
 
@@ -261,7 +260,7 @@ function GroupRow({
             e.stopPropagation();
             onUngroup(group.id);
           }}
-          className="shrink-0 ml-1 w-4 h-4 flex items-center justify-center rounded-none text-[9px] leading-none text-muted-foreground hover:bg-muted hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+          className="shrink-0 ml-1 w-4 h-4 flex items-center justify-center rounded-none text-xs leading-none text-muted-foreground hover:bg-muted hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
           title="Ungroup"
         >
           ✕
@@ -450,7 +449,7 @@ export default function AssetsPanel() {
   return (
     <div ref={dropdownRef} className="border-b border-border pb-2">
       {/* Search */}
-      <div className="px-3 pt-3 pb-2">
+      <div className="px-2.5 pt-3 pb-2">
         <Input
           type="text"
           value={search}
@@ -463,19 +462,18 @@ export default function AssetsPanel() {
       {/* Collapsible header */}
       <button
         onClick={handleToggle}
-        className="flex w-full items-center gap-2 px-3 py-1.5 text-left leading-none hover:bg-muted transition-colors"
+        className="flex w-full items-center gap-2 px-2.5 h-8 text-left leading-none hover:bg-muted transition-colors"
       >
         <span
-          className="inline-block text-foreground transition-transform duration-200"
+          className="inline-block text-xs text-foreground transition-transform duration-200"
           style={{
-            fontSize: "0.5rem",
             transform: expanded ? "rotate(90deg)" : "rotate(0deg)",
             lineHeight: 1,
           }}
         >
           ▶
         </span>
-        <span className="text-xs font-semibold tracking-tight text-foreground">
+        <span className="text-sm font-semibold tracking-tight text-foreground">
           Assets
         </span>
         <span className="ml-auto text-xs text-muted-foreground">
@@ -487,7 +485,7 @@ export default function AssetsPanel() {
       {expanded && (
         <ul onClick={() => selectAsset(null)}>
           {topLevelGroups.length === 0 && ungroupedAssets.length === 0 && (
-            <li className="px-3 py-2 text-xs text-muted-foreground italic">
+            <li className="px-2.5 py-2 text-xs text-muted-foreground italic">
               {search ? "No matches" : "No assets in scene"}
             </li>
           )}
@@ -589,7 +587,7 @@ function AssetRow({
       }}
       onClick={onSelect}
       style={indentStyle}
-      className={`flex items-center gap-2 mx-3 px-2 py-1.5 text-xs cursor-default group transition-colors text-foreground ${rounding} ${
+      className={`flex items-center gap-2 mx-2.5 px-2 h-8 text-xs cursor-default group transition-colors text-foreground ${rounding} ${
         selectedAssetIds.includes(asset.id) ? "bg-muted" : "hover:bg-muted"
       }`}
     >
@@ -605,7 +603,7 @@ function AssetRow({
               onCancelEdit();
             } else onKeyDown(e);
           }}
-          className="flex-1 min-w-0 bg-transparent outline-none border-b border-foreground text-xs text-foreground leading-none p-0 m-0 h-[1em]"
+          className="flex-1 min-w-0 bg-transparent outline-none text-xs text-foreground leading-none p-0 m-0"
           autoFocus
         />
       ) : (

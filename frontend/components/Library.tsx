@@ -80,7 +80,7 @@ function BrickCard({
             e.stopPropagation();
             onRemove();
           }}
-          className="absolute top-1 right-1 w-5 h-5 flex items-center justify-center rounded-none bg-muted text-muted-foreground hover:bg-red-100 hover:text-red-500 dark:hover:bg-red-900/40 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity text-[10px] leading-none"
+          className="absolute top-1 right-1 w-5 h-5 flex items-center justify-center rounded-none bg-muted text-xs text-muted-foreground hover:bg-red-100 hover:text-red-500 dark:hover:bg-red-900/40 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity leading-none"
           title="Remove"
         >
           ✕
@@ -146,21 +146,21 @@ export default function Library({ onClose }: LibraryProps) {
   }
 
   const tabClass = (t: Tab) =>
-    `flex-1 h-6.5 flex items-center justify-center text-sm font-normal leading-none text-foreground transition-colors rounded-none ${
+    `flex-1 h-8 flex items-center justify-center text-sm font-normal leading-none text-foreground transition-colors rounded-none ${
       tab === t ? "bg-muted" : "hover:bg-muted"
     }`;
 
   return (
     <div className="flex flex-col h-[calc(60vh-0.25rem)]">
       {/* Header */}
-      <div className="px-3 py-3 border-b border-border">
+      <div className="px-2.5 py-2 border-b border-border">
         <span className="text-sm font-semibold tracking-tight text-foreground">
           Library
         </span>
       </div>
 
       {/* Tab toggle */}
-      <div className="flex gap-2 px-3 pt-2 pb-0">
+      <div className="flex gap-2 px-2.5 pt-5 pb-0">
         <button className={tabClass("preset")} onClick={() => setTab("preset")}>
           Preset
         </button>
@@ -172,7 +172,7 @@ export default function Library({ onClose }: LibraryProps) {
       {/* Content area */}
       <div className="flex-1 min-h-0">
         {tab === "preset" && (
-          <div className="h-full p-3">
+          <div className="h-full p-2.5">
             <div className="grid grid-cols-4 grid-rows-2 gap-2 h-full">
               {BRICK_LIBRARY.map((brick) => (
                 <BrickCard
@@ -187,11 +187,11 @@ export default function Library({ onClose }: LibraryProps) {
         )}
 
         {tab === "custom" && (
-          <div className="h-full overflow-y-auto p-3">
+          <div className="h-full overflow-y-auto p-2.5">
             {/* Define new custom brick */}
             <div className="flex items-end gap-1.5 mb-3">
               <div className="flex flex-col gap-0.5">
-                <span className="text-[10px] text-muted-foreground text-center">
+                <span className="text-xs text-muted-foreground text-center">
                   X
                 </span>
                 <Input
@@ -204,7 +204,7 @@ export default function Library({ onClose }: LibraryProps) {
                 />
               </div>
               <div className="flex flex-col gap-0.5">
-                <span className="text-[10px] text-muted-foreground text-center">
+                <span className="text-xs text-muted-foreground text-center">
                   Y
                 </span>
                 <Input
@@ -218,7 +218,7 @@ export default function Library({ onClose }: LibraryProps) {
               </div>
               <Button
                 onClick={handleAddCustom}
-                className="!h-6.5 !py-0 flex items-center justify-center shrink-0 leading-none"
+                className="!h-8 !py-0 flex items-center justify-center shrink-0 leading-none"
               >
                 Add
               </Button>

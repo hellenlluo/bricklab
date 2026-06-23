@@ -51,8 +51,8 @@ export default function ScenesPanel() {
   return (
     <div className="flex flex-col">
       {/* Header */}
-      <div className="flex items-end gap-2 px-3 pt-3 pb-1.5">
-        <span className="text-xs font-semibold tracking-tight text-foreground">
+      <div className="flex items-center gap-2 px-2.5 pt-3 pb-1.5">
+        <span className="text-sm font-semibold tracking-tight text-foreground">
           Scenes
         </span>
         <span className="ml-auto text-xs text-muted-foreground">
@@ -61,9 +61,9 @@ export default function ScenesPanel() {
         <button
           onClick={addScene}
           title="Add Scene"
-          className="h-5 px-2 flex items-center text-[10px] leading-none rounded-none border transition-colors border-accent bg-accent/25 text-accent hover:bg-accent/35"
+          className="h-5 px-2 flex items-center text-xs leading-none rounded-none border transition-colors border-accent bg-accent/25 text-accent hover:bg-accent/35"
         >
-          + New
+          +
         </button>
       </div>
 
@@ -76,7 +76,7 @@ export default function ScenesPanel() {
             <li key={scene.id}>
               <div
                 onClick={() => setActiveScene(scene.id)}
-                className={`flex items-center gap-1.5 mx-3 px-2 py-1.5 rounded-none cursor-default group text-foreground transition-colors ${
+                className={`flex items-center gap-1.5 mx-2.5 px-2 h-8 rounded-none cursor-default group text-foreground transition-colors ${
                   isActive ? "bg-muted" : "hover:bg-muted"
                 }`}
               >
@@ -89,7 +89,7 @@ export default function ScenesPanel() {
                     onBlur={() => commitEdit(scene.id)}
                     onKeyDown={(e) => handleKeyDown(e, scene.id)}
                     onClick={(e) => e.stopPropagation()}
-                    className="flex-1 min-w-0 bg-transparent outline-none text-xs text-foreground leading-none p-0 m-0 h-[1em]"
+                    className="flex-1 min-w-0 bg-transparent outline-none text-xs text-foreground leading-none p-0 m-0"
                   />
                 ) : (
                   <span
@@ -105,7 +105,7 @@ export default function ScenesPanel() {
 
                 {/* Asset count badge */}
                 {!isEditing && (
-                  <span className="shrink-0 text-[9px] text-muted-foreground tabular-nums">
+                  <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
                     {scene.assets.length}
                   </span>
                 )}
@@ -118,8 +118,7 @@ export default function ScenesPanel() {
                       removeScene(scene.id);
                     }}
                     title="Delete scene"
-                    className="shrink-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-500 dark:hover:text-red-400 transition-all"
-                    style={{ fontSize: "0.6rem", lineHeight: 1 }}
+                    className="shrink-0 opacity-0 group-hover:opacity-100 text-xs leading-none text-muted-foreground hover:text-red-500 dark:hover:text-red-400 transition-all"
                   >
                     ✕
                   </button>

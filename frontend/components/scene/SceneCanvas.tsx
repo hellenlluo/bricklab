@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useMemo, useEffect, useCallback, useRef } from "react";
+import { Suspense, useMemo, useEffect, useCallback, useRef, memo } from "react";
 import * as THREE from "three";
 import { Canvas, useThree } from "@react-three/fiber";
 import {
@@ -14,19 +14,24 @@ import { useScene, type SceneAsset, type BrickGroup } from "@/store/sceneStore";
 import { usePrefixEdit } from "@/store/usePrefixEdit";
 import type { GenerationOffset } from "@/lib/prefixEditing";
 import Baseplate from "./Baseplate";
-import Gizmo from "./Gizmo";
 import ParametricBrick, { BODY_HEIGHT } from "@/components/ParametricBrick";
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from "@/components/ui/resizable";
 
 const BRICKGPT_WORLD_DIM = 20;
 const BRICKGPT_GRID_COLOR = "#7ec8e3";
 
 useGLTF.preload("/brick.glb");
 
-function ZUpCamera() {
+function CameraUp({ up }: { up: [number, number, number] }) {
   const { camera } = useThree();
   useEffect(() => {
-    camera.up.set(0, 0, 1);
-  }, [camera]);
+    camera.up.set(up[0], up[1], up[2]);
+    camera.lookAt(0, 0, 0);
+  }, [camera]); // eslint-disable-line react-hooks/exhaustive-deps
   return null;
 }
 
@@ -268,7 +273,13 @@ function ParametricBrickWrapper({
   );
 }
 
-function PlacedAssets({ assets }: { assets: SceneAsset[] }) {
+function PlacedAssets({
+  assets,
+  isPrimary = false,
+}: {
+  assets: SceneAsset[];
+  isPrimary?: boolean;
+}) {
   const {
     selectAsset,
     toggleGroupSelection,
@@ -423,9 +434,11 @@ function PlacedAssets({ assets }: { assets: SceneAsset[] }) {
         removeSelectedAssets();
       }
     }
+    if (!isPrimary) return;
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [
+    isPrimary,
     groupSelected,
     undo,
     removeSelectedAssets,
@@ -527,7 +540,13 @@ function clampToBrickGPTWorld(
   ];
 }
 
-function SceneControls() {
+function SceneControls({
+  viewportType,
+  disableTransform = false,
+}: {
+  viewportType: string;
+  disableTransform?: boolean;
+}) {
   const {
     selectedAssetIds,
     updateAsset,
@@ -535,7 +554,6 @@ function SceneControls() {
     plateSize,
     assets,
     maxCameraDistance,
-    viewportType,
   } = useScene();
   const prefixEdit = usePrefixEdit();
   const scene = useThree((s) => s.scene);
@@ -753,7 +771,7 @@ function SceneControls() {
   return (
     <>
       <primitive object={selectionPivot} visible={false} />
-      {shouldShowTransformControls && (
+      {!disableTransform && shouldShowTransformControls && (
         <TransformControls
           object={selectionPivot}
           size={0.5}
@@ -839,36 +857,89 @@ function ShadowLight({ plateSize }: { plateSize: number }) {
   );
 }
 
-export default function SceneCanvas() {
-  const {
-    assets,
-    sceneBackground,
-    selectAsset,
-    plateSize,
-    plateColor,
-    viewportType,
-  } = useScene();
-  const isPerspective = viewportType === "Perspective";
+const VIEWPORT_DEFAULTS: Record<
+  string,
+  { position: [number, number, number]; up: [number, number, number] }
+> = {
+  Perspective: { position: [30, -30, 20], up: [0, 0, 1] },
+  Top: { position: [0, 0, 90], up: [0, 1, 0] },
+  Front: { position: [0, -90, 0], up: [0, 0, 1] },
+};
+
+const SceneViewport = memo(function SceneViewport({
+  viewportType,
+  isPrimary = false,
+  label,
+  labelAtTop = false,
+}: {
+  viewportType: string;
+  isPrimary?: boolean;
+  label: string;
+  labelAtTop?: boolean;
+}) {
+  const { assets, sceneBackground, selectAsset, plateSize, plateColor } =
+    useScene();
+  const cam = VIEWPORT_DEFAULTS[viewportType] ?? VIEWPORT_DEFAULTS.Perspective;
 
   return (
-    <div data-no-deselect className="fixed inset-0 z-0">
+    <div className="relative w-full h-full">
       <Canvas
-        camera={{ position: [30, -30, 20], fov: 35, up: [0, 0, 1] }}
+        camera={{ position: cam.position, fov: 35 }}
         shadows={{ type: THREE.PCFShadowMap }}
         gl={{ antialias: true }}
         onPointerMissed={() => selectAsset(null)}
       >
         <color attach="background" args={[sceneBackground]} />
-        <ZUpCamera />
+        <CameraUp up={cam.up} />
         <ambientLight intensity={0.35} />
         <ShadowLight plateSize={plateSize} />
         <Baseplate size={plateSize} color={plateColor} />
         <Environment preset="city" />
-        <SceneControls />
-        <PlacedAssets assets={assets} />
+        <SceneControls
+          viewportType={viewportType}
+          disableTransform={!isPrimary}
+        />
+        <PlacedAssets assets={assets} isPrimary={isPrimary} />
         <PrefixEditWorldBox />
-        <Gizmo interactive={isPerspective} />
       </Canvas>
+      <div
+        className={`absolute left-2 text-[10px] text-white/40 pointer-events-none select-none font-mono uppercase tracking-widest ${labelAtTop ? "top-2" : "bottom-2"}`}
+      >
+        {label}
+      </div>
+    </div>
+  );
+});
+
+export default function SceneCanvas() {
+  return (
+    <div
+      data-no-deselect
+      className="fixed z-0"
+      style={{ top: "7.5vh", left: "15vw", right: "15vw", bottom: 0 }}
+    >
+      <ResizablePanelGroup orientation="horizontal">
+        <ResizablePanel defaultSize={400 / 7} minSize={15}>
+          <SceneViewport
+            viewportType="Perspective"
+            isPrimary
+            label="Perspective"
+            labelAtTop
+          />
+        </ResizablePanel>
+        <ResizableHandle withHandle />
+        <ResizablePanel defaultSize={300 / 7} minSize={15}>
+          <ResizablePanelGroup orientation="vertical">
+            <ResizablePanel defaultSize={50} minSize={15}>
+              <SceneViewport viewportType="Top" label="Top" />
+            </ResizablePanel>
+            <ResizableHandle withHandle />
+            <ResizablePanel defaultSize={50} minSize={15}>
+              <SceneViewport viewportType="Front" label="Front" />
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        </ResizablePanel>
+      </ResizablePanelGroup>
     </div>
   );
 }

@@ -38,11 +38,9 @@ export default function SettingsPanel() {
   }, [maxCameraDistance]);
 
   return (
-    <div data-no-deselect className="px-3 py-3 flex flex-col gap-3">
+    <div data-no-deselect className="px-2.5 py-3 flex flex-col gap-2">
       <div className="flex flex-col gap-0.5">
-        <span className="text-[10px] text-muted-foreground">
-          Background Color
-        </span>
+        <span className="text-xs text-muted-foreground">Background Color</span>
         <div className="flex items-center gap-2">
           <input
             type="color"
@@ -63,15 +61,13 @@ export default function SettingsPanel() {
               }
             }}
             maxLength={7}
-            className="w-full font-mono"
+            className="w-full text-base font-mono"
           />
         </div>
       </div>
 
       <div className="flex flex-col gap-0.5">
-        <span className="text-[10px] text-muted-foreground">
-          Baseplate Color
-        </span>
+        <span className="text-xs text-muted-foreground">Baseplate Color</span>
         <div className="flex items-center gap-2">
           <input
             type="color"
@@ -92,15 +88,13 @@ export default function SettingsPanel() {
               }
             }}
             maxLength={7}
-            className="w-full font-mono"
+            className="w-full text-base font-mono"
           />
         </div>
       </div>
 
       <div className="flex flex-col gap-0.5">
-        <span className="text-[10px] text-muted-foreground">
-          Baseplate Size
-        </span>
+        <span className="text-xs text-muted-foreground">Baseplate Size</span>
         <Input
           type="number"
           min={2}
@@ -121,14 +115,12 @@ export default function SettingsPanel() {
             if (e.key === "Enter") (e.target as HTMLInputElement).blur();
             if (e.key === "Escape") setPlateSizeDraft(String(plateSize));
           }}
-          className="w-full"
+          className="w-full text-base"
         />
       </div>
 
       <div className="flex flex-col gap-0.5">
-        <span className="text-[10px] text-muted-foreground">
-          Max Zoom Distance
-        </span>
+        <span className="text-xs text-muted-foreground">Max Zoom Distance</span>
         <Input
           type="number"
           min={1}
@@ -148,12 +140,12 @@ export default function SettingsPanel() {
             if (e.key === "Escape")
               setMaxDistanceDraft(String(maxCameraDistance));
           }}
-          className="w-full"
+          className="w-full text-base"
         />
       </div>
 
       <div className="flex flex-col gap-0.5">
-        <span className="text-[10px] text-muted-foreground">
+        <span className="text-xs text-muted-foreground">
           Default Brick Color
         </span>
         <div className="flex items-center gap-2">
@@ -176,15 +168,13 @@ export default function SettingsPanel() {
               }
             }}
             maxLength={7}
-            className="w-full font-mono"
+            className="w-full text-base font-mono"
           />
         </div>
       </div>
 
       <div className="flex flex-col gap-0.5">
-        <span className="text-[10px] text-muted-foreground">
-          Selection Color
-        </span>
+        <span className="text-xs text-muted-foreground">Selection Color</span>
         <div className="flex items-center gap-2">
           <input
             type="color"
@@ -205,7 +195,7 @@ export default function SettingsPanel() {
               }
             }}
             maxLength={7}
-            className="w-full font-mono"
+            className="w-full text-base font-mono"
           />
         </div>
       </div>

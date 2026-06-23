@@ -147,13 +147,13 @@ export default function GenerationReplay({
         onMouseDown={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-3 py-3 border-b border-border">
+        <div className="flex items-center justify-between px-2.5 py-2 border-b border-border">
           <span className="text-sm font-semibold tracking-tight text-foreground">
             Generation Replay
           </span>
           <button
             onClick={onClose}
-            className="w-6 h-6 flex items-center justify-center rounded-none hover:bg-muted text-muted-foreground transition-colors text-xs"
+            className="w-8 h-8 flex items-center justify-center rounded-none hover:bg-muted text-muted-foreground transition-colors text-xs"
           >
             ✕
           </button>
@@ -176,13 +176,13 @@ export default function GenerationReplay({
         </div>
 
         {/* Playback controls */}
-        <div className="px-3 py-4 border-t border-border flex flex-col gap-2">
-          <div className="flex items-center gap-3">
+        <div className="px-2.5 py-5 border-t border-border flex flex-col gap-2">
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={togglePlay}
               aria-label={atEnd ? "Restart" : isPlaying ? "Pause" : "Play"}
-              className="w-7 h-7 flex items-center justify-center rounded-none bg-accent text-white hover:bg-accent-dark transition-colors shrink-0"
+              className="w-8 h-8 flex items-center justify-center rounded-none bg-accent text-white hover:bg-accent-dark transition-colors shrink-0"
             >
               {atEnd ? (
                 <svg
@@ -236,7 +236,7 @@ export default function GenerationReplay({
                   key={s}
                   type="button"
                   onClick={() => setSpeed(s)}
-                  className={`px-1.5 py-0.5 text-[10px] rounded-none leading-none transition-colors ${
+                  className={`h-8 px-1.5 py-0 text-xs rounded-none leading-none transition-colors ${
                     speed === s
                       ? "bg-accent text-white"
                       : "text-muted-foreground hover:text-foreground"
@@ -248,7 +248,7 @@ export default function GenerationReplay({
             </div>
           </div>
 
-          <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>
               Step {step + 1} of {generationHistory.length}
             </span>

@@ -405,13 +405,13 @@ export default function Exporter({ onClose }: ExporterProps) {
   return (
     <div className="flex flex-col">
       {/* Header */}
-      <div className="px-3 py-3 border-b border-border">
+      <div className="px-2.5 py-2 border-b border-border">
         <span className="text-sm font-semibold tracking-tight text-foreground">
           Exporter
         </span>
       </div>
 
-      <div className="p-3 flex flex-col gap-4">
+      <div className="p-2.5 flex flex-col gap-2">
         {/* Scene selection */}
         <div className="flex flex-col gap-1.5">
           <span className="text-xs font-semibold tracking-tight text-foreground">
@@ -421,14 +421,13 @@ export default function Exporter({ onClose }: ExporterProps) {
             <button
               type="button"
               onClick={() => setSceneDropdownOpen((o) => !o)}
-              className={`flex w-full h-6.5 items-center gap-1.5 px-2 border border-border bg-background text-xs leading-none text-foreground hover:bg-muted/50 transition-colors ${
+              className={`flex w-full h-8 items-center gap-1.5 px-2 border border-border bg-background text-xs leading-none text-foreground hover:bg-muted/50 transition-colors ${
                 sceneDropdownOpen ? "rounded-none border-b-0" : "rounded-none"
               }`}
             >
               <span
-                className="inline-block shrink-0 text-foreground transition-transform duration-200"
+                className="inline-block shrink-0 text-xs text-foreground transition-transform duration-200"
                 style={{
-                  fontSize: "0.45rem",
                   transform: sceneDropdownOpen
                     ? "rotate(90deg)"
                     : "rotate(0deg)",
@@ -455,7 +454,7 @@ export default function Exporter({ onClose }: ExporterProps) {
                           setSelectedSceneId(scene.id);
                           setSceneDropdownOpen(false);
                         }}
-                        className={`flex w-full cursor-pointer items-center justify-between gap-2 px-3 py-1.5 text-xs hover:bg-muted transition-colors ${
+                        className={`flex w-full cursor-pointer items-center justify-between gap-2 px-3 h-8 text-xs hover:bg-muted transition-colors ${
                           scene.id === selectedSceneId
                             ? "text-foreground"
                             : "text-foreground"
@@ -493,14 +492,14 @@ export default function Exporter({ onClose }: ExporterProps) {
           <span className="text-xs font-semibold tracking-tight text-foreground">
             Format
           </span>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-2">
             {FORMAT_OPTIONS.map((fmt) => (
               <button
                 key={fmt.id}
                 type="button"
                 onClick={() => setExportFormat(fmt.id)}
                 title={fmt.description}
-                className={`h-6.5 flex items-center justify-center px-2.5 rounded-none text-xs font-medium leading-none border transition-colors ${
+                className={`h-8 flex items-center justify-center px-2.5 rounded-none text-xs font-medium leading-none border transition-colors ${
                   exportFormat === fmt.id
                     ? "bg-accent text-white border-accent hover:bg-accent-dark"
                     : "bg-background text-muted-foreground border-border hover:bg-muted"
@@ -510,7 +509,7 @@ export default function Exporter({ onClose }: ExporterProps) {
               </button>
             ))}
           </div>
-          <p className="text-[10px] text-muted-foreground leading-tight">
+          <p className="text-xs text-muted-foreground leading-tight">
             {FORMAT_OPTIONS.find((f) => f.id === exportFormat)?.description}
           </p>
         </div>
@@ -557,7 +556,7 @@ export default function Exporter({ onClose }: ExporterProps) {
         <Button
           onClick={handleExport}
           disabled={isExporting || !exportName.trim()}
-          className="w-full !h-6.5 !py-0 flex items-center justify-center"
+          className="w-full !h-8 !py-0 flex items-center justify-center"
         >
           {isExporting
             ? "Exporting…"

@@ -455,7 +455,7 @@ export default function ConstraintBuilder({
           {/* Name + Add Box controls */}
           <div className="flex gap-2 px-3 pt-3 pb-0 items-end">
             <div className="flex flex-col gap-1 flex-1">
-              <label className="text-[10px] text-muted-foreground">Name</label>
+              <label className="text-xs text-muted-foreground">Name</label>
               <Input
                 type="text"
                 value={name}
@@ -465,7 +465,7 @@ export default function ConstraintBuilder({
               />
             </div>
             <div className="flex flex-col gap-1 items-center">
-              <label className="text-[10px] text-muted-foreground text-center w-full">
+              <label className="text-xs text-muted-foreground text-center w-full">
                 X
               </label>
               <Input
@@ -480,7 +480,7 @@ export default function ConstraintBuilder({
               />
             </div>
             <div className="flex flex-col gap-1 items-center">
-              <label className="text-[10px] text-muted-foreground text-center w-full">
+              <label className="text-xs text-muted-foreground text-center w-full">
                 Y
               </label>
               <Input
@@ -495,7 +495,7 @@ export default function ConstraintBuilder({
               />
             </div>
             <div className="flex flex-col gap-1 items-center">
-              <label className="text-[10px] text-muted-foreground text-center w-full">
+              <label className="text-xs text-muted-foreground text-center w-full">
                 Z
               </label>
               <Input
@@ -582,15 +582,14 @@ export default function ConstraintBuilder({
                         className="w-12 text-center"
                       />
                     </div>
-                    <span className="text-[9px] text-muted-foreground">
+                    <span className="text-xs text-muted-foreground">
                       ({selectedBox.posX}, {selectedBox.posY},{" "}
                       {selectedBox.posZ})
                     </span>
                     <button
                       onClick={() => handleRemoveBox(selectedBox.id)}
                       title="Delete box"
-                      className="text-muted-foreground hover:text-red-500 transition-colors"
-                      style={{ fontSize: "0.55rem", lineHeight: 1 }}
+                      className="text-xs leading-none text-muted-foreground hover:text-red-500 transition-colors"
                     >
                       ✕
                     </button>

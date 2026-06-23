@@ -22,7 +22,7 @@ function ShortcutRow({
       <div className="min-w-0">
         <span className="text-xs text-muted-foreground">{action}</span>
         {note && (
-          <span className="block text-[10px] text-muted-foreground mt-0.5">
+          <span className="block text-xs text-muted-foreground mt-0.5">
             {note}
           </span>
         )}
@@ -30,11 +30,11 @@ function ShortcutRow({
       <div className="flex items-center gap-1 ml-3 flex-shrink-0">
         {keys.map((k, i) => (
           <span key={i} className="flex items-center gap-1">
-            <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-muted border border-border rounded-none text-muted-foreground leading-tight">
+            <kbd className="px-1.5 py-0.5 text-xs font-mono bg-muted border border-border rounded-none text-muted-foreground leading-tight">
               {k}
             </kbd>
             {i < keys.length - 1 && (
-              <span className="text-[10px] text-muted-foreground">+</span>
+              <span className="text-xs text-muted-foreground">+</span>
             )}
           </span>
         ))}
@@ -84,14 +84,14 @@ export default function Docs() {
       style={cardHeight ? { height: `${cardHeight}px` } : undefined}
     >
       {/* Header */}
-      <div ref={cardHeaderRef} className="px-3 py-3 border-b border-border">
+      <div ref={cardHeaderRef} className="px-2.5 py-2 border-b border-border">
         <span className="text-sm font-semibold text-foreground">Docs</span>
       </div>
 
       {/* Content */}
       <div
         ref={scrollAreaRef}
-        className="flex-1 min-h-0 overflow-y-auto px-3 py-3"
+        className="flex-1 min-h-0 overflow-y-auto px-2.5 py-3"
       >
         <div ref={shortcutsRef}>
           <SectionHeader>Keyboard &amp; mouse shortcuts</SectionHeader>

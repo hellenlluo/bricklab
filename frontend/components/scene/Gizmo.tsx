@@ -14,7 +14,7 @@ export default function Gizmo({
   const size = useThree((s) => s.size);
   const controls = useThree((s) => s.controls) as Controls;
   const gap = 55;
-  const marginX = Math.round(size.width * 0.16) + gap;
+  const marginX = Math.round(size.width * 0.185) + gap;
   const marginY = Math.round(size.height * 0.085) + gap;
 
   return (

@@ -70,7 +70,7 @@ const WORKSPACE_CAM_TARGET: [number, number, number] = [
   WORLD_DIM / 2,
 ];
 const TOOLBAR_BUTTON_CLASS =
-  "inline-flex h-6.5 shrink-0 items-center justify-center whitespace-nowrap py-0 leading-none";
+  "inline-flex h-8 shrink-0 items-center justify-center whitespace-nowrap py-0 leading-none";
 
 function PreviewAxes() {
   const axes = useMemo(() => {
@@ -1067,7 +1067,7 @@ export default function Generator({
   return (
     <div className="flex flex-col h-[64vh]">
       {/* Header */}
-      <div className="px-3 py-3 border-b border-border">
+      <div className="px-2.5 py-2 border-b border-border">
         <span className="text-sm font-semibold text-foreground">Generator</span>
       </div>
 
@@ -1076,12 +1076,12 @@ export default function Generator({
         {/* ── LEFT: tabs + controls + actions ─────────────────────────── */}
         <div className="flex flex-col md:w-[28%] shrink-0 border-b border-border md:border-b-0 md:border-r">
           {/* Tab toggle */}
-          <ul className="flex flex-col gap-2 px-3 py-2 border-b border-border">
+          <ul className="flex flex-col gap-2 px-2.5 py-2 border-b border-border">
             {(["text-to-3d", "image-to-3d"] as Tab[]).map((t) => (
               <li key={t}>
                 <button
                   onClick={() => setTab(t)}
-                  className={`w-full h-6.5 flex items-center px-2 rounded-none text-xs leading-none text-left text-foreground transition-colors ${
+                  className={`w-full h-8 flex items-center px-2 rounded-none text-xs leading-none text-left text-foreground transition-colors ${
                     tab === t ? "bg-muted" : "hover:bg-muted"
                   }`}
                 >
@@ -1092,7 +1092,7 @@ export default function Generator({
           </ul>
 
           {/* Tab-specific controls (scrollable) */}
-          <div className="flex flex-col flex-1 gap-3 px-3 py-3 overflow-y-auto min-h-0">
+          <div className="flex flex-col flex-1 gap-2 px-2.5 py-3 overflow-y-auto min-h-0">
             {tab === "text-to-3d" && (
               <>
                 {/* Prompt */}
@@ -1122,7 +1122,7 @@ export default function Generator({
                         <button
                           type="button"
                           onClick={() => setConstraintDropdownOpen((o) => !o)}
-                          className={`flex w-full h-6.5 items-center gap-1.5 px-2 border border-border bg-background text-xs leading-none text-foreground hover:bg-muted/50 transition-colors ${
+                          className={`flex w-full h-8 items-center gap-1.5 px-2 border border-border bg-background text-xs leading-none text-foreground hover:bg-muted/50 transition-colors ${
                             constraintDropdownOpen
                               ? "rounded-none border-b-0"
                               : "rounded-none"
@@ -1156,7 +1156,7 @@ export default function Generator({
                                 );
                                 return (
                                   <li key={c.id}>
-                                    <label className="flex cursor-pointer items-center gap-2 px-3 py-1.5 text-xs hover:bg-muted transition-colors">
+                                    <label className="flex cursor-pointer items-center gap-2 px-3 h-8 text-xs hover:bg-muted transition-colors">
                                       <Checkbox
                                         checked={checked}
                                         onCheckedChange={() =>
@@ -1198,7 +1198,7 @@ export default function Generator({
                 {/* Edit / revert / regenerate controls — visible after generation */}
                 {editing && (
                   <div className="flex flex-col gap-2 border border-border p-2">
-                    <p className="text-[10px] leading-snug text-muted-foreground">
+                    <p className="text-xs leading-snug text-muted-foreground">
                       Revert to an earlier step using the slider. Move or delete
                       bricks in the preview. Then regenerate from the edited
                       prefix.
@@ -1206,10 +1206,10 @@ export default function Generator({
 
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] text-muted-foreground">
+                        <span className="text-xs text-muted-foreground">
                           Keep steps
                         </span>
-                        <span className="text-[10px] text-muted-foreground tabular-nums">
+                        <span className="text-xs text-muted-foreground tabular-nums">
                           {keepCount} / {bricks.length}
                         </span>
                       </div>
@@ -1231,13 +1231,13 @@ export default function Generator({
                       <button
                         onClick={handleDeleteSelected}
                         disabled={selectedBrickIndex == null || regenLoading}
-                        className="w-full h-6.5 flex items-center justify-center rounded-none text-xs font-medium leading-none text-red-500 border border-red-500 bg-red-500/10 hover:bg-red-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        className="w-full h-8 flex items-center justify-center rounded-none text-xs font-medium leading-none text-red-500 border border-red-500 bg-red-500/10 hover:bg-red-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                       >
                         Delete selected brick
                       </button>
 
                       {collidingIndices.size > 0 && (
-                        <p className="text-[10px] leading-snug text-red-600 dark:text-red-400">
+                        <p className="text-xs leading-snug text-red-600 dark:text-red-400">
                           {collidingIndices.size} brick
                           {collidingIndices.size !== 1 ? "s" : ""} overlap — fix
                           before regenerating.
@@ -1251,7 +1251,7 @@ export default function Generator({
                           keepCount === 0 ||
                           collidingIndices.size > 0
                         }
-                        className="w-full h-6.5 flex items-center justify-center"
+                        className="w-full h-8 flex items-center justify-center"
                       >
                         {regenLoading
                           ? "Regenerating…"
@@ -1286,12 +1286,12 @@ export default function Generator({
                     type="button"
                     onClick={() => imgFileInputRef.current?.click()}
                     disabled={imgLoading && imgStage !== "segment"}
-                    className="w-full h-6.5 flex items-center justify-center"
+                    className="w-full h-8 flex items-center justify-center"
                   >
                     {imgFile ? "Change Image" : "Upload Image"}
                   </Button>
                   {imgFile && (
-                    <span className="text-[10px] text-muted-foreground truncate">
+                    <span className="text-xs text-muted-foreground truncate">
                       {imgFile.name}
                     </span>
                   )}
@@ -1303,7 +1303,7 @@ export default function Generator({
                     <span className="text-xs font-semibold tracking-tight text-foreground">
                       Selection
                     </span>
-                    <p className="text-[10px] text-muted-foreground leading-snug">
+                    <p className="text-xs text-muted-foreground leading-snug">
                       Click on the object to select it. Alt+click or right-click
                       to deselect regions.
                     </p>
@@ -1344,7 +1344,7 @@ export default function Generator({
                           <span className="text-xs font-semibold tracking-tight text-foreground">
                             Brick density
                           </span>
-                          <span className="text-[10px] text-muted-foreground tabular-nums">
+                          <span className="text-xs text-muted-foreground tabular-nums">
                             {imgVoxels.length} bricks
                           </span>
                         </div>
@@ -1361,7 +1361,7 @@ export default function Generator({
                     )}
                     <Button
                       onClick={handleImgReset}
-                      className="w-full h-6.5 flex items-center justify-center"
+                      className="w-full h-8 flex items-center justify-center"
                     >
                       Start Over
                     </Button>
@@ -1372,13 +1372,13 @@ export default function Generator({
           </div>
 
           {/* Action buttons (pinned to bottom of left column) */}
-          <div className="flex flex-col gap-2 px-3 py-3 border-t border-border">
+          <div className="flex flex-col gap-2 p-2.5 border-t border-border">
             {tab === "text-to-3d" && (
               <>
                 {isGenerating ? (
                   <Button
                     onClick={handlePause}
-                    className="w-full h-6.5 flex items-center justify-center"
+                    className="w-full h-8 flex items-center justify-center"
                   >
                     Pause
                   </Button>
@@ -1386,22 +1386,22 @@ export default function Generator({
                   <Button
                     onClick={handleGenerate}
                     disabled={!prompt.trim() || regenLoading}
-                    className="w-full h-6.5 flex items-center justify-center"
+                    className="w-full h-8 flex items-center justify-center"
                   >
                     Generate
                   </Button>
                 )}
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-wrap gap-2">
                   <Button
                     onClick={handleCancel}
-                    className="flex-1 min-w-max h-6.5 flex items-center justify-center"
+                    className="flex-1 min-w-max h-8 flex items-center justify-center"
                   >
                     Cancel
                   </Button>
                   <Button
                     onClick={handleAddToScene}
                     disabled={!hasResult || isGenerating || regenLoading}
-                    className="flex-1 min-w-max h-6.5 flex items-center justify-center"
+                    className="flex-1 min-w-max h-8 flex items-center justify-center"
                   >
                     Add to Scene
                   </Button>
@@ -1409,17 +1409,17 @@ export default function Generator({
               </>
             )}
             {tab === "image-to-3d" && (
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-2">
                 <Button
                   onClick={handleCancel}
-                  className="flex-1 min-w-max h-6.5 flex items-center justify-center"
+                  className="flex-1 min-w-max h-8 flex items-center justify-center"
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={handleImgAddToScene}
                   disabled={imgVoxels.length === 0}
-                  className="flex-1 min-w-max h-6.5 flex items-center justify-center"
+                  className="flex-1 min-w-max h-8 flex items-center justify-center"
                 >
                   Add to Scene
                 </Button>
@@ -1429,7 +1429,7 @@ export default function Generator({
         </div>
 
         {/* ── RIGHT: preview ───────────────────────────────────────────── */}
-        <div className="flex flex-col flex-1 min-h-0 p-3 gap-4">
+        <div className="flex flex-col flex-1 min-h-0 p-2.5 gap-2">
           {tab === "text-to-3d" && (
             <>
               {/* Viewport */}
@@ -1482,7 +1482,7 @@ export default function Generator({
                 {/* Edit-mode / regen-mode hint badge */}
                 {(editing || regenLoading) && (
                   <div className="absolute top-2 left-2 pointer-events-none">
-                    <span className="px-2 py-0.5 rounded-none bg-accent/90 text-white text-[10px] leading-none">
+                    <span className="px-2 py-0.5 rounded-none bg-accent/90 text-white text-xs leading-none">
                       {regenLoading
                         ? `Regenerating from step ${bricks.length}…`
                         : `Editing prefix · ${keepCount} brick${keepCount !== 1 ? "s" : ""}`}
@@ -1494,14 +1494,14 @@ export default function Generator({
                 {(isGenerating || regenLoading) && hasResult && (
                   <div className="absolute bottom-2 left-0 right-0 flex justify-center pointer-events-none">
                     <div className="flex items-center gap-2 px-2.5 py-1 rounded-none bg-black/40 backdrop-blur-sm">
-                      <span className="text-[10px] leading-none text-white/90 tabular-nums">
+                      <span className="text-xs leading-none text-white/90 tabular-nums">
                         <span className="text-blue-300 font-medium">
                           {streamStats.accepted}
                         </span>{" "}
                         placed
                       </span>
-                      <span className="text-white/30 text-[8px]">·</span>
-                      <span className="text-[10px] leading-none text-white/90 tabular-nums">
+                      <span className="text-xs text-white/30">·</span>
+                      <span className="text-xs leading-none text-white/90 tabular-nums">
                         <span className="text-red-300 font-medium">
                           {streamStats.rejected}
                         </span>{" "}
@@ -1509,8 +1509,8 @@ export default function Generator({
                       </span>
                       {streamStats.rollbacks > 0 && (
                         <>
-                          <span className="text-white/30 text-[8px]">·</span>
-                          <span className="text-[10px] leading-none text-white/90 tabular-nums">
+                          <span className="text-xs text-white/30">·</span>
+                          <span className="text-xs leading-none text-white/90 tabular-nums">
                             <span className="text-amber-300 font-medium">
                               {streamStats.rollbacks}
                             </span>{" "}

@@ -1,11 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  useScene,
-  type AssetCategory,
-  type BrickGroup,
-} from "@/store/sceneStore";
+import { useScene, type BrickGroup } from "@/store/sceneStore";
 import Texture from "./Texture";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -22,10 +18,14 @@ function Field({
 }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="text-[10px] text-muted-foreground">{label}</span>
+      <span className="text-xs text-muted-foreground">{label}</span>
       {children}
     </div>
   );
+}
+
+function SidebarDivider() {
+  return <div className="-mx-2.5 border-t border-border" />;
 }
 
 function TextValue({
@@ -48,18 +48,9 @@ function TextValue({
           (e.target as HTMLInputElement).blur();
         }
       }}
-      className="w-full"
+      className="w-full text-base"
     />
   );
-}
-
-function getCategoryLabel(
-  category: AssetCategory | undefined,
-  fallback: string,
-) {
-  if (category === "text-to-3d") return "Text-to-3d";
-  if (category === "image-to-3d") return "Image-to-3d";
-  return fallback;
 }
 
 function NumberValue({
@@ -94,7 +85,7 @@ function NumberValue({
           (e.target as HTMLInputElement).blur();
         }
       }}
-      className="w-full"
+      className="w-full text-base"
     />
   );
 }
@@ -178,7 +169,7 @@ export default function PropertiesPanel() {
   if (!asset && !selectedGroup) {
     return (
       <div data-no-deselect>
-        <div className="px-3 py-3 text-xs text-muted-foreground italic">
+        <div className="px-2.5 py-3 text-base text-muted-foreground italic">
           Select an asset to view its properties.
         </div>
       </div>
@@ -231,20 +222,9 @@ export default function PropertiesPanel() {
       return null;
     };
     const genGroup = findGeneratedGroup(selectedGroup);
-    const groupCategory =
-      selectedGroup.category ??
-      (() => {
-        const categories = new Set(
-          groupAssets.map((asset) => asset.category).filter(Boolean),
-        );
-        return categories.size === 1
-          ? (Array.from(categories)[0] as AssetCategory)
-          : undefined;
-      })();
-
     return (
       <div data-no-deselect>
-        <div className="px-3 py-2 flex flex-col gap-3">
+        <div className="px-2.5 py-2 flex flex-col gap-2">
           <Field label="Group Name">
             <TextValue
               key={selectedGroup.name}
@@ -260,7 +240,7 @@ export default function PropertiesPanel() {
                 onCheckedChange={(v) =>
                   updateAllAssets({ visible: v as boolean })
                 }
-                className="size-3.5"
+                className="size-3"
               />
               <span className="text-xs text-muted-foreground">
                 {allVisible ? "Visible" : "Hidden"}
@@ -272,7 +252,7 @@ export default function PropertiesPanel() {
                 onCheckedChange={(v) =>
                   updateAllAssets({ selectable: v as boolean })
                 }
-                className="size-3.5"
+                className="size-3"
               />
               <span className="text-xs text-muted-foreground">
                 {allSelectable ? "Selectable" : "Not selectable"}
@@ -280,15 +260,14 @@ export default function PropertiesPanel() {
             </label>
           </div>
 
-          <Field label="Category">
-            <span className="text-xs text-muted-foreground">
-              {getCategoryLabel(groupCategory, "Group")}
-            </span>
-          </Field>
+          <SidebarDivider />
 
           {genGroup && (
             <Field label="Generation Process">
-              <Button onClick={() => setReplayOpen(true)} className="w-full">
+              <Button
+                onClick={() => setReplayOpen(true)}
+                className="w-full h-8 flex items-center justify-center"
+              >
                 Replay
               </Button>
               {replayOpen && (
@@ -301,12 +280,14 @@ export default function PropertiesPanel() {
             </Field>
           )}
 
+          {genGroup && <SidebarDivider />}
+
           <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] text-muted-foreground">Position</span>
+            <span className="text-xs text-muted-foreground">Position</span>
             <div className="grid grid-cols-3 gap-1.5">
               {(["X", "Y", "Z"] as const).map((axis, i) => (
                 <div key={axis} className="flex flex-col gap-0.5">
-                  <span className="text-[10px] text-muted-foreground text-center">
+                  <span className="text-xs text-muted-foreground text-center">
                     {axis}
                   </span>
                   <NumberValue
@@ -320,26 +301,30 @@ export default function PropertiesPanel() {
             </div>
           </div>
 
+          <SidebarDivider />
+
           <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] text-muted-foreground">Rotation</span>
-            <div className="grid grid-cols-2 gap-1.5">
+            <span className="text-xs text-muted-foreground">Rotation</span>
+            <div className="grid grid-cols-2 gap-2">
               <Button
                 onClick={() => rotateSelectedAssets("ccw")}
-                className="w-full"
+                className="w-full h-8 flex items-center justify-center"
               >
                 90° CCW
               </Button>
               <Button
                 onClick={() => rotateSelectedAssets("cw")}
-                className="w-full"
+                className="w-full h-8 flex items-center justify-center"
               >
                 90° CW
               </Button>
             </div>
           </div>
 
+          <SidebarDivider />
+
           <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] text-muted-foreground">Color</span>
+            <span className="text-xs text-muted-foreground">Color</span>
             <div className="flex items-center gap-2">
               <input
                 type="color"
@@ -366,10 +351,12 @@ export default function PropertiesPanel() {
                     setColorDraft(referenceColor);
                 }}
                 maxLength={7}
-                className="w-full font-mono"
+                className="w-full text-base font-mono"
               />
             </div>
           </div>
+
+          <SidebarDivider />
 
           <Texture
             roughness={refRoughness}
@@ -378,10 +365,10 @@ export default function PropertiesPanel() {
             onMetalnessChange={(v) => updateAllAssets({ materialMetalness: v })}
           />
 
-          <div className="-mx-3 px-3 pt-2 border-t border-border">
+          <div className="-mx-2.5 px-2.5 pt-2 border-t border-border">
             <button
               onClick={() => removeGroup(selectedGroup.id)}
-              className="w-full h-6.5 flex items-center justify-center rounded-none text-xs font-medium text-red-500 border border-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors leading-none"
+              className="w-full h-8 flex items-center justify-center rounded-none text-xs font-medium text-red-500 border border-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors leading-none"
             >
               Delete Group
             </button>
@@ -439,17 +426,19 @@ export default function PropertiesPanel() {
 
     return (
       <div data-no-deselect>
-        <div className="px-3 py-2 flex flex-col gap-3">
-          <span className="text-xs font-semibold tracking-tight text-foreground">
+        <div className="px-2.5 py-2 flex flex-col gap-2">
+          <span className="text-base font-semibold tracking-tight text-foreground">
             {multiAssets.length} Selected
           </span>
 
+          <SidebarDivider />
+
           <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] text-muted-foreground">Position</span>
+            <span className="text-xs text-muted-foreground">Position</span>
             <div className="grid grid-cols-3 gap-1.5">
               {(["X", "Y", "Z"] as const).map((axis, i) => (
                 <div key={axis} className="flex flex-col gap-0.5">
-                  <span className="text-[10px] text-muted-foreground text-center">
+                  <span className="text-xs text-muted-foreground text-center">
                     {axis}
                   </span>
                   <NumberValue
@@ -463,21 +452,21 @@ export default function PropertiesPanel() {
             </div>
           </div>
 
+          <SidebarDivider />
+
           {allPreset && (
             <div className="flex flex-col gap-0.5">
-              <span className="text-[10px] text-muted-foreground">
-                Rotation
-              </span>
-              <div className="grid grid-cols-2 gap-1.5">
+              <span className="text-xs text-muted-foreground">Rotation</span>
+              <div className="grid grid-cols-2 gap-2">
                 <Button
                   onClick={() => rotateSelectedAssets("ccw")}
-                  className="w-full"
+                  className="w-full h-8 flex items-center justify-center"
                 >
                   90° CCW
                 </Button>
                 <Button
                   onClick={() => rotateSelectedAssets("cw")}
-                  className="w-full"
+                  className="w-full h-8 flex items-center justify-center"
                 >
                   90° CW
                 </Button>
@@ -485,8 +474,10 @@ export default function PropertiesPanel() {
             </div>
           )}
 
+          {allPreset && <SidebarDivider />}
+
           <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] text-muted-foreground">Color</span>
+            <span className="text-xs text-muted-foreground">Color</span>
             <div className="flex items-center gap-2">
               <input
                 type="color"
@@ -498,7 +489,7 @@ export default function PropertiesPanel() {
                 className="w-6.5 h-6.5 rounded-none cursor-pointer border border-border bg-transparent p-0.5 shrink-0"
               />
               {colorIsMixed ? (
-                <span className="text-[10px] text-muted-foreground italic">
+                <span className="text-xs text-muted-foreground italic">
                   Mixed
                 </span>
               ) : (
@@ -518,11 +509,13 @@ export default function PropertiesPanel() {
                       setColorDraft(referenceColor);
                   }}
                   maxLength={7}
-                  className="w-full font-mono"
+                  className="w-full text-base font-mono"
                 />
               )}
             </div>
           </div>
+
+          <SidebarDivider />
 
           <div className="flex flex-col gap-2">
             {(
@@ -545,10 +538,8 @@ export default function PropertiesPanel() {
             ).map(({ label, values, isMixed, avg, key }) => (
               <div key={label} className="flex flex-col gap-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-muted-foreground">
-                    {label}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground font-mono tabular-nums">
+                  <span className="text-xs text-muted-foreground">{label}</span>
+                  <span className="text-xs text-muted-foreground font-mono tabular-nums">
                     {isMixed ? (
                       <span className="italic text-muted-foreground">
                         Mixed
@@ -570,10 +561,10 @@ export default function PropertiesPanel() {
             ))}
           </div>
 
-          <div className="-mx-3 px-3 pt-2 border-t border-border">
+          <div className="-mx-2.5 px-2.5 pt-2 border-t border-border">
             <button
               onClick={() => removeSelectedAssets()}
-              className="w-full h-6.5 flex items-center justify-center rounded-none text-xs font-medium text-red-500 border border-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors leading-none"
+              className="w-full h-8 flex items-center justify-center rounded-none text-xs font-medium text-red-500 border border-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors leading-none"
             >
               Delete All Selected
             </button>
@@ -587,10 +578,23 @@ export default function PropertiesPanel() {
 
   const pos = asset!.position ?? [0, 0, 0];
   const singleAsset = asset!;
+  const singleGenGroup = (() => {
+    if (!singleAsset.groupId) return null;
+    const findGen = (gId: string): (typeof groups)[number] | null => {
+      const g = groups.find((gr) => gr.id === gId);
+      if (!g) return null;
+      if (g.generationHistory && g.generationHistory.length > 0) return g;
+      if (g.parentGroupId) return findGen(g.parentGroupId);
+      return null;
+    };
+    return findGen(singleAsset.groupId);
+  })();
+  const canRotateSingle =
+    singleAsset.type === "preset-brick" && Boolean(singleAsset.preset);
 
   return (
     <div data-no-deselect>
-      <div className="px-3 py-2 flex flex-col gap-3">
+      <div className="px-2.5 py-2 flex flex-col gap-2">
         <Field label="Name">
           <TextValue
             key={singleAsset.name}
@@ -606,7 +610,7 @@ export default function PropertiesPanel() {
               onCheckedChange={(v) =>
                 updateAsset(singleAsset.id, { visible: v as boolean })
               }
-              className="size-3.5"
+              className="size-3"
             />
             <span className="text-xs text-muted-foreground">
               {singleAsset.visible ? "Visible" : "Hidden"}
@@ -618,7 +622,7 @@ export default function PropertiesPanel() {
               onCheckedChange={(v) =>
                 updateAsset(singleAsset.id, { selectable: v as boolean })
               }
-              className="size-3.5"
+              className="size-3"
             />
             <span className="text-xs text-muted-foreground">
               {(singleAsset.selectable ?? true)
@@ -628,45 +632,34 @@ export default function PropertiesPanel() {
           </label>
         </div>
 
-        <Field label="Category">
-          <span className="text-xs text-muted-foreground">
-            {getCategoryLabel(singleAsset.category, "Primitive")}
-          </span>
-        </Field>
+        <SidebarDivider />
 
-        {(() => {
-          if (!singleAsset.groupId) return null;
-          const findGen = (gId: string): (typeof groups)[number] | null => {
-            const g = groups.find((gr) => gr.id === gId);
-            if (!g) return null;
-            if (g.generationHistory && g.generationHistory.length > 0) return g;
-            if (g.parentGroupId) return findGen(g.parentGroupId);
-            return null;
-          };
-          const genGroup = findGen(singleAsset.groupId);
-          if (!genGroup) return null;
-          return (
-            <Field label="Generation Process">
-              <Button onClick={() => setReplayOpen(true)} className="w-full">
-                Replay
-              </Button>
-              {replayOpen && (
-                <GenerationReplay
-                  generationHistory={genGroup.generationHistory!}
-                  groupName={genGroup.name}
-                  onClose={() => setReplayOpen(false)}
-                />
-              )}
-            </Field>
-          );
-        })()}
+        {singleGenGroup && (
+          <Field label="Generation Process">
+            <Button
+              onClick={() => setReplayOpen(true)}
+              className="w-full h-8 flex items-center justify-center"
+            >
+              Replay
+            </Button>
+            {replayOpen && (
+              <GenerationReplay
+                generationHistory={singleGenGroup.generationHistory!}
+                groupName={singleGenGroup.name}
+                onClose={() => setReplayOpen(false)}
+              />
+            )}
+          </Field>
+        )}
+
+        {singleGenGroup && <SidebarDivider />}
 
         <div className="flex flex-col gap-0.5">
-          <span className="text-[10px] text-muted-foreground">Position</span>
+          <span className="text-xs text-muted-foreground">Position</span>
           <div className="grid grid-cols-3 gap-1.5">
             {(["X", "Y", "Z"] as const).map((axis, i) => (
               <div key={axis} className="flex flex-col gap-0.5">
-                <span className="text-[10px] text-muted-foreground text-center">
+                <span className="text-xs text-muted-foreground text-center">
                   {axis}
                 </span>
                 <NumberValue
@@ -688,48 +681,32 @@ export default function PropertiesPanel() {
           </div>
         </div>
 
-        {(() => {
-          const isMulti = selectedAssetIds.length > 1;
-          const selectedPresetAssets = isMulti
-            ? assets.filter(
-                (a) =>
-                  selectedAssetIds.includes(a.id) && a.type === "preset-brick",
-              )
-            : [];
-          const showForGroup =
-            isMulti && selectedPresetAssets.length === selectedAssetIds.length;
-          const showForSingle =
-            !isMulti &&
-            singleAsset.type === "preset-brick" &&
-            singleAsset.preset;
+        <SidebarDivider />
 
-          if (!showForGroup && !showForSingle) return null;
-
-          return (
-            <div className="flex flex-col gap-0.5">
-              <span className="text-[10px] text-muted-foreground">
-                Rotation
-              </span>
-              <div className="grid grid-cols-2 gap-1.5">
-                <Button
-                  onClick={() => rotateSelectedAssets("ccw")}
-                  className="w-full"
-                >
-                  90° CCW
-                </Button>
-                <Button
-                  onClick={() => rotateSelectedAssets("cw")}
-                  className="w-full"
-                >
-                  90° CW
-                </Button>
-              </div>
+        {canRotateSingle && (
+          <div className="flex flex-col gap-0.5">
+            <span className="text-xs text-muted-foreground">Rotation</span>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                onClick={() => rotateSelectedAssets("ccw")}
+                className="w-full h-8 flex items-center justify-center"
+              >
+                90° CCW
+              </Button>
+              <Button
+                onClick={() => rotateSelectedAssets("cw")}
+                className="w-full h-8 flex items-center justify-center"
+              >
+                90° CW
+              </Button>
             </div>
-          );
-        })()}
+          </div>
+        )}
+
+        {canRotateSingle && <SidebarDivider />}
 
         <div className="flex flex-col gap-0.5">
-          <span className="text-[10px] text-muted-foreground">Color</span>
+          <span className="text-xs text-muted-foreground">Color</span>
           <div className="flex items-center gap-2">
             <input
               type="color"
@@ -756,10 +733,12 @@ export default function PropertiesPanel() {
                   setColorDraft(singleAsset.materialColor ?? "#bfbfff");
               }}
               maxLength={7}
-              className="w-full font-mono"
+              className="w-full text-base font-mono"
             />
           </div>
         </div>
+
+        <SidebarDivider />
 
         <Texture
           roughness={singleAsset.materialRoughness}
@@ -772,14 +751,14 @@ export default function PropertiesPanel() {
           }
         />
 
-        <div className="flex flex-col gap-3 -mx-3 px-3 pt-3 border-t border-border">
+        <div className="flex flex-col gap-2 -mx-2.5 px-2.5 pt-3 border-t border-border">
           {singleAsset.type === "preset-brick" &&
             singleAsset.preset &&
             (singleAsset.preset.studsX > 1 ||
               singleAsset.preset.studsY > 1) && (
               <Button
                 onClick={() => decomposeBrick(singleAsset.id)}
-                className="w-full"
+                className="w-full h-8 flex items-center justify-center"
               >
                 Decompose
               </Button>
@@ -790,7 +769,7 @@ export default function PropertiesPanel() {
               selectAsset(null);
               removeAsset(singleAsset.id);
             }}
-            className="w-full h-6.5 flex items-center justify-center rounded-none text-xs font-medium text-red-500 border border-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors leading-none"
+            className="w-full h-8 flex items-center justify-center rounded-none text-xs font-medium text-red-500 border border-red-500 bg-red-500/10 hover:bg-red-500/20 transition-colors leading-none"
           >
             Delete Brick
           </button>

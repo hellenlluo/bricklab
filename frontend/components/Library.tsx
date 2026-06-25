@@ -50,7 +50,7 @@ function BrickCard({
 }) {
   return (
     <div
-      className={`group relative flex flex-col rounded-none border border-accent bg-chart-1 overflow-hidden transition-all${fillHeight ? " h-full" : ""}`}
+      className={`group relative flex flex-col rounded-none border border-accent bg-accent/25 overflow-hidden transition-colors hover:bg-accent/35${fillHeight ? " h-full" : ""}`}
     >
       <button
         onClick={onClick}

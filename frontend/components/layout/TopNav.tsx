@@ -69,7 +69,7 @@ export default function TopNav() {
           style={{ width: sidebarWidth }}
           className="flex shrink-0 items-center pl-2.5 border-r border-border"
         >
-          <span className="inline-flex items-center gap-1.5 text-xl font-normal tracking-tight text-accent px-2 py-0.5 border border-accent bg-chart-1">
+          <span className="inline-flex items-center gap-1.5 text-xl font-normal tracking-tight text-accent px-2 py-0.5 border border-accent bg-accent/25">
             <BrickPreview
               studsX={1}
               studsY={1}

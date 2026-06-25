@@ -931,11 +931,11 @@ export default function SceneCanvas() {
         <ResizablePanel defaultSize={300 / 7} minSize={15}>
           <ResizablePanelGroup orientation="vertical">
             <ResizablePanel defaultSize={50} minSize={15}>
-              <SceneViewport viewportType="Top" label="Top" />
+              <SceneViewport viewportType="Top" label="Top" labelAtTop />
             </ResizablePanel>
             <ResizableHandle withHandle />
             <ResizablePanel defaultSize={50} minSize={15}>
-              <SceneViewport viewportType="Front" label="Front" />
+              <SceneViewport viewportType="Front" label="Front" labelAtTop />
             </ResizablePanel>
           </ResizablePanelGroup>
         </ResizablePanel>
